@@ -181,14 +181,14 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Mobile header */}
-        <div className="lg:hidden flex h-16 items-center justify-between px-4 border-b border-gray-200 bg-white">
+        <div className="lg:hidden sticky top-0 z-40 flex h-16 items-center justify-between px-4 border-b border-gray-200 bg-white shadow-sm">
           <button onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
             <Menu className="h-6 w-6 text-gray-600" />
           </button>
           <h1 className="text-lg font-semibold text-gray-900">AQUI Admin</h1>
           <button
             onClick={handleLogout}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Logout"
           >
             <LogOut className="h-5 w-5" />
@@ -196,8 +196,10 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1">
-          {children}
+        <main className="flex-1 min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

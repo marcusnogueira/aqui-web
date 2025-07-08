@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
+import { loadGoogleMaps } from '@/lib/google-maps-loader'
 import { VendorWithLiveSession, VendorMapProps } from '@/types/vendor'
 
 // Helper function to extract coordinates from live session
@@ -81,22 +81,16 @@ export function VendorMap({ vendors, userLocation, onVendorClick, getVendorStatu
 
   // Initialize Google Maps
   useEffect(() => {
-    const initMap = async () => {
-      const loader = new Loader({
-        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-        version: 'weekly',
-        libraries: ['places']
-      })
-
+    const initializeMap = async () => {
       try {
-        await loader.load()
+        await loadGoogleMaps()
         setIsLoaded(true)
       } catch (error) {
         console.error('Error loading Google Maps:', error)
       }
     }
 
-    initMap()
+    initializeMap()
   }, [])
 
   // Create map instance

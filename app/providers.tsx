@@ -1,13 +1,15 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { SessionContextProvider } from '@supabase/auth-helpers-react'
+import { createBrowserClient } from '@supabase/ssr'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import type { Database } from '@/types/database'
 
-const supabase = createClientComponentClient<Database>()
+const supabase = createBrowserClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface AppContextType {
   user: any
@@ -51,12 +53,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <SessionContextProvider supabaseClient={supabase}>
-      <I18nextProvider i18n={i18n}>
-        <AppContext.Provider value={{ user, loading }}>
-          {children}
-        </AppContext.Provider>
-      </I18nextProvider>
-    </SessionContextProvider>
+    <I18nextProvider i18n={i18n}>
+      <AppContext.Provider value={{ user, loading }}>
+        {children}
+      </AppContext.Provider>
+    </I18nextProvider>
   )
 }

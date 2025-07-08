@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
+import { loadGoogleMaps } from '@/lib/google-maps-loader'
 
 interface PlaceResult {
   formatted_address: string
@@ -39,13 +39,7 @@ export default function GooglePlacesAutocomplete({
   useEffect(() => {
     const initializeAutocomplete = async () => {
       try {
-        const loader = new Loader({
-          apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-          version: 'weekly',
-          libraries: ['places']
-        })
-
-        await loader.load()
+        await loadGoogleMaps()
         setIsLoaded(true)
 
         if (inputRef.current && !autocompleteRef.current) {

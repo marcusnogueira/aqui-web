@@ -1,13 +1,23 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/database'
 
 // Server-side Supabase client
-export const createServerClient = () => createServerComponentClient<Database>({ cookies })
+export const createClient = () => createServerClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    cookies: {
+      get(name: string) {
+        return cookies().get(name)?.value
+      },
+    },
+  }
+)
 
 // Helper function to get current user on server
 export const getCurrentUserServer = async () => {
-  const supabase = createServerClient()
+  const supabase = createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   
   if (error) {
@@ -20,7 +30,7 @@ export const getCurrentUserServer = async () => {
 
 // Helper function to check if user is admin on server
 export const isUserAdminServer = async (userId: string) => {
-  const supabase = createServerClient()
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('admin_users')
     .select('id')

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createClient, signOut } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
@@ -110,6 +110,16 @@ export default function VendorDashboardPage() {
     } catch (error) {
       console.error('Error switching to customer mode:', error)
       alert('Failed to switch to customer mode. Please try again.')
+    }
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+      alert('Failed to sign out. Please try again.')
     }
   }
 
@@ -507,6 +517,13 @@ export default function VendorDashboardPage() {
                   {isStartingSession ? 'Starting...' : 'Go Live'}
                 </button>
               )}
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity border border-gray-300"
+                style={{ backgroundColor: '#ffffff', color: '#DC2626' }}
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>

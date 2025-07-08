@@ -19,7 +19,7 @@ interface VendorFeedback {
   priority: 'low' | 'medium' | 'high' | 'urgent'
   created_at: string
   updated_at: string
-  admin_notes?: string
+  admin_notes: string | null
   resolved_by?: string
 }
 
@@ -77,7 +77,8 @@ export default function FeedbackPage() {
           status: 'pending',
           priority: 'high',
           created_at: '2024-01-07T10:30:00Z',
-          updated_at: '2024-01-07T10:30:00Z'
+          updated_at: '2024-01-07T10:30:00Z',
+          admin_notes: null
         },
         {
           id: '2',
@@ -124,7 +125,8 @@ export default function FeedbackPage() {
           status: 'pending',
           priority: 'urgent',
           created_at: '2024-01-07T12:00:00Z',
-          updated_at: '2024-01-07T12:00:00Z'
+          updated_at: '2024-01-07T12:00:00Z',
+          admin_notes: null
         }
       ]
       
@@ -169,7 +171,7 @@ export default function FeedbackPage() {
           ? { 
               ...item, 
               status: status as any, 
-              admin_notes: notes,
+              admin_notes: notes || null,
               resolved_by: 'admin@aqui.com',
               updated_at: new Date().toISOString()
             }

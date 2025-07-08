@@ -245,12 +245,12 @@ export default function ExportsPage() {
     }
   }
 
-  const spinRef = useSpin(true);
-
   const getStatusIcon = (status: string) => {
+    const processingSpinRef = useSpin(status === 'processing');
+    
     switch (status) {
       case 'pending': return <Clock className="h-4 w-4" />
-      case 'processing': return <div ref={spinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+      case 'processing': return <div ref={processingSpinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
       case 'completed': return <CheckCircle className="h-4 w-4" />
       case 'failed': return <div className="h-4 w-4 bg-red-600 rounded-full"></div>
       default: return <Clock className="h-4 w-4" />
