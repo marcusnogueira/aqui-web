@@ -76,6 +76,7 @@ export default function RootLayout({
                 borderRadius: '8px',
                 fontFamily: 'Varela Round, sans-serif',
               },
+              className: 'animate-bounceFadeIn',
             }}
           />
         </Providers>

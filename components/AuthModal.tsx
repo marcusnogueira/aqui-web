@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield } from 'lucide-react'
 import { signInWithGoogle } from '@/lib/supabase'
+import { useSlideInBottom } from '@/lib/animations'
 
 interface AuthModalProps {
   onClose: () => void
@@ -12,6 +13,7 @@ interface AuthModalProps {
 export function AuthModal({ onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const modalRef = useSlideInBottom()
 
   const handleGoogleSignIn = async () => {
     try {
@@ -32,7 +34,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative">
+      <div ref={modalRef} className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative animate-slideInBottom">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to AQUI</h2>
           <p className="text-gray-600 mb-6">Sign in to discover amazing local vendors</p>

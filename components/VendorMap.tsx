@@ -152,7 +152,7 @@ export function VendorMap({ vendors, userLocation, onVendorClick, getVendorStatu
     })
   }, [map, userLocation])
 
-  // Create Airbnb-style marker SVG
+  // Create Airbnb-style marker SVG with PopIn animation
   const createAirbnbMarkerSVG = (vendor: any, isHighlighted: boolean = false) => {
     const status = getVendorStatus(vendor)
     const statusColor = status === 'open' ? '#10B981' : status === 'closing' ? '#F59E0B' : '#6B7280'
@@ -174,19 +174,37 @@ export function VendorMap({ vendors, userLocation, onVendorClick, getVendorStatu
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
           </filter>
+          <style>
+            .marker-group {
+              animation: popIn 0.6s ease-out;
+              transform-origin: center;
+            }
+            @keyframes popIn {
+              from {
+                opacity: 0;
+                transform: scale(0.8);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+          </style>
         </defs>
         
-        <!-- Main bubble -->
-        <rect x="5" y="5" width="110" height="30" rx="15" ry="15" 
-              fill="${bgColor}" stroke="${borderColor}" stroke-width="2" filter="url(#shadow)"/>
-        
-        <!-- Pointer -->
-        <polygon points="60,35 55,45 65,45" fill="${borderColor}"/>
-        
-        <!-- Text -->
-        <text x="15" y="25" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="${textColor}">
-          ${categoryIcon} ${displayName}
-        </text>
+        <g class="marker-group">
+          <!-- Main bubble -->
+          <rect x="5" y="5" width="110" height="30" rx="15" ry="15" 
+                fill="${bgColor}" stroke="${borderColor}" stroke-width="2" filter="url(#shadow)"/>
+          
+          <!-- Pointer -->
+          <polygon points="60,35 55,45 65,45" fill="${borderColor}"/>
+          
+          <!-- Text -->
+          <text x="15" y="25" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="${textColor}">
+            ${categoryIcon} ${displayName}
+          </text>
+        </g>
       </svg>
     `
   }

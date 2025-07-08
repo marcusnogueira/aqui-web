@@ -24,7 +24,6 @@ export interface AdminVendorView extends Vendor {
   users: User
   vendor_live_sessions: VendorLiveSession[]
   category?: string // Legacy field for admin compatibility
-  admin_notes?: string | null // Admin-specific notes
 }
 
 // Props interfaces for components

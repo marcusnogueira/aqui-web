@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
-import { Download, FileText, Calendar, Database, Users, Store, MessageSquare, BarChart3, Clock, CheckCircle } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Download, FileText, Users, Store, BarChart3, Clock, CheckCircle, MessageSquare, Database } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { useSpin } from '@/lib/animations'
 
 interface ExportJob {
   id: string
@@ -244,10 +245,12 @@ export default function ExportsPage() {
     }
   }
 
+  const spinRef = useSpin(true);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="h-4 w-4" />
-      case 'processing': return <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+      case 'processing': return <div ref={spinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
       case 'completed': return <CheckCircle className="h-4 w-4" />
       case 'failed': return <div className="h-4 w-4 bg-red-600 rounded-full"></div>
       default: return <Clock className="h-4 w-4" />
@@ -262,12 +265,14 @@ export default function ExportsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const loadingSpinRef = useSpin(loading);
+
   if (loading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D85D28] mx-auto"></div>
+            <div ref={loadingSpinRef} className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D85D28] mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading exports...</p>
           </div>
         </div>

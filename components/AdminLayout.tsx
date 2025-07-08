@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { adminAuth } from '@/lib/admin-auth'
 import { toast, Toaster } from 'react-hot-toast'
+import { useSpin } from '@/lib/animations'
 import {
   LayoutDashboard,
   Users,
@@ -47,6 +48,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  const spinRef = useSpin(loading)
 
   useEffect(() => {
     checkAuth()
@@ -80,7 +82,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D85D28]"></div>
+        <div ref={spinRef} className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D85D28]"></div>
       </div>
     )
   }

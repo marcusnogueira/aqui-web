@@ -4,6 +4,7 @@ import { Star, MapPin, Clock, Users } from 'lucide-react'
 import Image from 'next/image'
 import { VendorWithLiveSession, VendorCardProps } from '@/types/vendor'
 import { useState, useEffect } from 'react'
+import { useFadeInUp, usePulse } from '@/lib/animations'
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3959 // Earth's radius in miles
@@ -52,6 +53,8 @@ function formatTimeRemaining(seconds: number): string {
 
 export function VendorCard({ vendor, status, onClick, userLocation }: VendorCardProps) {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+  const fadeRef = useFadeInUp()
+  const pulseRef = usePulse(status === 'open' || (vendor.live_session?.is_active && status !== 'offline'))
 
   const statusColors = {
     open: 'bg-green-500',
@@ -97,6 +100,7 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
 
   return (
     <div 
+      ref={fadeRef}
       className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer overflow-hidden"
       onClick={onClick}
     >
@@ -120,7 +124,12 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
           <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-white text-xs font-medium ${
             timeRemaining !== null && timeRemaining > 0 ? 'bg-orange-500' : statusColors[status]
           }`}>
-            <div className="w-2 h-2 bg-white rounded-full"></div>
+            <div 
+              ref={pulseRef}
+              className={`w-2 h-2 bg-white rounded-full ${
+                status === 'open' || (vendor.live_session?.is_active && status !== 'offline') ? 'animate-pulse' : ''
+              }`}
+            ></div>
             <span>
               {timeRemaining !== null && timeRemaining > 0 
                 ? `⏳ ${formatTimeRemaining(timeRemaining)}`

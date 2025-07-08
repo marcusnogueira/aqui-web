@@ -7,6 +7,7 @@ import { clientAuth } from '@/lib/auth-helpers';
 import { Database } from '@/types/database';
 import { VendorWithDetails } from '@/types/vendor';
 import { Star, MapPin, Clock, Phone, Mail, Heart, MessageSquare, Flag, X, Navigation } from 'lucide-react';
+import { useHeartBeat } from '@/lib/animations';
 
 type VendorLocation = Database['public']['Tables']['vendor_static_locations']['Row'];
 type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['Row'];
@@ -36,11 +37,13 @@ export default function VendorProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteClicked, setFavoriteClicked] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportData, setReportData] = useState({ reason: '', description: '' });
   const [submittingReport, setSubmittingReport] = useState(false);
+  const heartBeatRef = useHeartBeat(favoriteClicked);
 
   const vendorId = params.id as string;
 
@@ -172,6 +175,9 @@ export default function VendorProfilePage() {
     if (!user) return;
     
     try {
+      setFavoriteClicked(true);
+      setTimeout(() => setFavoriteClicked(false), 600);
+      
       if (isFavorite) {
         await supabase
           .from('favorites')
@@ -383,7 +389,7 @@ export default function VendorProfilePage() {
                         : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                    <Heart ref={heartBeatRef} className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''} ${favoriteClicked ? 'animate-heartbeat' : ''}`} />
                     <span>{isFavorite ? 'Favorited' : 'Add to Favorites'}</span>
                   </button>
                   <button
