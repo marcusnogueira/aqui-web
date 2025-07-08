@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 251 242 227; /* market-cream */
+    --foreground: 33 99 97; /* bay-cypress */
+    --card: 255 255 255;
+    --card-foreground: 33 99 97;
+    --popover: 255 255 255;
+    --popover-foreground: 33 99 97;
+    --primary: 58 147 138; /* mission-teal */
+    --primary-foreground: 255 255 255;
+    --secondary: 246 177 69; /* golden-plantain */
+    --secondary-foreground: 33 99 97;
+    --muted: 245 245 245;
+    --muted-foreground: 115 115 115;
+    --accent: 216 93 40; /* chili-orange */
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 229 229 229;
+    --input: 229 229 229;
+    --ring: 58 147 138;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 33 99 97;
+    --foreground: 251 242 227;
+    --card: 33 99 97;
+    --card-foreground: 251 242 227;
+    --popover: 33 99 97;
+    --popover-foreground: 251 242 227;
+    --primary: 58 147 138;
+    --primary-foreground: 255 255 255;
+    --secondary: 246 177 69;
+    --secondary-foreground: 33 99 97;
+    --muted: 64 64 64;
+    --muted-foreground: 163 163 163;
+    --accent: 216 93 40;
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 64 64 64;
+    --input: 64 64 64;
+    --ring: 58 147 138;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3A938A;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #216361;
+}
+
+/* Map styles */
+.gm-style {
+  font-family: 'Varela Round', sans-serif !important;
+}
+
+.gm-style .gm-style-iw-c {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Vendor status colors */
+.vendor-status-open {
+  @apply bg-green-500 text-white;
+}
+
+.vendor-status-closing {
+  @apply bg-yellow-500 text-white;
+}
+
+.vendor-status-offline {
+  @apply bg-red-500 text-white;
+}
