@@ -5,6 +5,7 @@ import AdminLayout from '@/components/AdminLayout'
 import { Search, Filter, CheckCircle, XCircle, Clock, Eye, Edit2, MoreHorizontal } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { AdminVendorView } from '@/types/vendor'
+import { VENDOR_STATUSES, BUSINESS_CATEGORIES, PAGINATION } from '@/lib/constants'
 
 type Vendor = AdminVendorView
 
@@ -40,7 +41,7 @@ export default function VendorManagementPage() {
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
-    limit: 10,
+    limit: PAGINATION.DEFAULT_LIMIT,
     total: 0,
     totalPages: 0
   })
@@ -342,7 +343,7 @@ export default function VendorManagementPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(vendor.created_at).toLocaleDateString()}
+                        {vendor.created_at && new Date(vendor.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button

@@ -1,0 +1,99 @@
+<prompt>
+  <title>Next 14 production-build failures &nbsp;— root causes + fixes</title>
+
+  <context>
+    <![CDATA[
+    You attempted `npm run build` (Next 14.2.30). Compilation succeeded but
+    the final **static export** phase stopped with multiple runtime errors
+    and a missing dependency.  Below is a structured summary of every error
+    and the exact change required so the build can finish.
+    ]]>
+  </context>
+
+  <!-- ―――――――――――― 1. Dynamic-server error digests ――――――――――――― -->
+  <issue id="dynamic-server-usage">
+    <route>/api/admin/me</route>
+    <route>/api/admin/stats</route>
+    <route>/api/admin/vendors/stats</route>
+
+    <symptom>
+      <![CDATA[
+      Digest `DYNAMIC_SERVER_USAGE`: “Route … couldn't be rendered
+      statically because it used `request.cookies`”.
+      ]]>
+    </symptom>
+
+    <explanation>
+      Accessing `request.cookies` during the build makes the route dynamic,
+      but Next tried to prerender it.  Static export therefore aborts.
+    </explanation>
+
+    <resolution>
+      <option preferred="true">
+        <!-- let the route stay dynamic -->
+        <code export="ts">
+          export const dynamic = 'force-dynamic';   <!-- top of the file -->
+        </code>
+      </option>
+      <option>
+        <!-- or remove cookie read until runtime -->
+        Refactor the handler to fetch cookies only on the client or in a
+        server action that is explicitly dynamic.
+      </option>
+    </resolution>
+  </issue>
+
+  <!-- ―――――――――――― 2. Missing “critters” module ――――――――――――― -->
+  <issue id="critters-dependency">
+    <affected>Pages 404 and 500 prerender</affected>
+
+    <symptom>Cannot find module 'critters'</symptom>
+
+    <explanation>
+      Your custom <document> (or an older Next preset) imports Critters to
+      inline critical CSS.  The package is no longer in package.json.
+    </explanation>
+
+    <resolution>
+      <step>Run <cmd>npm i --save critters</cmd></step>
+      <step>Re-build.</step>
+    </resolution>
+  </issue>
+
+  <!-- ―――――――――――― 3. TypeScript model mismatch ――――――――――――― -->
+  <issue id="estimated-duration">
+    <file>app/vendor/[id]/page.tsx</file>
+    <line>149</line>
+
+    <symptom>
+      Property <code>estimated_duration</code> does not exist on
+      <code>VendorLiveSession</code> type.
+    </symptom>
+
+    <resolution>
+      <choice>
+        <title>Use existing column</title>
+        <code export="ts">
+          const estimatedEnd =
+            new Date(sessionStart.getTime() +
+                     (liveSession.was_scheduled_duration ?? 120) * 60_000);
+        </code>
+      </choice>
+      <choice>
+        <title>Add missing DB column</title>
+        <step>Add <code>estimated_duration INTEGER</code> to
+              <code>vendor_live_sessions</code>.</step>
+        <step>Regenerate generated types:
+              <cmd>supabase gen types typescript --local &gt; src/lib/database.types.ts</cmd></step>
+      </choice>
+    </resolution>
+  </issue>
+
+  <!-- ―――――――――――― 4. Build checklist ――――――――――――― -->
+  <checklist>
+    <item>Install Critters ➜ <cmd>npm i critters</cmd></item>
+    <item>Mark dynamic API routes with <code>export const dynamic = 'force-dynamic'</code></item>
+    <item>Fix <code>estimated_duration</code> mismatch (choose one option above)</item>
+    <item>Run <cmd>npm run build</cmd> again — build should now pass.</item>
+  </checklist>
+</prompt>

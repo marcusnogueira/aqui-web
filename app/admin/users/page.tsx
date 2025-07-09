@@ -4,18 +4,20 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { Users, Search, Filter, Eye, Ban, CheckCircle, XCircle, Mail, Calendar, Star } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { USER_ROLES, USER_ACCOUNT_STATUS } from '@/lib/constants'
 
 interface User {
   id: string
   email: string
   full_name?: string
-  status: 'active' | 'suspended' | 'banned'
+  status: string
   created_at: string
   phone?: string
   avatar_url?: string
   is_vendor: boolean
   is_admin: boolean
   active_role: string
+  location?: string
 }
 
 interface UserStats {
@@ -56,39 +58,39 @@ export default function UsersPage() {
           id: '1',
           email: 'john.doe@email.com',
           full_name: 'John Doe',
-          status: 'active',
+          status: USER_ACCOUNT_STATUS.ACTIVE,
           created_at: '2024-01-01T10:00:00Z',
           phone: '+1-555-0123',
           avatar_url: 'https://via.placeholder.com/40',
           is_vendor: false,
           is_admin: false,
-          active_role: 'customer'
+          active_role: USER_ROLES.CUSTOMER
         },
         {
           id: '2',
           email: 'jane.smith@email.com',
           full_name: 'Jane Smith',
-          status: 'active',
+          status: USER_ACCOUNT_STATUS.ACTIVE,
           created_at: '2024-01-02T11:15:00Z',
           is_vendor: true,
           is_admin: false,
-          active_role: 'vendor'
+          active_role: USER_ROLES.VENDOR
         },
         {
           id: '3',
           email: 'mike.johnson@email.com',
           full_name: 'Mike Johnson',
-          status: 'suspended',
+          status: USER_ACCOUNT_STATUS.SUSPENDED,
           created_at: '2024-01-03T16:45:00Z',
           is_vendor: false,
           is_admin: false,
-          active_role: 'customer'
+          active_role: USER_ROLES.CUSTOMER
         },
         {
           id: '4',
           email: 'sarah.wilson@email.com',
           full_name: 'Sarah Wilson',
-          status: 'active',
+          status: USER_ACCOUNT_STATUS.ACTIVE,
           created_at: '2024-01-04T08:30:00Z',
           phone: '+1-555-0456',
           is_vendor: true,
@@ -99,7 +101,7 @@ export default function UsersPage() {
           id: '5',
           email: 'spam.user@email.com',
           full_name: 'Spam User',
-          status: 'banned',
+          status: USER_ACCOUNT_STATUS.BANNED,
           created_at: '2024-01-05T13:20:00Z',
           is_vendor: false,
           is_admin: false,
@@ -165,18 +167,18 @@ export default function UsersPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'suspended': return 'bg-yellow-100 text-yellow-800'
-      case 'banned': return 'bg-red-100 text-red-800'
+      case USER_ACCOUNT_STATUS.ACTIVE: return 'bg-green-100 text-green-800'
+      case USER_ACCOUNT_STATUS.SUSPENDED: return 'bg-yellow-100 text-yellow-800'
+      case USER_ACCOUNT_STATUS.BANNED: return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'suspended': return <XCircle className="h-4 w-4 text-yellow-500" />
-      case 'banned': return <Ban className="h-4 w-4 text-red-500" />
+      case USER_ACCOUNT_STATUS.ACTIVE: return <CheckCircle className="h-4 w-4 text-green-500" />
+      case USER_ACCOUNT_STATUS.SUSPENDED: return <XCircle className="h-4 w-4 text-yellow-500" />
+      case USER_ACCOUNT_STATUS.BANNED: return <Ban className="h-4 w-4 text-red-500" />
       default: return <CheckCircle className="h-4 w-4 text-gray-500" />
     }
   }
@@ -331,8 +333,8 @@ export default function UsersPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          {user.profile_image_url ? (
-                            <img className="h-10 w-10 rounded-full" src={user.profile_image_url} alt="" />
+                          {user.avatar_url ? (
+                            <img className="h-10 w-10 rounded-full" src={user.avatar_url} alt="" />
                           ) : (
                             <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                               <Users className="h-5 w-5 text-gray-600" />
@@ -454,8 +456,8 @@ export default function UsersPage() {
                   {/* User Info */}
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-16 w-16">
-                      {selectedUser.profile_image_url ? (
-                        <img className="h-16 w-16 rounded-full" src={selectedUser.profile_image_url} alt="" />
+                      {selectedUser.avatar_url ? (
+                        <img className="h-16 w-16 rounded-full" src={selectedUser.avatar_url} alt="" />
                       ) : (
                         <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
                           <Users className="h-8 w-8 text-gray-600" />
@@ -548,16 +550,16 @@ export default function UsersPage() {
                       Close
                     </button>
                     
-                    {selectedUser.status === 'active' && (
+                    {selectedUser.status === USER_ACCOUNT_STATUS.ACTIVE && (
                       <>
                         <button
-                          onClick={() => updateUserStatus(selectedUser.id, 'suspended')}
+                          onClick={() => updateUserStatus(selectedUser.id, USER_ACCOUNT_STATUS.SUSPENDED)}
                           className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm font-medium"
                         >
                           Suspend User
                         </button>
                         <button
-                          onClick={() => updateUserStatus(selectedUser.id, 'banned')}
+                          onClick={() => updateUserStatus(selectedUser.id, USER_ACCOUNT_STATUS.BANNED)}
                           className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
                         >
                           Ban User
@@ -565,16 +567,16 @@ export default function UsersPage() {
                       </>
                     )}
                     
-                    {selectedUser.status === 'suspended' && (
+                    {selectedUser.status === USER_ACCOUNT_STATUS.SUSPENDED && (
                       <>
                         <button
-                          onClick={() => updateUserStatus(selectedUser.id, 'active')}
+                          onClick={() => updateUserStatus(selectedUser.id, USER_ACCOUNT_STATUS.ACTIVE)}
                           className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
                         >
                           Reactivate User
                         </button>
                         <button
-                          onClick={() => updateUserStatus(selectedUser.id, 'banned')}
+                          onClick={() => updateUserStatus(selectedUser.id, USER_ACCOUNT_STATUS.BANNED)}
                           className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm font-medium"
                         >
                           Ban User
@@ -582,9 +584,9 @@ export default function UsersPage() {
                       </>
                     )}
                     
-                    {selectedUser.status === 'banned' && (
+                    {selectedUser.status === USER_ACCOUNT_STATUS.BANNED && (
                       <button
-                        onClick={() => updateUserStatus(selectedUser.id, 'active')}
+                        onClick={() => updateUserStatus(selectedUser.id, USER_ACCOUNT_STATUS.ACTIVE)}
                         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
                       >
                         Unban User

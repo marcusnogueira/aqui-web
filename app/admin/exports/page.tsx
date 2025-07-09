@@ -1,16 +1,16 @@
-'use client'
-
-import { useState, useEffect } from 'react'
+'use client';
 import AdminLayout from '@/components/AdminLayout'
-import { Download, FileText, Users, Store, BarChart3, Clock, CheckCircle, MessageSquare, Database } from 'lucide-react'
-import { toast } from 'react-hot-toast'
 import { useSpin } from '@/lib/animations'
+import { EXPORT_FORMATS, EXPORT_TYPES, EXPORT_STATUSES } from '@/lib/constants'
+import { Users, Store, BarChart3, FileText, Clock, CheckCircle, Download } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 
 interface ExportJob {
   id: string
-  type: 'users' | 'vendors' | 'analytics' | 'feedback' | 'reviews' | 'search_logs'
-  format: 'csv' | 'json' | 'xlsx'
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  type: keyof typeof EXPORT_TYPES
+  format: keyof typeof EXPORT_FORMATS
+  status: keyof typeof EXPORT_STATUSES
   created_at: string
   completed_at?: string
   file_url?: string
@@ -28,7 +28,7 @@ interface ExportTemplate {
   id: string
   name: string
   description: string
-  type: string
+  type: keyof typeof EXPORT_TYPES
   icon: React.ReactNode
   fields: string[]
   estimated_size: string
@@ -40,7 +40,7 @@ export default function ExportsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<ExportTemplate | null>(null)
   const [exportConfig, setExportConfig] = useState({
-    format: 'csv' as 'csv' | 'json' | 'xlsx',
+    format: 'CSV' as keyof typeof EXPORT_FORMATS,
     dateRange: {
       start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
       end: new Date().toISOString().split('T')[0] // today
@@ -53,7 +53,7 @@ export default function ExportsPage() {
       id: 'users',
       name: 'User Data Export',
       description: 'Export user accounts, registration data, and activity metrics',
-      type: 'users',
+      type: 'USERS',
       icon: <Users className="h-6 w-6 text-blue-600" />,
       fields: ['id', 'email', 'name', 'created_at', 'last_login', 'favorite_count', 'review_count'],
       estimated_size: '~2MB for 1000 users'
@@ -62,46 +62,28 @@ export default function ExportsPage() {
       id: 'vendors',
       name: 'Vendor Data Export',
       description: 'Export vendor profiles, status, and performance metrics',
-      type: 'vendors',
+      type: 'VENDORS',
       icon: <Store className="h-6 w-6 text-[#D85D28]" />,
       fields: ['id', 'name', 'business_type', 'status', 'location', 'rating', 'total_reviews', 'created_at'],
       estimated_size: '~1MB for 100 vendors'
     },
     {
-      id: 'analytics',
+      id: 'sales',
       name: 'Platform Analytics',
       description: 'Export platform usage statistics and performance data',
-      type: 'analytics',
+      type: 'SALES',
       icon: <BarChart3 className="h-6 w-6 text-green-600" />,
       fields: ['date', 'active_users', 'new_registrations', 'searches', 'vendor_sessions'],
       estimated_size: '~500KB for 90 days'
     },
     {
-      id: 'feedback',
-      name: 'Customer Feedback',
-      description: 'Export customer feedback, complaints, and suggestions',
-      type: 'feedback',
-      icon: <MessageSquare className="h-6 w-6 text-purple-600" />,
-      fields: ['id', 'vendor_name', 'customer_name', 'type', 'subject', 'rating', 'status', 'created_at'],
-      estimated_size: '~3MB for 1000 feedback items'
-    },
-    {
       id: 'reviews',
       name: 'Reviews & Ratings',
       description: 'Export customer reviews and rating data',
-      type: 'reviews',
+      type: 'REVIEWS',
       icon: <FileText className="h-6 w-6 text-yellow-600" />,
       fields: ['id', 'vendor_name', 'customer_name', 'rating', 'comment', 'created_at'],
       estimated_size: '~2MB for 1000 reviews'
-    },
-    {
-      id: 'search_logs',
-      name: 'Search Analytics',
-      description: 'Export search queries and analytics data',
-      type: 'search_logs',
-      icon: <Database className="h-6 w-6 text-indigo-600" />,
-      fields: ['id', 'query', 'user_id', 'results_count', 'location', 'timestamp'],
-      estimated_size: '~1MB for 10000 searches'
     }
   ]
 
@@ -117,9 +99,9 @@ export default function ExportsPage() {
       const mockJobs: ExportJob[] = [
         {
           id: '1',
-          type: 'users',
-          format: 'csv',
-          status: 'completed',
+          type: 'USERS',
+          format: 'CSV',
+          status: EXPORT_STATUSES.COMPLETED,
           created_at: '2024-01-07T10:00:00Z',
           completed_at: '2024-01-07T10:02:00Z',
           file_url: '/exports/users-2024-01-07.csv',
@@ -133,9 +115,9 @@ export default function ExportsPage() {
         },
         {
           id: '2',
-          type: 'analytics',
-          format: 'json',
-          status: 'processing',
+          type: 'SALES',
+          format: 'JSON',
+          status: EXPORT_STATUSES.PROCESSING,
           created_at: '2024-01-07T11:30:00Z',
           date_range: {
             start: '2023-12-01',
@@ -145,9 +127,9 @@ export default function ExportsPage() {
         },
         {
           id: '3',
-          type: 'vendors',
-          format: 'xlsx',
-          status: 'failed',
+          type: 'VENDORS',
+          format: 'PDF',
+          status: EXPORT_STATUSES.FAILED,
           created_at: '2024-01-06T15:20:00Z',
           date_range: {
             start: '2024-01-01',
@@ -173,9 +155,9 @@ export default function ExportsPage() {
       // This would be an API call
       const newJob: ExportJob = {
         id: Date.now().toString(),
-        type: selectedTemplate.type as any,
+        type: selectedTemplate.type,
         format: exportConfig.format,
-        status: 'pending',
+        status: EXPORT_STATUSES.PENDING,
         created_at: new Date().toISOString(),
         date_range: exportConfig.dateRange,
         filters: exportConfig.filters,
@@ -192,7 +174,7 @@ export default function ExportsPage() {
       setTimeout(() => {
         setJobs(prev => prev.map(job => 
           job.id === newJob.id 
-            ? { ...job, status: 'processing' }
+            ? { ...job, status: EXPORT_STATUSES.PROCESSING }
             : job
         ))
       }, 1000)
@@ -203,7 +185,7 @@ export default function ExportsPage() {
           job.id === newJob.id 
             ? { 
                 ...job, 
-                status: 'completed',
+                status: EXPORT_STATUSES.COMPLETED,
                 completed_at: new Date().toISOString(),
                 file_url: `/exports/${selectedTemplate.type}-${new Date().toISOString().split('T')[0]}.${exportConfig.format}`,
                 file_size: Math.floor(Math.random() * 5000000) + 500000, // Random size between 500KB-5MB
@@ -237,22 +219,22 @@ export default function ExportsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'processing': return 'bg-blue-100 text-blue-800'
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'failed': return 'bg-red-100 text-red-800'
+      case EXPORT_STATUSES.PENDING: return 'bg-yellow-100 text-yellow-800'
+      case EXPORT_STATUSES.PROCESSING: return 'bg-blue-100 text-blue-800'
+      case EXPORT_STATUSES.COMPLETED: return 'bg-green-100 text-green-800'
+      case EXPORT_STATUSES.FAILED: return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getStatusIcon = (status: string) => {
-    const processingSpinRef = useSpin(status === 'processing');
+    const processingSpinRef = useSpin(status === EXPORT_STATUSES.PROCESSING);
     
     switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />
-      case 'processing': return <div ref={processingSpinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-      case 'completed': return <CheckCircle className="h-4 w-4" />
-      case 'failed': return <div className="h-4 w-4 bg-red-600 rounded-full"></div>
+      case EXPORT_STATUSES.PENDING: return <Clock className="h-4 w-4" />
+      case EXPORT_STATUSES.PROCESSING: return <div ref={processingSpinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+      case EXPORT_STATUSES.COMPLETED: return <CheckCircle className="h-4 w-4" />
+      case EXPORT_STATUSES.FAILED: return <div className="h-4 w-4 bg-red-600 rounded-full"></div>
       default: return <Clock className="h-4 w-4" />
     }
   }
@@ -353,7 +335,7 @@ export default function ExportsPage() {
                         <div className="flex items-center">
                           {exportTemplates.find(t => t.type === job.type)?.icon}
                           <span className="ml-2 text-sm font-medium text-gray-900 capitalize">
-                            {job.type.replace('_', ' ')}
+                            {String(job.type).replace('_', ' ')}
                           </span>
                         </div>
                       </td>
@@ -381,7 +363,7 @@ export default function ExportsPage() {
                         {new Date(job.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {job.status === 'completed' && job.file_url ? (
+                        {job.status === EXPORT_STATUSES.COMPLETED && job.file_url ? (
                           <button
                             onClick={() => downloadExport(job)}
                             className="text-[#D85D28] hover:text-[#B54A1F] flex items-center"
@@ -457,12 +439,12 @@ export default function ExportsPage() {
                       <select
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
                         value={exportConfig.format}
-                        onChange={(e) => setExportConfig(prev => ({ ...prev, format: e.target.value as any }))}
+                        onChange={(e) => setExportConfig(prev => ({ ...prev, format: e.target.value as keyof typeof EXPORT_FORMATS }))}
                         aria-label="Select export format"
                       >
-                        <option value="csv">CSV (Comma Separated Values)</option>
-                        <option value="json">JSON (JavaScript Object Notation)</option>
-                        <option value="xlsx">XLSX (Excel Spreadsheet)</option>
+                        <option value="CSV">CSV (Comma Separated Values)</option>
+                        <option value="JSON">JSON (JavaScript Object Notation)</option>
+                        <option value="PDF">PDF (Portable Document Format)</option>
                       </select>
                     </div>
                     

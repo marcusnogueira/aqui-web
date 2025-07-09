@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
+import { USER_ROLES, VENDOR_STATUSES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+
+// Force dynamic rendering for cookie usage
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (!business_name || !business_type) {
       return NextResponse.json(
         { error: 'Business name and type are required' },
-        { status: 400 }
+        { status: HTTP_STATUS.BAD_REQUEST }
       )
     }
 
@@ -32,8 +36,8 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
+        { error: ERROR_MESSAGES.UNAUTHORIZED },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       )
     }
 
@@ -47,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (existingVendor) {
       return NextResponse.json(
         { error: 'User already has a vendor profile' },
-        { status: 400 }
+        { status: HTTP_STATUS.BAD_REQUEST }
       )
     }
 
@@ -67,7 +71,7 @@ export async function POST(request: NextRequest) {
       profile_image_url: profile_image_url || null,
       banner_image_url: banner_image_url || [],
       is_active: true, // Default to active, admin can deactivate
-      is_approved: false, // Require admin approval
+      status: VENDOR_STATUSES.PENDING, // Require admin approval
     };
 
     // Create vendor profile
@@ -80,8 +84,8 @@ export async function POST(request: NextRequest) {
     if (vendorError) {
       console.error('Vendor creation error:', vendorError)
       return NextResponse.json(
-        { error: 'Failed to create vendor profile' },
-        { status: 500 }
+        { error: ERROR_MESSAGES.INTERNAL_ERROR },
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
       )
     }
 
@@ -102,7 +106,7 @@ export async function POST(request: NextRequest) {
       .from('users')
       .update({
         is_vendor: true,
-        active_role: 'vendor',
+        active_role: USER_ROLES.VENDOR,
       })
       .eq('id', user.id)
       .select()
@@ -114,8 +118,8 @@ export async function POST(request: NextRequest) {
       await supabase.from('vendors').delete().eq('id', newVendor.id)
 
       return NextResponse.json(
-        { error: 'Failed to update user profile' },
-        { status: 500 }
+        { error: ERROR_MESSAGES.INTERNAL_ERROR },
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
       )
     }
 
@@ -129,8 +133,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Vendor onboarding error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
   }
 }

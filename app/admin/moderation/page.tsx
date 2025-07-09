@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { AlertTriangle, Eye, CheckCircle, XCircle, Clock, Flag, MessageSquare, User } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { MODERATION_STATUS, PRIORITY_LEVELS } from '@/lib/constants'
 
 interface ModerationItem {
   id: string
@@ -12,8 +13,8 @@ interface ModerationItem {
   reporter_id?: string
   target_id: string
   target_type: 'vendor' | 'review' | 'user'
-  status: 'pending' | 'approved' | 'rejected'
-  priority: 'low' | 'medium' | 'high'
+  status: string
+  priority: string
   created_at: string
   updated_at: string
   admin_notes?: string
@@ -71,8 +72,8 @@ export default function ModerationPage() {
           content: 'This vendor was very rude and unprofessional. Would not recommend.',
           target_id: 'vendor-123',
           target_type: 'vendor',
-          status: 'pending',
-          priority: 'medium',
+          status: MODERATION_STATUS.PENDING,
+          priority: PRIORITY_LEVELS.MEDIUM,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           reporter: {
@@ -91,8 +92,8 @@ export default function ModerationPage() {
           content: 'Inappropriate behavior from this user in chat',
           target_id: 'user-789',
           target_type: 'user',
-          status: 'pending',
-          priority: 'high',
+          status: MODERATION_STATUS.PENDING,
+          priority: PRIORITY_LEVELS.HIGH,
           created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           updated_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           reporter: {
@@ -148,20 +149,20 @@ export default function ModerationPage() {
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'high':
+      case PRIORITY_LEVELS.HIGH:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
             <AlertTriangle className="w-3 h-3 mr-1" />
             High
           </span>
         )
-      case 'medium':
+      case PRIORITY_LEVELS.MEDIUM:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
             Medium
           </span>
         )
-      case 'low':
+      case PRIORITY_LEVELS.LOW:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             Low
@@ -174,21 +175,21 @@ export default function ModerationPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
+      case MODERATION_STATUS.PENDING:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
             <Clock className="w-3 h-3 mr-1" />
             Pending
           </span>
         )
-      case 'approved':
+      case MODERATION_STATUS.APPROVED:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <CheckCircle className="w-3 h-3 mr-1" />
             Approved
           </span>
         )
-      case 'rejected':
+      case MODERATION_STATUS.REJECTED:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
             <XCircle className="w-3 h-3 mr-1" />

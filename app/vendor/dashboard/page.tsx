@@ -7,6 +7,7 @@ import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
 import { getBusinessTypeKeys } from '@/lib/business-types'
+import { USER_ROLES } from '@/lib/constants'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -28,8 +29,8 @@ export default function VendorDashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'locations' | 'announcements' | 'live'>('overview')
 
   // Form states
-  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '' })
-  const [newLocation, setNewLocation] = useState({ name: '', address: '', latitude: 0, longitude: 0 })
+  const [newAnnouncement, setNewAnnouncement] = useState({ message: '' })
+  const [newLocation, setNewLocation] = useState({ address: '', latitude: 0, longitude: 0 })
   const [isStartingSession, setIsStartingSession] = useState(false)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [sessionDuration, setSessionDuration] = useState<number | null>(null) // Duration in minutes
@@ -90,7 +91,7 @@ export default function VendorDashboardPage() {
         return
       }
 
-      if (userProfile.active_role !== 'vendor') {
+      if (userProfile.active_role !== USER_ROLES.VENDOR) {
         router.push('/')
         return
       }
@@ -105,7 +106,7 @@ export default function VendorDashboardPage() {
 
   const switchToCustomerMode = async () => {
     try {
-      await clientAuth.switchRole('customer')
+      await clientAuth.switchRole(USER_ROLES.CUSTOMER)
       router.push('/explore')
     } catch (error) {
       console.error('Error switching to customer mode:', error)
@@ -314,7 +315,7 @@ export default function VendorDashboardPage() {
         .update({ 
           is_active: false,
           end_time: new Date().toISOString(),
-          ended_by: 'vendor'
+          ended_by: USER_ROLES.VENDOR
         })
         .eq('vendor_id', vendor.id)
         .eq('is_active', true)
@@ -330,20 +331,19 @@ export default function VendorDashboardPage() {
   }
 
   const addAnnouncement = async () => {
-    if (!vendor || !newAnnouncement.title || !newAnnouncement.message) return
+    if (!vendor || !newAnnouncement.message) return
 
     try {
       const { error } = await supabase
         .from('vendor_announcements')
         .insert({
           vendor_id: vendor.id,
-          title: newAnnouncement.title,
           message: newAnnouncement.message
         })
 
       if (error) throw error
 
-      setNewAnnouncement({ title: '', message: '' })
+      setNewAnnouncement({ message: '' })
       await fetchVendorData()
     } catch (error) {
       console.error('Error adding announcement:', error)
@@ -353,14 +353,13 @@ export default function VendorDashboardPage() {
 
 
   const addLocation = async () => {
-    if (!vendor || !newLocation.name || !newLocation.address) return
+    if (!vendor || !newLocation.address) return
 
     try {
       const { error } = await supabase
         .from('vendor_static_locations')
         .insert({
           vendor_id: vendor.id,
-          name: newLocation.name,
           address: newLocation.address,
           latitude: newLocation.latitude || null,
           longitude: newLocation.longitude || null
@@ -368,7 +367,7 @@ export default function VendorDashboardPage() {
 
       if (error) throw error
 
-      setNewLocation({ name: '', address: '', latitude: 0, longitude: 0 })
+      setNewLocation({ address: '', latitude: 0, longitude: 0 })
       await fetchVendorData()
     } catch (error) {
       console.error('Error adding location:', error)
@@ -835,13 +834,6 @@ export default function VendorDashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Location name"
-                  value={newLocation.name}
-                  onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
-                  className="px-3 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal"
-                />
-                <input
-                  type="text"
                   placeholder="Address"
                   value={newLocation.address}
                   onChange={(e) => setNewLocation(prev => ({ ...prev, address: e.target.value }))}
@@ -865,8 +857,7 @@ export default function VendorDashboardPage() {
               <div className="divide-y">
                 {staticLocations.map((location) => (
                   <div key={location.id} className="p-6">
-                    <h3 className="font-medium text-gray-900">{location.name}</h3>
-                    <p className="text-gray-600">{location.address}</p>
+                    <p className="text-gray-600">{location.address || 'No address provided'}</p>
                     <p className="text-sm text-gray-500 mt-1">Static location</p>
                   </div>
                 ))}
@@ -886,13 +877,6 @@ export default function VendorDashboardPage() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Create Announcement</h2>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Announcement title"
-                  value={newAnnouncement.title}
-                  onChange={(e) => setNewAnnouncement(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal"
-                />
                 <textarea
                   placeholder="Announcement content"
                   rows={3}
@@ -917,10 +901,9 @@ export default function VendorDashboardPage() {
               <div className="divide-y">
                 {announcements.map((announcement) => (
                   <div key={announcement.id} className="p-6">
-                    <h3 className="font-medium text-gray-900">{announcement.title}</h3>
-                    <p className="text-gray-600 mt-1">{announcement.message}</p>
+                    <p className="text-gray-600 mt-1">{announcement.message || 'No Message'}</p>
                     <p className="text-sm text-gray-500 mt-2">
-                          {new Date(announcement.created_at).toLocaleDateString()}
+                          {announcement.created_at && new Date(announcement.created_at).toLocaleDateString()}
                         </p>
                   </div>
                 ))}

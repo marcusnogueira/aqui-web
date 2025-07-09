@@ -1,8 +1,10 @@
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase-client'
+import { User } from '@supabase/supabase-js'
+import { USER_ROLES } from '@/lib/constants'
 import type { Database } from '@/types/database'
 
-type UserRole = 'customer' | 'vendor'
-type User = Database['public']['Tables']['users']['Row']
+type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES]
+type DatabaseUser = Database['public']['Tables']['users']['Row']
 
 /**
  * Client-side authentication helpers
@@ -25,7 +27,7 @@ export const clientAuth = {
   /**
    * Get user profile from database
    */
-  async getUserProfile(userId: string): Promise<User | null> {
+  async getUserProfile(userId: string): Promise<DatabaseUser | null> {
     const supabase = createClient()
     const { data: userProfile, error } = await supabase
       .from('users')

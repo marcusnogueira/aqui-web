@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createClient, signOut } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
@@ -93,6 +93,15 @@ export default function VendorOnboardingPage() {
     })
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
@@ -133,13 +142,21 @@ export default function VendorOnboardingPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <span className="mr-2">←</span>
-            Back
-          </button>
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <span className="mr-2">←</span>
+              Back
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome to AQUI Vendors!</h1>
           <p className="text-gray-600 mt-2">
             Let's set up your business profile to start connecting with your community.

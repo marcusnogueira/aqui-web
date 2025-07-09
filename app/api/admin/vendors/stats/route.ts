@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server'
+import { STATS_TIME_RANGES, ERROR_MESSAGES, HTTP_STATUS, getTimeAgoISO } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,8 +15,8 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!isAdminAuthenticatedServer(request)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdminAuthenticatedServer(request))) {
+      return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
 
     // Get vendor counts by status
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     if (vendorError) {
       console.error('Error fetching vendor stats:', vendorError)
-      return NextResponse.json({ error: 'Failed to fetch vendor statistics' }, { status: 500 })
+      return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
     // Calculate statistics
@@ -40,13 +42,13 @@ export async function GET(request: NextRequest) {
     const { data: liveSessions, error: sessionError } = await supabase
       .from('vendor_live_sessions')
       .select('is_active, start_time, end_time, latitude, longitude')
-      .gte('start_time', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+      .gte('start_time', getTimeAgoISO(1)) // Last 24 hours
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
 
     if (sessionError) {
       console.error('Error fetching live session stats:', sessionError)
-      return NextResponse.json({ error: 'Failed to fetch session statistics' }, { status: 500 })
+      return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
     const sessionStats = {
@@ -56,7 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get recent vendor registrations (last 7 days)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const sevenDaysAgo = getTimeAgoISO(7)
     const { data: recentVendors, error: recentError } = await supabase
       .from('vendors')
       .select('created_at')
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     if (recentError) {
       console.error('Error fetching recent vendors:', recentError)
-      return NextResponse.json({ error: 'Failed to fetch recent vendor data' }, { status: 500 })
+      return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
     const recentStats = {
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in vendor stats API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
   }
 }
 

@@ -45,9 +45,14 @@ export default function VendorProfilePage() {
   const [submittingReport, setSubmittingReport] = useState(false);
   const heartBeatRef = useHeartBeat(favoriteClicked);
 
-  const vendorId = params.id as string;
+  const vendorId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
+    if (!vendorId) {
+      setError("Vendor ID is missing.");
+      setLoading(false);
+      return;
+    }
     fetchVendorData();
     fetchUser();
   }, [vendorId]);
@@ -137,11 +142,11 @@ export default function VendorProfilePage() {
       let status: 'live' | 'closing_soon' | 'offline' = 'offline';
       let isLive = false;
       
-      if (liveSession && liveSession.is_active && !liveSession.end_time) {
+      if (liveSession && liveSession.is_active && liveSession.start_time && !liveSession.end_time) {
         isLive = true;
         const now = new Date();
         const sessionStart = new Date(liveSession.start_time);
-        const estimatedEnd = new Date(sessionStart.getTime() + (liveSession.estimated_duration || 120) * 60000);
+        const estimatedEnd = new Date(sessionStart.getTime() + (liveSession.was_scheduled_duration || 120) * 60000);
         const timeUntilEnd = estimatedEnd.getTime() - now.getTime();
         
         if (timeUntilEnd > 30 * 60000) { // More than 30 minutes left
@@ -197,6 +202,7 @@ export default function VendorProfilePage() {
   };
 
   const openDirections = (location: VendorLocation) => {
+    if (!location.address) return;
     // Create Google Maps URL with the vendor's address
     const address = encodeURIComponent(location.address);
     const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${address}`;
@@ -236,7 +242,7 @@ export default function VendorProfilePage() {
       
       if (allReviews) {
         const totalReviews = allReviews.length;
-        const averageRating = allReviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
+        const averageRating = allReviews.reduce((sum, review) => sum + (review.rating || 0), 0) / totalReviews;
         
         await supabase
           .from('vendors')
@@ -279,8 +285,6 @@ export default function VendorProfilePage() {
     } catch (error) {
       console.error('Error submitting report:', error);
       alert('Failed to submit report. Please try again.');
-    } finally {
-      setSubmittingReport(false);
     }
   };
 
@@ -433,7 +437,7 @@ export default function VendorProfilePage() {
                     <Star
                       key={star}
                       className={`w-5 h-5 ${
-                        star <= vendor.averageRating
+                        star <= (vendor.averageRating || 0)
                           ? 'text-yellow-400 fill-current'
                           : 'text-gray-300'
                       }`}
@@ -488,13 +492,7 @@ export default function VendorProfilePage() {
                 <div className="space-y-4">
                   {vendor.announcements.map((announcement) => (
                     <div key={announcement.id} className="border-l-4 border-blue-500 pl-4">
-                      <h3 className="font-semibold text-gray-900">{announcement.title}</h3>
                       <p className="text-gray-600">{announcement.message}</p>
-                      {announcement.expires_at && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Expires: {new Date(announcement.expires_at).toLocaleDateString()}
-                        </p>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -510,25 +508,8 @@ export default function VendorProfilePage() {
                     <div key={special.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-gray-900">{special.title}</h3>
-                        <div className="text-right">
-                          {special.price && (
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg font-bold text-green-600">
-                                ${special.price.toFixed(2)}
-                              </span>
-                              {special.original_price && (
-                                <span className="text-sm text-gray-500 line-through">
-                                  ${special.original_price.toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
                       </div>
                       <p className="text-gray-600 mb-2">{special.description}</p>
-                      <p className="text-sm text-gray-500">
-                        Valid until: {new Date(special.ends_at).toLocaleDateString()}
-                      </p>
                     </div>
                   ))}
                 </div>
@@ -619,16 +600,18 @@ export default function VendorProfilePage() {
                                 <Star
                                   key={star}
                                   className={`w-4 h-4 ${
-                                    star <= review.rating
+                                    star <= (review.rating || 0)
                                       ? 'text-yellow-400 fill-current'
                                       : 'text-gray-300'
                                   }`}
                                 />
                               ))}
                             </div>
-                            <span className="text-sm text-gray-500">
-                              {new Date(review.created_at).toLocaleDateString()}
-                            </span>
+                            {review.created_at &&
+                              <span className="text-sm text-gray-500">
+                                {new Date(review.created_at).toLocaleDateString()}
+                              </span>
+                            }
                           </div>
                           <p className="text-gray-700">{review.review}</p>
                         </div>
@@ -668,7 +651,7 @@ export default function VendorProfilePage() {
             </div>
 
             {/* Map Preview */}
-            {vendor.location && (
+            {vendor.location && vendor.location.latitude && vendor.location.longitude && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Location</h3>
                 <div className="aspect-square bg-gray-200 rounded-lg mb-3 flex items-center justify-center">

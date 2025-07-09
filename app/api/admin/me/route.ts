@@ -3,10 +3,11 @@ import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const adminUser = verifyAdminTokenServer(request)
+    const adminUser = await verifyAdminTokenServer(request)
     
     if (!adminUser) {
       return NextResponse.json(

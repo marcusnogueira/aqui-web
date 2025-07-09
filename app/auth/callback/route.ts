@@ -1,106 +1,39 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import type { Database } from '@/types/database'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const error = requestUrl.searchParams.get('error')
 
-  if (code) {
-    const cookieStore = cookies()
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options })
-          },
-          remove(name: string, options: any) {
-            cookieStore.set({ name, value: '', ...options })
-          },
-        },
-      }
-    )
-    
-    // Exchange code for session
-    const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
-    
-    if (sessionError) {
-      console.error('Error exchanging code for session:', sessionError)
-      return NextResponse.redirect(`${requestUrl.origin}?error=auth_failed`)
-    }
-    
-    // If we have a session and user, ensure they exist in our custom users table
-    if (session?.user) {
-      try {
-        const user = session.user
-        
-        // Check if user already exists in our custom users table
-        const { data: existingUser, error: checkError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .single()
-        
-        // If user doesn't exist, create them
-        if (checkError && checkError.code === 'PGRST116') {
-          console.log('Creating new user record for:', user.email)
-          
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: user.id,
-              full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-              avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-              is_vendor: false,
-              active_role: 'customer'
-            })
-          
-          if (insertError) {
-            console.error('Error creating user record:', insertError)
-            // Don't fail the auth flow, just log the error
-          } else {
-            console.log('✅ User record created successfully for:', user.email)
-          }
-        } else if (existingUser) {
-          console.log('User already exists in database:', user.email)
-        } else if (checkError) {
-          console.error('Error checking user existence:', checkError)
-        }
-        
-      } catch (error) {
-        console.error('Error in user creation flow:', error)
-        // Don't fail the auth flow, just log the error
-      }
-    }
-
-    // URL to redirect to after sign in process completes
-    // Check user's active role and redirect accordingly
-    if (session?.user) {
-      try {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('active_role')
-          .eq('id', session.user.id)
-          .single()
-        
-        if (userProfile?.active_role === 'vendor') {
-          return NextResponse.redirect(`${requestUrl.origin}/vendor/dashboard`)
-        }
-      } catch (error) {
-        console.error('Error checking user role for redirect:', error)
-      }
-    }
-    
-    // Default redirect to explore page (customer view)
-    return NextResponse.redirect(`${requestUrl.origin}/explore`)
+  if (error) {
+    console.error('OAuth Error:', requestUrl.searchParams.get('error_description'))
+    return NextResponse.redirect(`${requestUrl.origin}?error=auth_failed&message=${encodeURIComponent(requestUrl.searchParams.get('error_description') || 'Could not authenticate user.')}`)
   }
+
+  if (!code) {
+    console.error('OAuth Callback: No code provided.')
+    return NextResponse.redirect(`${requestUrl.origin}?error=auth_failed&message=Authorization%20code%20missing.`)
+  }
+
+  const cookieStore = cookies()
+  const supabase = createSupabaseServerClient(cookieStore)
   
-  // If no code, redirect to home
-  return NextResponse.redirect(requestUrl.origin)
+  // Exchange code for session
+  const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+  if (exchangeError) {
+    console.error('Error exchanging code for session:', exchangeError.message)
+    return NextResponse.redirect(`${requestUrl.origin}?error=auth_failed&message=${encodeURIComponent(exchangeError.message)}`)
+  }
+
+  console.log('Successfully exchanged code for session.')
+
+  // The rest of your user creation logic can go here.
+  // For now, we will just redirect to a protected route.
+
+  return NextResponse.redirect(`${requestUrl.origin}/explore`)
 }

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { SignJWT } from 'jose'
 import type { Database } from '@/types/database'
+import { ADMIN_SESSION, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+
+// Force dynamic rendering for cookie usage
+export const dynamic = 'force-dynamic'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
@@ -19,13 +23,16 @@ const supabaseAdmin = createClient<Database>(
   }
 )
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required but not set. Please configure JWT_SECRET in your environment variables.')
-}
-
 export async function POST(request: NextRequest) {
+  const JWT_SECRET = process.env.JWT_SECRET
+  if (!JWT_SECRET) {
+    console.error('JWT_SECRET environment variable is required but not set.')
+    return NextResponse.json(
+      { error: 'Internal server error: JWT secret not configured.' },
+      { status: 500 }
+    )
+  }
+
   try {
     const { username, password } = await request.json()
     
@@ -45,8 +52,8 @@ export async function POST(request: NextRequest) {
     
     if (fetchError || !adminUser) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
+        { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       )
     }
     
@@ -55,22 +62,23 @@ export async function POST(request: NextRequest) {
     
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
+        { error: ERROR_MESSAGES.INVALID_CREDENTIALS },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       )
     }
     
     // Create JWT token
-    const token = jwt.sign(
-      {
+    const secretKey = new TextEncoder().encode(JWT_SECRET)
+    const token = await new SignJWT({
         adminId: adminUser.id,
         username: adminUser.username,
         email: adminUser.email,
         type: 'admin'
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    )
+      })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime(ADMIN_SESSION.EXPIRATION_TIME)
+      .sign(secretKey)
     
     // Create response with secure cookie
     const response = NextResponse.json(
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60, // 24 hours
+      maxAge: ADMIN_SESSION.MAX_AGE_SECONDS,
       path: '/'
     })
     
@@ -99,8 +107,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Admin login error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
   }
 }

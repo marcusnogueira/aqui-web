@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server'
+import { PAGINATION, VENDOR_STATUSES, ERROR_MESSAGES, HTTP_STATUS, SUCCESS_MESSAGES } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
@@ -13,42 +14,29 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!isAdminAuthenticatedServer(request)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdminAuthenticatedServer(request))) {
+      return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const page = parseInt(searchParams.get('page') || PAGINATION.DEFAULT_PAGE.toString())
+    const limit = parseInt(searchParams.get('limit') || PAGINATION.DEFAULT_LIMIT.toString())
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') // 'approved', 'pending', 'rejected'
     const active = searchParams.get('active') // 'true', 'false'
 
     let query = supabase
       .from('vendors')
-      .select(`
-        *,
-        users(
-          id,
-          email,
-          full_name
-        ),
-        vendor_live_sessions(
-          id,
-          is_active,
-          start_time,
-          end_time
-        )
-      `)
+      .select('*,users(id,email,full_name),vendor_live_sessions(id,is_active,start_time,end_time)', { count: 'exact' })
 
     // Apply filters
     if (search) {
       query = query.or(`business_name.ilike.%${search}%,description.ilike.%${search}%`)
     }
 
-    if (status === 'approved') {
-      query = query.eq('is_approved', true)
-    } else if (status === 'pending') {
+    if (status === VENDOR_STATUSES.APPROVED) {
+        query = query.eq('is_approved', true)
+      } else if (status === VENDOR_STATUSES.PENDING) {
       query = query.eq('is_approved', false)
     }
 
@@ -65,11 +53,10 @@ export async function GET(request: NextRequest) {
     const { data: vendors, error, count } = await query
       .range(from, to)
       .order('created_at', { ascending: false })
-      .select('*,users(id,email,full_name),vendor_live_sessions(id,is_active,start_time,end_time)', { count: 'exact' })
 
     if (error) {
       console.error('Error fetching vendors:', error)
-      return NextResponse.json({ error: 'Failed to fetch vendors' }, { status: 500 })
+      return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
     return NextResponse.json({
@@ -83,22 +70,22 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in vendors API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!isAdminAuthenticatedServer(request)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!(await isAdminAuthenticatedServer(request))) {
+      return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
 
     const body = await request.json()
     const { vendorId, updates } = body
 
     if (!vendorId) {
-      return NextResponse.json({ error: 'Vendor ID is required' }, { status: 400 })
+      return NextResponse.json({ error: ERROR_MESSAGES.MISSING_REQUIRED_FIELDS }, { status: HTTP_STATUS.BAD_REQUEST })
     }
 
     // Only allow specific fields to be updated
@@ -127,12 +114,12 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Error updating vendor:', error)
-      return NextResponse.json({ error: 'Failed to update vendor' }, { status: 500 })
+      return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
     return NextResponse.json({ vendor: data })
   } catch (error) {
     console.error('Error in vendor update API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
   }
 }

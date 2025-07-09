@@ -54,7 +54,7 @@ function formatTimeRemaining(seconds: number): string {
 export function VendorCard({ vendor, status, onClick, userLocation }: VendorCardProps) {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const fadeRef = useFadeInUp()
-  const pulseRef = usePulse(status === 'open' || (vendor.live_session?.is_active && status !== 'offline'))
+  const pulseRef = usePulse(!!(status === 'open' || (vendor.live_session?.is_active && status !== 'offline')))
 
   const statusColors = {
     open: 'bg-green-500',
@@ -171,7 +171,7 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
         )}
 
         {/* Rating */}
-        {vendor.average_rating && vendor.total_reviews > 0 ? (
+        {vendor.average_rating && vendor.total_reviews && vendor.total_reviews > 0 ? (
           <div className="flex items-center space-x-1 mb-3">
             <Star className="w-4 h-4 text-yellow-400 fill-current" />
             <span className="text-sm font-medium text-gray-900">

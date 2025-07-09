@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { MessageSquare, Star, Clock, CheckCircle, XCircle, Eye, Filter, Search, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { FEEDBACK_TYPES, PRIORITY_LEVELS } from '@/lib/constants'
 
 interface VendorFeedback {
   id: string
@@ -11,12 +12,12 @@ interface VendorFeedback {
   vendor_name: string
   customer_id: string
   customer_name: string
-  feedback_type: 'complaint' | 'suggestion' | 'compliment' | 'bug_report'
+  feedback_type: keyof typeof FEEDBACK_TYPES
   subject: string
   message: string
   rating?: number
   status: 'pending' | 'reviewed' | 'resolved' | 'dismissed'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
+  priority: keyof typeof PRIORITY_LEVELS
   created_at: string
   updated_at: string
   admin_notes: string | null
@@ -30,10 +31,9 @@ interface FeedbackStats {
   resolved: number
   dismissed: number
   by_type: {
-    complaint: number
-    suggestion: number
-    compliment: number
-    bug_report: number
+    GENERAL: number
+    FEATURE: number
+    BUG: number
   }
   avg_rating: number
 }
@@ -70,12 +70,12 @@ export default function FeedbackPage() {
           vendor_name: 'Taco Express',
           customer_id: 'c1',
           customer_name: 'John Doe',
-          feedback_type: 'complaint',
+          feedback_type: 'GENERAL',
           subject: 'Long wait time',
           message: 'Had to wait 45 minutes for my order. The app said 15 minutes.',
           rating: 2,
           status: 'pending',
-          priority: 'high',
+          priority: 'HIGH',
           created_at: '2024-01-07T10:30:00Z',
           updated_at: '2024-01-07T10:30:00Z',
           admin_notes: null
@@ -86,11 +86,11 @@ export default function FeedbackPage() {
           vendor_name: 'Coffee Corner',
           customer_id: 'c2',
           customer_name: 'Jane Smith',
-          feedback_type: 'suggestion',
+          feedback_type: 'FEATURE',
           subject: 'Add more payment options',
           message: 'Would love to see Apple Pay and Google Pay options added.',
           status: 'reviewed',
-          priority: 'medium',
+          priority: 'MEDIUM',
           created_at: '2024-01-06T14:20:00Z',
           updated_at: '2024-01-07T09:15:00Z',
           admin_notes: 'Forwarded to development team',
@@ -102,12 +102,12 @@ export default function FeedbackPage() {
           vendor_name: 'Ice Cream Dreams',
           customer_id: 'c3',
           customer_name: 'Mike Johnson',
-          feedback_type: 'compliment',
+          feedback_type: 'GENERAL',
           subject: 'Amazing service!',
           message: 'The vendor was super friendly and the ice cream was delicious. Great experience!',
           rating: 5,
           status: 'resolved',
-          priority: 'low',
+          priority: 'LOW',
           created_at: '2024-01-05T16:45:00Z',
           updated_at: '2024-01-06T08:30:00Z',
           admin_notes: 'Positive feedback shared with vendor',
@@ -119,11 +119,11 @@ export default function FeedbackPage() {
           vendor_name: 'Burger Bliss',
           customer_id: 'c4',
           customer_name: 'Sarah Wilson',
-          feedback_type: 'bug_report',
+          feedback_type: 'BUG',
           subject: 'App crashed during order',
           message: 'The app crashed when I tried to place my order. Lost my cart items.',
           status: 'pending',
-          priority: 'urgent',
+          priority: 'CRITICAL',
           created_at: '2024-01-07T12:00:00Z',
           updated_at: '2024-01-07T12:00:00Z',
           admin_notes: null
@@ -149,10 +149,9 @@ export default function FeedbackPage() {
         resolved: 78,
         dismissed: 10,
         by_type: {
-          complaint: 45,
-          suggestion: 67,
-          compliment: 32,
-          bug_report: 12
+          GENERAL: 77,
+          FEATURE: 67,
+          BUG: 12
         },
         avg_rating: 3.8
       }
@@ -200,20 +199,19 @@ export default function FeedbackPage() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800'
-      case 'high': return 'bg-orange-100 text-orange-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800'
-      case 'low': return 'bg-green-100 text-green-800'
+      case 'CRITICAL': return 'bg-red-100 text-red-800'
+      case 'HIGH': return 'bg-orange-100 text-orange-800'
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800'
+      case 'LOW': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'complaint': return <XCircle className="h-4 w-4 text-red-500" />
-      case 'suggestion': return <MessageSquare className="h-4 w-4 text-blue-500" />
-      case 'compliment': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'bug_report': return <Eye className="h-4 w-4 text-purple-500" />
+      case 'GENERAL': return <MessageSquare className="h-4 w-4 text-blue-500" />
+      case 'FEATURE': return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'BUG': return <XCircle className="h-4 w-4 text-red-500" />
       default: return <MessageSquare className="h-4 w-4 text-gray-500" />
     }
   }
@@ -328,8 +326,8 @@ export default function FeedbackPage() {
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm font-medium text-gray-600">Complaints</p>
-              <p className="text-2xl font-bold text-red-600">{stats.by_type.complaint}</p>
+              <p className="text-sm font-medium text-gray-600">Bug Reports</p>
+              <p className="text-2xl font-bold text-red-600">{stats.by_type.BUG}</p>
             </div>
           </div>
         )}
@@ -374,10 +372,9 @@ export default function FeedbackPage() {
                 aria-label="Filter by type"
               >
                 <option value="all">All Types</option>
-                <option value="complaint">Complaints</option>
-                <option value="suggestion">Suggestions</option>
-                <option value="compliment">Compliments</option>
-                <option value="bug_report">Bug Reports</option>
+                <option value="GENERAL">General</option>
+                <option value="FEATURE">Feature Requests</option>
+                <option value="BUG">Bug Reports</option>
               </select>
             </div>
             <div>
@@ -389,10 +386,10 @@ export default function FeedbackPage() {
                 aria-label="Filter by priority"
               >
                 <option value="all">All Priorities</option>
-                <option value="urgent">Urgent</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
               </select>
             </div>
           </div>

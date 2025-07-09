@@ -7,17 +7,22 @@ This directory contains database setup and management scripts for the AQUI platf
 ### Primary Setup Script
 
 **Use ONLY this script for new database setup:**
-- `database-setup.sql` - **Single authoritative script** for complete database initialization
+- `V2_database_setup.sql` - **Single authoritative script** for complete database initialization
 
 This script creates all necessary tables, indexes, triggers, and RLS policies. It should be the only script used for setting up a new database.
 
 ### Deprecated/Legacy Scripts
 
-The following scripts are **DEPRECATED** and should NOT be used:
-- ~~`create-missing-tables.sql`~~ - Replaced by `database-setup.sql`
-- ~~`manual-table-creation.sql`~~ - Removed (was redundant)
-- ~~`create-admin-table.js`~~ - Use `database-setup.sql` instead
-- ~~`create-remaining-tables.js`~~ - Use `database-setup.sql` instead
+The following scripts have been **REMOVED** as they are now redundant:
+- `database-setup.sql` - Replaced by `V2_database_setup.sql`
+- `create-missing-tables.js` - Replaced by `V2_database_setup.sql`
+- `create-remaining-tables.js` - Replaced by `V2_database_setup.sql`
+- `database-recovery.sql` - Replaced by `V2_database_setup.sql`
+- `create-admin-table.js` - Replaced by `V2_database_setup.sql`
+- `fix-favorites-rls.js` - Replaced by `V2_database_setup.sql`
+- `create-admin-direct.js` - Replaced by `V2_database_setup.sql`
+- `create-admin.js` - Replaced by `V2_database_setup.sql`
+- `setup-admin-auth.js` - Replaced by `V2_database_setup.sql`
 
 ## 🔧 Setup Instructions
 
@@ -25,9 +30,9 @@ The following scripts are **DEPRECATED** and should NOT be used:
 
 1. Run the consolidated setup script:
    ```sql
-   -- Copy and paste the contents of database-setup.sql into Supabase SQL Editor
+   -- Copy and paste the contents of V2_database_setup.sql into Supabase SQL Editor
    -- Or run via psql:
-   psql -h your-host -U your-user -d your-database -f scripts/database-setup.sql
+   psql -h your-host -U your-user -d your-database -f scripts/V2_database_setup.sql
    ```
 
 2. Verify tables were created:
@@ -39,7 +44,7 @@ The following scripts are **DEPRECATED** and should NOT be used:
 
 ### For Existing Databases
 
-⚠️ **CAUTION**: Review the `database-setup.sql` script carefully before running on existing databases. The script uses `CREATE TABLE IF NOT EXISTS` to avoid conflicts, but you should verify compatibility with your existing schema.
+⚠️ **CAUTION**: Review the `V2_database_setup.sql` script carefully before running on existing databases. The script uses `CREATE TABLE IF NOT EXISTS` to avoid conflicts, but you should verify compatibility with your existing schema.
 
 ## 🔐 Security Requirements
 
@@ -75,7 +80,6 @@ The following scripts are **DEPRECATED** and should NOT be used:
 ### Admin Management
 - `create-admin-user.js` - Create admin users
 - `list-admin-users.js` - List existing admin users
-- `setup-admin-auth.js` - Setup admin authentication
 
 ## 🐛 Fixed Issues
 

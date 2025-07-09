@@ -1,0 +1,92 @@
+/* ============================================================================
+   AQUI – Alignment Patch (TEXT active_role)   · 2025-07-09
+   ========================================================================== */
+BEGIN;
+
+/* ---------- 1.  ENUMs ---------------------------------------------------- */
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'priority_enum') THEN
+    CREATE TYPE priority_enum AS ENUM ('LOW','MEDIUM','HIGH','CRITICAL');
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'feedback_type_enum') THEN
+    CREATE TYPE feedback_type_enum AS ENUM ('BUG','FEATURE','GENERAL');
+  END IF;
+END$$;
+
+/* ---------- 2.  users.active_role  CHECK constraint ---------------------- */
+DO $$
+BEGIN
+  IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE  conname = 'chk_users_active_role'
+        AND    conrelid = 'users'::regclass
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT chk_users_active_role
+      CHECK (active_role IN ('customer','vendor','admin'));
+  END IF;
+END$$;
+
+/* ---------- 3.  vendor_feedback  → missing columns & index --------------- */
+ALTER TABLE vendor_feedback
+  ADD COLUMN IF NOT EXISTS feedback_type feedback_type_enum,
+  ADD COLUMN IF NOT EXISTS priority      priority_enum;
+
+CREATE INDEX IF NOT EXISTS idx_vendor_feedback_priority
+  ON vendor_feedback(priority);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE  conname = 'chk_vendor_feedback_status'
+        AND    conrelid = 'vendor_feedback'::regclass
+  ) THEN
+    ALTER TABLE vendor_feedback
+      ADD CONSTRAINT chk_vendor_feedback_status
+      CHECK (status IN ('pending','resolved'));
+  END IF;
+END$$;
+
+/* ---------- 4.  moderation_logs  → priority column & index --------------- */
+ALTER TABLE moderation_logs
+  ADD COLUMN IF NOT EXISTS priority priority_enum;
+
+CREATE INDEX IF NOT EXISTS idx_moderation_logs_priority
+  ON moderation_logs(priority);
+
+/* ---------- 5.  one active live-session per vendor ----------------------- */
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_live_active
+  ON vendor_live_sessions(vendor_id)
+  WHERE is_active;
+
+/* ---------- 6.  updated_at trigger for users ----------------------------- */
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE  tgname = 'trg_users_updated'
+  ) THEN
+    CREATE TRIGGER trg_users_updated
+      BEFORE UPDATE ON users
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END$$;
+
+COMMIT;
+/* ============================================================================
+   PATCH COMPLETE
+   Now regenerate TypeScript types:
+     supabase gen types typescript > src/lib/database.types.ts
+   ========================================================================== */

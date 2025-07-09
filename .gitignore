@@ -137,3 +137,4 @@ extract_pdf.py
 create-vendor-reports.js
 check-*.js
 mock-data.sql
+.vercel

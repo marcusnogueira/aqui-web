@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { createClient, signOut } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import type { Database } from '@/types/database'
+import { USER_ROLES } from '@/lib/constants'
 
-type UserRole = 'customer' | 'vendor'
+type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES]
 type User = Database['public']['Tables']['users']['Row']
 
 interface RoleSwitcherProps {
@@ -44,7 +45,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
     if (!currentUser || loading) return
     
     // If switching to vendor but no vendor profile exists, redirect to onboarding
-    if (newRole === 'vendor' && !hasVendorProfile) {
+    if (newRole === USER_ROLES.VENDOR && !hasVendorProfile) {
       window.location.href = '/vendor/onboarding'
       return
     }
@@ -60,7 +61,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
       onRoleChange?.(newRole)
       
       // Redirect to appropriate page based on role
-      if (newRole === 'vendor') {
+      if (newRole === USER_ROLES.VENDOR) {
         window.location.href = '/vendor/dashboard'
       } else {
         window.location.href = '/explore'
@@ -76,6 +77,9 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
   const handleSignOut = async () => {
     try {
       await signOut()
+      // Clear user state and redirect to home page
+      setCurrentUser(null)
+      window.location.href = '/'
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -85,23 +89,23 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
     return null
   }
 
-  const currentRole = currentUser.active_role as UserRole || 'customer'
+  const currentRole = currentUser.active_role as UserRole || USER_ROLES.CUSTOMER
 
   return (
     <div className="relative">
       <div className="flex items-center space-x-2">
         {/* Current Role Indicator */}
         <span className="text-sm text-gray-600">
-          {currentRole === 'vendor' ? 'Store' : 'User'}
+          {currentRole === USER_ROLES.VENDOR ? 'Store' : 'User'}
         </span>
         
         {/* Role Switch Buttons */}
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => handleRoleSwitch('customer')}
+            onClick={() => handleRoleSwitch(USER_ROLES.CUSTOMER)}
             disabled={loading}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-              currentRole === 'customer'
+              currentRole === USER_ROLES.CUSTOMER
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             } disabled:opacity-50`}
@@ -110,10 +114,10 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
           </button>
           
           <button
-            onClick={() => handleRoleSwitch('vendor')}
+            onClick={() => handleRoleSwitch(USER_ROLES.VENDOR)}
             disabled={loading}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-              currentRole === 'vendor'
+              currentRole === USER_ROLES.VENDOR
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             } disabled:opacity-50`}
@@ -138,7 +142,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
       {/* Role Description */}
       <div className="mt-1">
         <p className="text-xs text-gray-500">
-          {currentRole === 'vendor' 
+          {currentRole === USER_ROLES.VENDOR 
             ? 'Managing your business' 
             : hasVendorProfile 
               ? 'Shopping mode' 

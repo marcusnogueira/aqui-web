@@ -65,7 +65,7 @@ async function createAdminUser() {
           full_name: 'Admin User',
           is_admin: true,
           is_vendor: false,
-          active_role: 'customer'
+          active_role: 'customer' // Note: Admin users still use customer as active_role
         })
         .select()
         .single();

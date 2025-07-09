@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StylingFixPrompt version="1.0">
+
+  <!-- ------------------------------------------------------------------
+       HIGH-LEVEL GOAL
+  ------------------------------------------------------------------- -->
+  <Goal>
+    Resolve all style-only lint warnings currently raised by:
+      • markdownlint (MD0xx series you listed)  
+      • Edge DevTools “no-inline-styles” hints in *.tsx  
+      • VS Code CSS “unknownAtRules” complaints for Tailwind (@tailwind/@apply)  
+    Do NOT change any business logic, data flow, or API contracts.
+  </Goal>
+
+  <!-- ------------------------------------------------------------------
+       GLOBAL CONSTRAINTS
+  ------------------------------------------------------------------- -->
+  <Constraints>
+    <Item>Touch every file that triggers one of the reported warnings.</Item>
+    <Item>Preserve original meaning & behaviour 100 % – formatting only.</Item>
+    <Item>Keep commits atomic (one logical change per file) so diffs stay readable.</Item>
+    <Item>After edits, the repo must pass:
+        • markdownlint with the default ruleset  
+        • eslint / tsc the same as before  
+        • stylelint (Tailwind-aware) without new errors
+    </Item>
+    <Item>Add a single trailing newline at EOF for all text files.</Item>
+  </Constraints>
+
+  <!-- ------------------------------------------------------------------
+       MARKDOWN RULE-BY-RULE FIXES
+  ------------------------------------------------------------------- -->
+  <MarkdownRules>
+
+    <Rule id="MD022">
+      <Description>Headings must be surrounded by one blank line above AND below.</Description>
+      <Action>Insert/remove blank lines to satisfy.</Action>
+    </Rule>
+
+    <Rule id="MD032">
+      <Description>Lists require a blank line before and after the list block.</Description>
+      <Action>Ensure exactly one blank line surrounds every list.</Action>
+    </Rule>
+
+    <Rule id="MD031">
+      <Description>Fenced code blocks need a blank line before and after.</Description>
+      <Action>Insert missing blank lines; remove extras.</Action>
+    </Rule>
+
+    <Rule id="MD040">
+      <Description>Code fences must specify a language (&lt;code&gt;```tsx``` etc.).</Description>
+      <Action>Detect language by extension or content and annotate each fence.</Action>
+    </Rule>
+
+    <Rule id="MD009">
+      <Description>No trailing spaces (except exactly two for hard-line-break).</Description>
+      <Action>Strip trailing whitespace lines; keep deliberate two-space breaks.</Action>
+    </Rule>
+
+    <Rule id="MD047">
+      <Description>File must end with exactly one newline.</Description>
+      <Action>Enforce once per file.</Action>
+    </Rule>
+
+    <Rule id="MD026|MD036">
+      <Description>Heading punctuation / emphasis misuse.</Description>
+      <Action>Remove stray punctuation (colons, etc.) and replace *emphasis* with 
+              proper heading levels where detected.</Action>
+    </Rule>
+
+    <Rule id="MD034">
+      <Description>No bare URLs.</Description>
+      <Action>Wrap naked links in markdown link syntax: [text](url).</Action>
+    </Rule>
+
+  </MarkdownRules>
+
+  <!-- ------------------------------------------------------------------
+       REACT / TSX INLINE-STYLE CLEAN-UP
+  ------------------------------------------------------------------- -->
+  <InlineStyles>
+    <Policy>
+      Replace every JSX `style={{ … }}` occurrence flagged in lint output with
+      either:
+        • semantic Tailwind utility classes *or*  
+        • a CSS module / global class defined in app/globals.css
+      Choose the smaller diff that keeps visual appearance unchanged.
+    </Policy>
+
+    <Steps>
+      <Step>Map unique inline declarations to Tailwind equivalents (padding, flex, etc.).</Step>
+      <Step>If no direct Tailwind match, move rules into a co-located “.module.css” file and
+            reference via `className={styles.foo}`.</Step>
+      <Step>Delete the original inline `style` attribute.</Step>
+    </Steps>
+  </InlineStyles>
+
+  <!-- ------------------------------------------------------------------
+       TAILWIND @RULE WARNINGS
+  ------------------------------------------------------------------- -->
+  <TailwindAtRules>
+    <Issue>VS Code shows “unknownAtRules” for @tailwind / @apply in globals.css.</Issue>
+    <Fixes>
+      <Item>Add a project-level `stylelint.config.cjs` with `tailwindcss` plugin.</Item>
+      <Item>Add `/* stylelint-disable-next-line unknownAtRules */` above any 
+            @tailwind or @apply line *only* if the plugin can’t be used.</Item>
+    </Fixes>
+  </TailwindAtRules>
+
+  <!-- ------------------------------------------------------------------
+       AUTOMATED VALIDATION
+  ------------------------------------------------------------------- -->
+  <PostFixValidation>
+    <Command>npx markdownlint '**/*.md'</Command>
+    <Command>npx eslint . --max-warnings 0</Command>
+    <Command>npx stylelint '**/*.{css,scss,pcss}'</Command>
+    <Expectation>All commands exit 0.</Expectation>
+  </PostFixValidation>
+
+  <!-- ------------------------------------------------------------------
+       CHANGE-LOG NOTE
+  ------------------------------------------------------------------- -->
+  <CommitMessageTemplate>
+    chore(style): resolve markdownlint, Tailwind @rule, and inline-style warnings
+
+    Details:
+      * Normalised blank lines, trailing newlines, code-fence languages
+      * Replaced inline JSX styles with Tailwind classes / CSS modules
+      * Added Tailwind-aware stylelint config to silence false positives
+  </CommitMessageTemplate>
+
+</StylingFixPrompt>

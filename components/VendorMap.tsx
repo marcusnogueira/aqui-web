@@ -33,6 +33,7 @@ export function VendorMap({ vendors, userLocation, onVendorClick, getVendorStatu
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [markers, setMarkers] = useState<Map<string, google.maps.Marker>>(new Map())
   const [isLoaded, setIsLoaded] = useState(false)
+  const [mapError, setMapError] = useState<string | null>(null)
   const [highlightedVendorId, setHighlightedVendorId] = useState<string | null>(null)
   const [vendorTimers, setVendorTimers] = useState<Map<string, number>>(new Map())
 
@@ -82,11 +83,17 @@ export function VendorMap({ vendors, userLocation, onVendorClick, getVendorStatu
   // Initialize Google Maps
   useEffect(() => {
     const initializeMap = async () => {
+      if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+        setMapError('Google Maps API key is missing. Please check your environment variables.')
+        return
+      }
+      
       try {
         await loadGoogleMaps()
         setIsLoaded(true)
       } catch (error) {
         console.error('Error loading Google Maps:', error)
+        setMapError('Failed to load Google Maps. Please check the console for details.')
       }
     }
 
@@ -327,6 +334,17 @@ export function VendorMap({ vendors, userLocation, onVendorClick, getVendorStatu
       window.removeEventListener('unhighlightVendor', handleUnhighlight)
     }
   }, [])
+
+  if (mapError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-red-50 text-red-700 p-4">
+        <div className="text-center">
+          <h3 className="font-bold mb-2">Map Error</h3>
+          <p>{mapError}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isLoaded) {
     return (

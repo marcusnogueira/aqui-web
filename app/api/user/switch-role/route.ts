@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import type { Database } from '@/types/database'
+import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+
+// Force dynamic rendering for cookie usage
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
     const { role } = await request.json()
     
-    if (!role || !['customer', 'vendor'].includes(role)) {
+    if (!role || ![USER_ROLES.CUSTOMER, USER_ROLES.VENDOR].includes(role)) {
       return NextResponse.json(
         { error: 'Invalid role. Must be "customer" or "vendor"' },
-        { status: 400 }
+        { status: HTTP_STATUS.BAD_REQUEST }
       )
     }
     
@@ -20,8 +24,8 @@ export async function POST(request: NextRequest) {
     
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
+        { error: ERROR_MESSAGES.UNAUTHORIZED },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       )
     }
     
@@ -35,12 +39,12 @@ export async function POST(request: NextRequest) {
     if (profileError || !userProfile) {
       return NextResponse.json(
         { error: 'User profile not found' },
-        { status: 404 }
+        { status: HTTP_STATUS.NOT_FOUND }
       )
     }
     
     // If switching to vendor, check if vendor profile exists
-    if (role === 'vendor') {
+    if (role === USER_ROLES.VENDOR) {
       const { data: vendorProfile, error: vendorError } = await supabase
         .from('vendors')
         .select('id')
@@ -51,7 +55,7 @@ export async function POST(request: NextRequest) {
       if (vendorError || !vendorProfile) {
         return NextResponse.json(
           { error: 'Vendor profile not found. Please complete vendor onboarding first.' },
-          { status: 400 }
+          { status: HTTP_STATUS.BAD_REQUEST }
         )
       }
     }
@@ -69,8 +73,8 @@ export async function POST(request: NextRequest) {
     
     if (updateError) {
       return NextResponse.json(
-        { error: 'Failed to update role' },
-        { status: 500 }
+        { error: ERROR_MESSAGES.INTERNAL_ERROR },
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
       )
     }
     
@@ -83,8 +87,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Role switch error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
   }
 }

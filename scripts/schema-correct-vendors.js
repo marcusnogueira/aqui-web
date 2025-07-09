@@ -47,7 +47,7 @@ async function insertSchemaCorrectVendors() {
           id: user.id,
           full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Vendor User',
           is_vendor: true,
-          active_role: 'vendor'
+          active_role: 'vendor' // Setting vendor role for existing vendors
         });
       
       if (userUpdateError) {

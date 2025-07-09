@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
+import { USER_ROLES } from '@/lib/constants'
 
 export default function ExplorePage() {
   const router = useRouter()
@@ -22,7 +23,7 @@ export default function ExplorePage() {
         const userProfile = await clientAuth.getUserProfile(user.id)
         
         // If user is a vendor, redirect to vendor dashboard
-        if (userProfile?.active_role === 'vendor') {
+        if (userProfile?.active_role === USER_ROLES.VENDOR) {
           router.replace('/vendor/dashboard')
           return
         }

@@ -5,6 +5,7 @@ import AdminLayout from '@/components/AdminLayout'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, Users, Store, Search, Eye, Download, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { BUSINESS_CATEGORIES } from '@/lib/constants'
 
 interface AnalyticsData {
   userGrowth: { date: string; users: number; vendors: number }[]
@@ -77,11 +78,11 @@ export default function AnalyticsPage() {
           active_sessions: 28
         },
         categoryDistribution: [
-          { business_type: 'Food Trucks', count: 35 },
-          { business_type: 'Coffee Shops', count: 20 },
-          { business_type: 'Ice Cream', count: 15 },
-          { business_type: 'Beverages', count: 10 },
-          { business_type: 'Snacks', count: 5 }
+          { business_type: 'Food & Beverage', count: 35 },
+          { business_type: 'Vintage & Thrift', count: 20 },
+          { business_type: 'Handmade Crafts & Jewelry', count: 15 },
+          { business_type: 'Books & Zines', count: 10 },
+          { business_type: 'Art Prints & Stickers', count: 5 }
         ],
         recentActivity: {
           new_users_today: 12,

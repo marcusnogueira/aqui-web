@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut, createClient } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
+import { USER_ROLES } from '@/lib/constants'
 
 export function Navigation() {
   const router = useRouter()
@@ -32,6 +33,9 @@ export function Navigation() {
     try {
       await signOut()
       setIsOpen(false)
+      // Clear user state and redirect to home page
+      setUser(null)
+      router.push('/')
     } catch (error) {
       console.error('Error signing out:', error)
     }
@@ -50,7 +54,7 @@ export function Navigation() {
     
     setIsUpdatingRole(true)
     try {
-      await clientAuth.switchRole('vendor')
+      await clientAuth.switchRole(USER_ROLES.VENDOR)
       setIsOpen(false)
       router.push('/vendor/dashboard')
       
@@ -68,7 +72,7 @@ export function Navigation() {
     
     setIsUpdatingRole(true)
     try {
-      await clientAuth.switchRole('customer')
+      await clientAuth.switchRole(USER_ROLES.CUSTOMER)
       setIsOpen(false)
       router.push('/')
       
@@ -101,12 +105,12 @@ export function Navigation() {
           <div className="px-4 py-2 text-sm text-gray-700 border-b">
             <div className="font-medium">{user.email}</div>
             <div className="text-xs text-gray-500 capitalize flex items-center">
-              Current Role: {user.active_role || 'Customer'}
+              Current Role: {user.active_role || USER_ROLES.CUSTOMER}
             </div>
           </div>
           
           {/* Role-based menu options */}
-          {user.active_role === 'customer' && (
+          {user.active_role === USER_ROLES.CUSTOMER && (
             <>
               {user.is_vendor ? (
                 <button
@@ -127,7 +131,7 @@ export function Navigation() {
             </>
           )}
           
-          {user.active_role === 'vendor' && (
+          {user.active_role === USER_ROLES.VENDOR && (
             <>
               <button
                 onClick={handleSwitchToCustomer}

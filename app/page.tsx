@@ -11,6 +11,7 @@ import { Navigation } from '@/components/Navigation'
 import { AuthModal } from '@/components/AuthModal'
 import { createClient } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
+import { USER_ROLES } from '@/lib/constants'
 import toast from 'react-hot-toast'
 
 import { VendorWithLiveSession } from '@/types/vendor'
@@ -47,7 +48,7 @@ export default function HomePage() {
         setUser(userProfile)
         
         // If user is a vendor, redirect to vendor dashboard
-        if (userProfile?.active_role === 'vendor') {
+        if (userProfile?.active_role === USER_ROLES.VENDOR) {
           router.push('/vendor/dashboard')
           return
         }
@@ -106,8 +107,10 @@ export default function HomePage() {
           return
         }
 
-        // Get vendor IDs from live sessions
-        const vendorIds = liveSessionsData.map(session => session.vendor_id)
+        // Get vendor IDs from live sessions (filter out null values)
+        const vendorIds = liveSessionsData
+          .map(session => session.vendor_id)
+          .filter((id): id is string => id !== null)
 
         // Then get vendors for those IDs
         const { data: vendorsData, error: vendorsError } = await supabase
@@ -431,7 +434,7 @@ export default function HomePage() {
                       <div className="flex-1 p-3">
                         <div className="flex items-start justify-between mb-1">
                           <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">{vendor.business_name}</h3>
-                          {vendor.average_rating && vendor.total_reviews > 0 && (
+                          {vendor.average_rating && vendor.total_reviews && vendor.total_reviews > 0 && (
                             <div className="flex items-center space-x-1 ml-2">
                               <Star className="w-3 h-3 text-yellow-400 fill-current" />
                               <span className="text-xs font-medium text-gray-900">

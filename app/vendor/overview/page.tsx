@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
 import { Store, MapPin, Clock, Users, TrendingUp, Calendar } from 'lucide-react'
+import { USER_ROLES } from '@/lib/constants'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -44,7 +45,7 @@ export default function VendorOverviewPage() {
         return
       }
 
-      if (userProfile.active_role !== 'vendor') {
+      if (userProfile.active_role !== USER_ROLES.VENDOR) {
         router.push('/')
         return
       }
@@ -115,7 +116,7 @@ export default function VendorOverviewPage() {
 
       const totalReviews = reviewsData?.length || 0
       const avgRating = totalReviews > 0 && reviewsData
-        ? reviewsData.reduce((sum, review) => sum + review.rating, 0) / totalReviews 
+        ? reviewsData.reduce((sum, review) => sum + (review.rating ?? 0), 0) / totalReviews 
         : 0
 
       setStats({

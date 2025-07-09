@@ -58,10 +58,6 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Varela+Round:wght@400&display=swap"
           rel="stylesheet"
         />
-        <script
-          async
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        />
       </head>
       <body className={inter.className}>
         <Providers>
