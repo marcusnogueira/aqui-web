@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete'
+import { SubcategoryInput } from '@/components/SubcategoryInput'
 
 export default function VendorOnboardingPage() {
   const [user, setUser] = useState<any>(null)
@@ -14,8 +15,10 @@ export default function VendorOnboardingPage() {
   const [formData, setFormData] = useState({
     business_name: '',
     business_type: '',
+    subcategory: '',
     description: '',
     phone: '',
+    contact_email: '',
     address: ''
   })
   
@@ -41,6 +44,7 @@ export default function VendorOnboardingPage() {
     }
     
     setUser(user)
+    setFormData(prev => ({ ...prev, contact_email: user.email || '' }))
     
     // Check if user already has vendor profile
     const hasVendor = await clientAuth.hasVendorProfile(user.id)
@@ -72,6 +76,10 @@ export default function VendorOnboardingPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleSubcategoryChange = (value: string) => {
+    setFormData(prev => ({ ...prev, subcategory: value }))
+  }
+
   const handleAddressChange = (address: string) => {
     setFormData(prev => ({ ...prev, address }))
   }
@@ -96,13 +104,14 @@ export default function VendorOnboardingPage() {
       // Combine form data with place data
       const vendorData = {
         ...formData,
-        ...placeData
+        latitude: placeData.latitude,
+        longitude: placeData.longitude,
       }
       
       await clientAuth.becomeVendor(vendorData)
 
       // Navigate to vendor dashboard
-      router.push('/vendor/dashboard')
+      router.push('/vendor/dashboard?onboarding=complete')
     } catch (error: any) {
       console.error('Error creating vendor:', error)
       setError(error.message || 'Failed to create vendor profile')
@@ -183,6 +192,23 @@ export default function VendorOnboardingPage() {
               </select>
             </div>
 
+            {/* Subcategory */}
+            {formData.business_type && (
+              <div>
+                <label htmlFor="subcategory" className="block text-sm font-medium text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <SubcategoryInput
+                  id="subcategory"
+                  value={formData.subcategory}
+                  onChange={handleSubcategoryChange}
+                  businessType={formData.business_type}
+                  placeholder="e.g., Street Tacos, Vintage Clothing, Handmade Jewelry"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal focus:border-transparent"
+                />
+              </div>
+            )}
+
             {/* Description */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
@@ -215,7 +241,23 @@ export default function VendorOnboardingPage() {
                   placeholder="(555) 123-4567"
                 />
               </div>
-              <div>
+               <div>
+                <label htmlFor="contact_email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Email
+                </label>
+                <input
+                  type="email"
+                  id="contact_email"
+                  name="contact_email"
+                  value={formData.contact_email}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal focus:border-transparent"
+                  placeholder="contact@example.com"
+                />
+              </div>
+            </div>
+            
+            <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
                   Business Address
                 </label>
@@ -234,7 +276,6 @@ export default function VendorOnboardingPage() {
                   </div>
                 )}
               </div>
-            </div>
 
             {/* Submit Button */}
             <div className="pt-6">
@@ -253,10 +294,9 @@ export default function VendorOnboardingPage() {
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-lg font-medium text-blue-900 mb-2">What's Next?</h3>
           <ul className="text-blue-800 text-sm space-y-1">
-            <li>• Complete your vendor profile setup</li>
-            <li>• Add your business location and operating hours</li>
-            <li>• Create announcements and special offers</li>
-            <li>• Start your first live session to connect with customers</li>
+            <li>• Your profile is pending approval from our team.</li>
+            <li>• Once approved, you can start your first live session!</li>
+            <li>• In the meantime, you can add more details to your profile from the dashboard.</li>
           </ul>
         </div>
       </div>

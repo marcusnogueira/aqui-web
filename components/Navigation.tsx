@@ -40,33 +40,9 @@ export function Navigation() {
   const handleBecomeVendor = async () => {
     if (!user) return
     
-    setIsUpdatingRole(true)
-    try {
-      // Create vendor profile using API
-      const response = await fetch('/api/user/create-vendor', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create vendor profile')
-      }
-      
-      // Navigate to vendor dashboard after creation
-      router.push('/vendor/dashboard')
-      setIsOpen(false)
-      
-      // Refresh user data
-      await checkAuth()
-    } catch (error) {
-      console.error('Error becoming vendor:', error)
-    } finally {
-      setIsUpdatingRole(false)
-    }
+    // Navigate directly to onboarding form instead of creating placeholder vendor
+    setIsOpen(false)
+    router.push('/vendor/onboarding')
   }
 
   const handleSwitchToVendor = async () => {
@@ -143,10 +119,9 @@ export function Navigation() {
               ) : (
                 <button
                   onClick={handleBecomeVendor}
-                  disabled={isUpdatingRole}
-                  className="block w-full text-left px-4 py-2 text-sm text-mission-teal hover:bg-gray-100 font-medium disabled:opacity-50"
+                  className="block w-full text-left px-4 py-2 text-sm text-mission-teal hover:bg-gray-100 font-medium"
                 >
-                  {isUpdatingRole ? 'Processing...' : 'Become a Vendor'}
+                  Become a Vendor
                 </button>
               )}
             </>

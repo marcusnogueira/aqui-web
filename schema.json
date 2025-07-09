@@ -819,6 +819,13 @@
     "column_default": null
   },
   {
+    "table_name": "vendor_live_sessions",
+    "column_name": "ended_by",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": "'vendor'::text"
+  },
+  {
     "table_name": "vendor_reports",
     "column_name": "id",
     "data_type": "uuid",
@@ -1083,6 +1090,34 @@
     "data_type": "integer",
     "is_nullable": "YES",
     "column_default": "0"
+  },
+  {
+    "table_name": "vendors",
+    "column_name": "admin_notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "vendors",
+    "column_name": "latitude",
+    "data_type": "double precision",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "vendors",
+    "column_name": "longitude",
+    "data_type": "double precision",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "vendors",
+    "column_name": "city",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null
   },
   {
     "table_name": "vendors_old",

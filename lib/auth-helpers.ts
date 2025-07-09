@@ -107,27 +107,5 @@ export const clientAuth = {
   }
 }
 
-/**
- * Legacy compatibility functions
- * These maintain compatibility with existing code
- */
-
-/**
- * @deprecated Use clientAuth.getUserProfile() instead
- * Check if user is admin (always returns false since admins are separate)
- */
-export async function isUserAdminServer(userId: string): Promise<boolean> {
-  // Admins are now completely separate from regular users
-  // This function is kept for compatibility but always returns false
-  return false
-}
-
-/**
- * @deprecated Use clientAuth.getUserProfile() instead
- * Check if user is admin (always returns false since admins are separate)
- */
-export async function isUserAdmin(userId: string): Promise<boolean> {
-  // Admins are now completely separate from regular users
-  // This function is kept for compatibility but always returns false
-  return false
-}
+// All deprecated functions have been removed.
+// Use clientAuth methods for authentication checks.

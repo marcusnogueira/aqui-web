@@ -64,7 +64,7 @@ export default function ExportsPage() {
       description: 'Export vendor profiles, status, and performance metrics',
       type: 'vendors',
       icon: <Store className="h-6 w-6 text-[#D85D28]" />,
-      fields: ['id', 'name', 'category', 'status', 'location', 'rating', 'total_reviews', 'created_at'],
+      fields: ['id', 'name', 'business_type', 'status', 'location', 'rating', 'total_reviews', 'created_at'],
       estimated_size: '~1MB for 100 vendors'
     },
     {

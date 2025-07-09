@@ -5,6 +5,10 @@
  * Run with: node scripts/create-admin-table.js
  */
 
+// ⚠️  DEPRECATED: This script is DEPRECATED and should NOT be used.
+// Use scripts/database-setup.sql instead for all table creation.
+// This file is kept for reference only.
+
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env.local' });
 

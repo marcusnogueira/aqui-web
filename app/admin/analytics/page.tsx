@@ -17,7 +17,7 @@ interface AnalyticsData {
     total_reviews: number
     active_sessions: number
   }
-  categoryDistribution: { category: string; count: number }[]
+  categoryDistribution: { business_type: string; count: number }[]
   recentActivity: {
     new_users_today: number
     new_vendors_today: number
@@ -77,11 +77,11 @@ export default function AnalyticsPage() {
           active_sessions: 28
         },
         categoryDistribution: [
-          { category: 'Food Trucks', count: 35 },
-          { category: 'Coffee Shops', count: 20 },
-          { category: 'Ice Cream', count: 15 },
-          { category: 'Beverages', count: 10 },
-          { category: 'Snacks', count: 5 }
+          { business_type: 'Food Trucks', count: 35 },
+          { business_type: 'Coffee Shops', count: 20 },
+          { business_type: 'Ice Cream', count: 15 },
+          { business_type: 'Beverages', count: 10 },
+          { business_type: 'Snacks', count: 5 }
         ],
         recentActivity: {
           new_users_today: 12,
@@ -335,9 +335,9 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Category Distribution */}
+          {/* Business Type Distribution */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Vendor Categories</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Vendor Business Types</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -345,7 +345,7 @@ export default function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ category, percent }) => `${category} ${(percent * 100).toFixed(0)}%`}
+                  label={({ business_type, percent }) => `${business_type} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"

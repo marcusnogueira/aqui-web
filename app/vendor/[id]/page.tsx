@@ -441,7 +441,7 @@ export default function VendorProfilePage() {
                   ))}
                 </div>
                 <span className="text-gray-600">
-                  {vendor.averageRating.toFixed(1)} ({vendor.totalReviews} reviews)
+                  {vendor.average_rating?.toFixed(1) || '0.0'} ({vendor.total_reviews || 0} reviews)
                 </span>
               </div>
 

@@ -15,47 +15,40 @@ async function testManualJoin() {
   try {
     console.log('🔍 Testing manual join between vendors and vendor_live_sessions...');
     
-    // Get vendors first
-    const { data: vendors, error: vendorsError } = await supabase
+    // Efficient single query with embedded join using Supabase's built-in relationship support
+    const { data: vendorsWithSessions, error: vendorsError } = await supabase
       .from('vendors')
-      .select('id, business_name')
+      .select(`
+        id,
+        business_name,
+        vendor_live_sessions (
+          id,
+          latitude,
+          longitude,
+          address,
+          start_time,
+          end_time,
+          is_active,
+          created_at,
+          updated_at
+        )
+      `)
       .limit(5);
     
     if (vendorsError) {
-      console.error('❌ Error fetching vendors:', vendorsError);
+      console.error('❌ Error fetching vendors with sessions:', vendorsError);
       return;
     }
     
-    console.log('✅ Found vendors:', vendors.length);
+    console.log('✅ Found vendors with embedded sessions:', vendorsWithSessions.length);
     
-    // Get live sessions
-    const { data: sessions, error: sessionsError } = await supabase
-      .from('vendor_live_sessions')
-      .select('*');
-    
-    if (sessionsError) {
-      console.error('❌ Error fetching sessions:', sessionsError);
-      return;
-    }
-    
-    console.log('✅ Found live sessions:', sessions.length);
-    
-    // Manual join
-    const vendorsWithSessions = vendors.map(vendor => {
-      const vendorSessions = sessions.filter(session => session.vendor_id === vendor.id);
-      return {
-        ...vendor,
-        live_sessions: vendorSessions
-      };
-    });
-    
-    console.log('🔗 Manual join result:', JSON.stringify(vendorsWithSessions, null, 2));
+    console.log('🔗 Efficient join result:', JSON.stringify(vendorsWithSessions, null, 2));
     
     // Test if we can create a new live session
     console.log('\n🆕 Testing live session creation...');
     
-    if (vendors.length > 0) {
-      const testVendor = vendors[0];
+    if (vendorsWithSessions.length > 0) {
+      const testVendor = vendorsWithSessions[0];
       
       const { data: newSession, error: createError } = await supabase
         .from('vendor_live_sessions')

@@ -159,7 +159,7 @@ async function insertCorrectVendors() {
           reviewsData.push({
             id: uuidv4(),
             vendor_id: vendor.id,
-            customer_id: authUsers[reviewerIndex]?.id,
+            user_id: authUsers[reviewerIndex]?.id,
             rating: 4 + Math.floor(Math.random() * 2), // Rating 4-5
             review_text: reviewTexts[i % reviewTexts.length]
           });
@@ -185,7 +185,7 @@ async function insertCorrectVendors() {
         const vendorIndex = userIndex % vendorData.length;
         favoritesData.push({
           id: uuidv4(),
-          customer_id: user.id,
+          user_id: user.id,
           vendor_id: vendorData[vendorIndex].id
         });
       });

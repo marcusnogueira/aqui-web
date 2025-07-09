@@ -8,17 +8,14 @@ import toast from 'react-hot-toast'
 interface User {
   id: string
   email: string
-  name: string
+  full_name?: string
   status: 'active' | 'suspended' | 'banned'
   created_at: string
-  last_login?: string
-  favorite_vendors_count: number
-  reviews_count: number
-  total_searches: number
-  location?: string
   phone?: string
-  verified_email: boolean
-  profile_image_url?: string
+  avatar_url?: string
+  is_vendor: boolean
+  is_admin: boolean
+  active_role: string
 }
 
 interface UserStats {
@@ -58,69 +55,55 @@ export default function UsersPage() {
         {
           id: '1',
           email: 'john.doe@email.com',
-          name: 'John Doe',
+          full_name: 'John Doe',
           status: 'active',
           created_at: '2024-01-01T10:00:00Z',
-          last_login: '2024-01-07T14:30:00Z',
-          favorite_vendors_count: 5,
-          reviews_count: 12,
-          total_searches: 45,
-          location: 'New York, NY',
           phone: '+1-555-0123',
-          verified_email: true,
-          profile_image_url: 'https://via.placeholder.com/40'
+          avatar_url: 'https://via.placeholder.com/40',
+          is_vendor: false,
+          is_admin: false,
+          active_role: 'customer'
         },
         {
           id: '2',
           email: 'jane.smith@email.com',
-          name: 'Jane Smith',
+          full_name: 'Jane Smith',
           status: 'active',
           created_at: '2024-01-02T11:15:00Z',
-          last_login: '2024-01-07T09:20:00Z',
-          favorite_vendors_count: 8,
-          reviews_count: 6,
-          total_searches: 23,
-          location: 'Los Angeles, CA',
-          verified_email: true
+          is_vendor: true,
+          is_admin: false,
+          active_role: 'vendor'
         },
         {
           id: '3',
           email: 'mike.johnson@email.com',
-          name: 'Mike Johnson',
+          full_name: 'Mike Johnson',
           status: 'suspended',
           created_at: '2024-01-03T16:45:00Z',
-          last_login: '2024-01-05T12:00:00Z',
-          favorite_vendors_count: 2,
-          reviews_count: 1,
-          total_searches: 8,
-          location: 'Chicago, IL',
-          verified_email: false
+          is_vendor: false,
+          is_admin: false,
+          active_role: 'customer'
         },
         {
           id: '4',
           email: 'sarah.wilson@email.com',
-          name: 'Sarah Wilson',
+          full_name: 'Sarah Wilson',
           status: 'active',
           created_at: '2024-01-04T08:30:00Z',
-          last_login: '2024-01-07T16:45:00Z',
-          favorite_vendors_count: 12,
-          reviews_count: 18,
-          total_searches: 67,
-          location: 'Miami, FL',
           phone: '+1-555-0456',
-          verified_email: true
+          is_vendor: true,
+          is_admin: false,
+          active_role: 'vendor'
         },
         {
           id: '5',
           email: 'spam.user@email.com',
-          name: 'Spam User',
+          full_name: 'Spam User',
           status: 'banned',
           created_at: '2024-01-05T13:20:00Z',
-          last_login: '2024-01-05T14:00:00Z',
-          favorite_vendors_count: 0,
-          reviews_count: 0,
-          total_searches: 2,
-          verified_email: false
+          is_vendor: false,
+          is_admin: false,
+          active_role: 'customer'
         }
       ]
       
@@ -201,12 +184,13 @@ export default function UsersPage() {
   const filteredUsers = users.filter(user => {
     if (filters.status !== 'all' && user.status !== filters.status) return false
     if (filters.verified !== 'all') {
-      const isVerified = user.verified_email
+      // Note: verified_email field not in schema, treating all as verified for now
+      const isVerified = true
       if (filters.verified === 'verified' && !isVerified) return false
       if (filters.verified === 'unverified' && isVerified) return false
     }
     if (filters.search && !(
-      user.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      user.full_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
       user.email.toLowerCase().includes(filters.search.toLowerCase())
     )) return false
     return true
@@ -335,9 +319,9 @@ export default function UsersPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -357,10 +341,16 @@ export default function UsersPage() {
                         </div>
                         <div className="ml-4">
                           <div className="flex items-center">
-                            <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                            {user.verified_email && (
-                              <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
-                            )}
+                            <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
+                            <div className="flex items-center space-x-1 ml-2">
+                              <span className="text-xs text-blue-600 capitalize">{user.active_role}</span>
+                              {user.is_vendor && (
+                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Vendor</span>
+                              )}
+                              {user.is_admin && (
+                                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
+                              )}
+                            </div>
                           </div>
                           <p className="text-sm text-gray-500">{user.email}</p>
                         </div>
@@ -375,18 +365,14 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="space-y-1">
-                        <div className="flex items-center">
-                          <Star className="h-3 w-3 text-yellow-400 mr-1" />
-                          <span>{user.favorite_vendors_count} favorites</span>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Role:</span>
+                          <span className="capitalize">{user.active_role}</span>
                         </div>
-                        <div className="flex items-center">
-                          <Eye className="h-3 w-3 text-blue-400 mr-1" />
-                          <span>{user.reviews_count} reviews</span>
-                        </div>
-                        <div className="flex items-center">
-                          <Search className="h-3 w-3 text-green-400 mr-1" />
-                          <span>{user.total_searches} searches</span>
+                        <div className="flex justify-between">
+                          <span>Phone:</span>
+                          <span>{user.phone || 'Not provided'}</span>
                         </div>
                       </div>
                     </td>
@@ -397,7 +383,7 @@ export default function UsersPage() {
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
+                      {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
@@ -478,10 +464,16 @@ export default function UsersPage() {
                     </div>
                     <div className="ml-6">
                       <div className="flex items-center">
-                        <h4 className="text-xl font-medium text-gray-900">{selectedUser.name}</h4>
-                        {selectedUser.verified_email && (
-                          <CheckCircle className="h-5 w-5 text-green-500 ml-2" />
-                        )}
+                        <h4 className="text-xl font-medium text-gray-900">{selectedUser.full_name}</h4>
+                        <div className="flex items-center space-x-2 ml-2">
+                          <span className="text-sm text-blue-600 capitalize">{selectedUser.active_role}</span>
+                          {selectedUser.is_vendor && (
+                            <span className="text-sm bg-purple-100 text-purple-800 px-2 py-1 rounded">Vendor</span>
+                          )}
+                          {selectedUser.is_admin && (
+                            <span className="text-sm bg-red-100 text-red-800 px-2 py-1 rounded">Admin</span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-gray-600">{selectedUser.email}</p>
                       <div className="flex items-center mt-2">
@@ -500,44 +492,37 @@ export default function UsersPage() {
                       <p className="text-sm text-gray-900 mt-1">{selectedUser.phone || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Location</label>
-                      <p className="text-sm text-gray-900 mt-1">{selectedUser.location || 'Not provided'}</p>
+                      <label className="block text-sm font-medium text-gray-700">Avatar</label>
+                      <p className="text-sm text-gray-900 mt-1">{selectedUser.avatar_url ? 'Provided' : 'Not provided'}</p>
                     </div>
                   </div>
                   
-                  {/* Activity Stats */}
+                  {/* Account Info */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Activity Summary</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">Account Information</label>
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                        <p className="text-2xl font-bold text-yellow-600">{selectedUser.favorite_vendors_count}</p>
-                        <p className="text-sm text-yellow-600">Favorite Vendors</p>
-                      </div>
                       <div className="text-center p-4 bg-blue-50 rounded-lg">
-                        <p className="text-2xl font-bold text-blue-600">{selectedUser.reviews_count}</p>
-                        <p className="text-sm text-blue-600">Reviews Written</p>
+                        <p className="text-lg font-bold text-blue-600 capitalize">{selectedUser.active_role}</p>
+                        <p className="text-sm text-blue-600">Active Role</p>
                       </div>
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <p className="text-2xl font-bold text-green-600">{selectedUser.total_searches}</p>
-                        <p className="text-sm text-green-600">Total Searches</p>
+                      <div className="text-center p-4 bg-purple-50 rounded-lg">
+                        <p className="text-lg font-bold text-purple-600">{selectedUser.is_vendor ? 'Yes' : 'No'}</p>
+                        <p className="text-sm text-purple-600">Is Vendor</p>
+                      </div>
+                      <div className="text-center p-4 bg-red-50 rounded-lg">
+                        <p className="text-lg font-bold text-red-600">{selectedUser.is_admin ? 'Yes' : 'No'}</p>
+                        <p className="text-sm text-red-600">Is Admin</p>
                       </div>
                     </div>
                   </div>
                   
                   {/* Dates */}
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                  <div className="grid grid-cols-1 gap-4 text-sm text-gray-500">
                     <div>
                       <label className="block font-medium">Joined</label>
                       <div className="flex items-center mt-1">
                         <Calendar className="h-4 w-4 mr-2" />
                         <p>{new Date(selectedUser.created_at).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block font-medium">Last Login</label>
-                      <div className="flex items-center mt-1">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <p>{selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleString() : 'Never'}</p>
                       </div>
                     </div>
                   </div>

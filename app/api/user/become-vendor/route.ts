@@ -1,70 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
-import type { Database } from '@/types/database'
 
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      business_name, 
-      business_type, 
-      description, 
-      phone, 
+    const {
+      business_name,
+      business_type,
+      subcategory,
+      description,
+      phone,
+      contact_email,
       address,
-      place_id,
       latitude,
       longitude,
-      address_components
+      tags,
+      profile_image_url,
+      banner_image_url,
     } = await request.json()
-    
+
     if (!business_name || !business_type) {
       return NextResponse.json(
         { error: 'Business name and type are required' },
         { status: 400 }
       )
     }
-    
+
     const supabase = createClient()
-    
+
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       )
     }
-    
+
     // Check if user already has a vendor profile
-    const { data: existingVendor, error: vendorCheckError } = await supabase
+    const { data: existingVendor } = await supabase
       .from('vendors')
       .select('id')
       .eq('user_id', user.id)
       .single()
-    
+
     if (existingVendor) {
       return NextResponse.json(
         { error: 'User already has a vendor profile' },
         { status: 400 }
       )
     }
-    
+
+    // Prepare vendor data for insertion
+    const vendorData = {
+      user_id: user.id,
+      business_name,
+      business_type,
+      subcategory: subcategory || null,
+      description: description || null,
+      phone: phone || null,
+      contact_email: contact_email || user.email,
+      address: address || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
+      tags: tags || [],
+      profile_image_url: profile_image_url || null,
+      banner_image_url: banner_image_url || [],
+      is_active: true, // Default to active, admin can deactivate
+      is_approved: false, // Require admin approval
+    };
+
     // Create vendor profile
     const { data: newVendor, error: vendorError } = await supabase
       .from('vendors')
-      .insert({
-        user_id: user.id,
-        business_name,
-        business_type,
-        description: description || null,
-        phone: phone || null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(vendorData)
       .select()
       .single()
-    
+
     if (vendorError) {
       console.error('Vendor creation error:', vendorError)
       return NextResponse.json(
@@ -73,57 +85,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create static location if place data is provided
+    // Create static location if address and coordinates are provided
     if (address && latitude && longitude) {
-      const { error: locationError } = await supabase
+      await supabase
         .from('vendor_static_locations')
         .insert({
           vendor_id: newVendor.id,
-          name: business_name,
           address,
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
-          is_primary: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          latitude,
+          longitude,
         })
-
-      if (locationError) {
-        console.error('Location creation error:', locationError)
-        // Don't fail the entire process if location creation fails
-      }
     }
-    
+
     // Update user to mark as vendor and switch active role
     const { data: updatedUser, error: userUpdateError } = await supabase
       .from('users')
       .update({
         is_vendor: true,
         active_role: 'vendor',
-        updated_at: new Date().toISOString()
       })
       .eq('id', user.id)
       .select()
       .single()
-    
+
     if (userUpdateError) {
       console.error('User update error:', userUpdateError)
-      // Try to clean up the vendor profile if user update fails
+      // Attempt to clean up by deleting the created vendor profile
       await supabase.from('vendors').delete().eq('id', newVendor.id)
-      
+
       return NextResponse.json(
         { error: 'Failed to update user profile' },
         { status: 500 }
       )
     }
-    
+
     return NextResponse.json({
       success: true,
       vendor: newVendor,
       user: updatedUser,
-      message: 'Vendor profile created successfully'
+      message: 'Vendor profile created successfully. It is now pending approval.'
     })
-    
+
   } catch (error) {
     console.error('Vendor onboarding error:', error)
     return NextResponse.json(

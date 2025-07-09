@@ -23,7 +23,6 @@ export interface VendorWithDetails extends Vendor {
 export interface AdminVendorView extends Vendor {
   users: User
   vendor_live_sessions: VendorLiveSession[]
-  category?: string // Legacy field for admin compatibility
 }
 
 // Props interfaces for components
@@ -51,24 +50,4 @@ export interface VendorRegistrationData {
   place_id?: string | null
   latitude?: number | null
   longitude?: number | null
-}
-
-// Legacy compatibility - to be removed after migration
-/** @deprecated Use VendorWithLiveSession instead */
-export interface LegacyVendor {
-  id: string
-  business_name: string
-  description: string | null
-  subcategory: string | null
-  profile_image_url: string | null
-  average_rating: number | null
-  total_reviews: number
-  live_session?: {
-    id: string
-    started_at: string
-    ended_at: string | null
-    location: any // This should be migrated to latitude/longitude
-    was_scheduled_duration: number | null
-    estimated_customers: number
-  } | null
 }

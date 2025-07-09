@@ -1,3 +1,7 @@
+-- ⚠️  DEPRECATED: This script is DEPRECATED and should NOT be used.
+-- Use scripts/database-setup.sql instead for all table creation.
+-- This file is kept for reference only.
+--
 -- Create missing tables for vendor profile features
 
 -- Create vendor_static_locations table

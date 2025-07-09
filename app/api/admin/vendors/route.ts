@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       .from('vendors')
       .select(`
         *,
-        users!vendors_user_id_fkey(
+        users(
           id,
           email,
           full_name
@@ -58,18 +58,14 @@ export async function GET(request: NextRequest) {
       query = query.eq('is_active', false)
     }
 
-    // Get total count for pagination
-    const { count } = await supabase
-      .from('vendors')
-      .select('*', { count: 'exact', head: true })
-
-    // Apply pagination
+    // Apply pagination and get both data and count in a single query
     const from = (page - 1) * limit
     const to = from + limit - 1
 
-    const { data: vendors, error } = await query
+    const { data: vendors, error, count } = await query
       .range(from, to)
       .order('created_at', { ascending: false })
+      .select('*,users(id,email,full_name),vendor_live_sessions(id,is_active,start_time,end_time)', { count: 'exact' })
 
     if (error) {
       console.error('Error fetching vendors:', error)
