@@ -1,28 +1,33 @@
 import { Database } from './database'
+import { 
+  Vendor, 
+  VendorLiveSession, 
+  VendorStaticLocation, 
+  User, 
+  Review,
+  VendorWithLiveSession,
+  VendorWithDetails,
+  EnrichedVendor,
+  VendorForMap
+} from '@/lib/vendor-utils'
 
-// Base types from Supabase schema
-export type Vendor = Database['public']['Tables']['vendors']['Row']
-export type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
-export type VendorStaticLocation = Database['public']['Tables']['vendor_static_locations']['Row']
-export type User = Database['public']['Tables']['users']['Row']
-export type Review = Database['public']['Tables']['reviews']['Row']
-
-// Extended types for frontend components with joined data
-export interface VendorWithLiveSession extends Vendor {
-  live_session?: VendorLiveSession | null
-}
-
-export interface VendorWithDetails extends Vendor {
-  live_session?: VendorLiveSession | null
-  static_locations?: VendorStaticLocation[]
-  user?: User
-  reviews?: Review[]
-}
-
-// Admin-specific vendor type with user details
+// Admin-specific vendor view
 export interface AdminVendorView extends Vendor {
   users: User
   vendor_live_sessions: VendorLiveSession[]
+}
+
+// Re-export commonly used types for backward compatibility
+export type { 
+  Vendor, 
+  VendorLiveSession, 
+  VendorStaticLocation, 
+  User, 
+  Review,
+  VendorWithLiveSession,
+  VendorWithDetails,
+  EnrichedVendor,
+  VendorForMap
 }
 
 // Props interfaces for components
@@ -35,9 +40,9 @@ export interface VendorCardProps {
 
 export interface VendorMapProps {
   vendors: VendorWithLiveSession[]
-  userLocation: { lat: number; lng: number } | null
-  onVendorClick: (vendorId: string) => void
-  getVendorStatus: (vendor: VendorWithLiveSession) => 'open' | 'closing' | 'offline'
+  userLocation: { lat: number; lng: number } | undefined
+  onVendorClick?: (vendorId: string) => void
+  onMapBoundsChange?: (bounds: any) => void
 }
 
 // Utility types for vendor operations

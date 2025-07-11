@@ -350,6 +350,13 @@
     "column_default": "now()"
   },
   {
+    "table_name": "moderation_logs",
+    "column_name": "priority",
+    "data_type": "USER-DEFINED",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
     "table_name": "platform_settings",
     "column_name": "id",
     "data_type": "boolean",
@@ -698,6 +705,20 @@
     "data_type": "timestamp without time zone",
     "is_nullable": "YES",
     "column_default": "now()"
+  },
+  {
+    "table_name": "vendor_feedback",
+    "column_name": "feedback_type",
+    "data_type": "USER-DEFINED",
+    "is_nullable": "YES",
+    "column_default": null
+  },
+  {
+    "table_name": "vendor_feedback",
+    "column_name": "priority",
+    "data_type": "USER-DEFINED",
+    "is_nullable": "YES",
+    "column_default": null
   },
   {
     "table_name": "vendor_hours",

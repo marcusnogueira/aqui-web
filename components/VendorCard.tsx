@@ -1,55 +1,18 @@
 'use client'
 
-import { Star, MapPin, Clock, Users } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Star, MapPin, Clock, Navigation } from 'lucide-react'
 import Image from 'next/image'
-import { VendorWithLiveSession, VendorCardProps } from '@/types/vendor'
-import { useState, useEffect } from 'react'
+import { VendorCardProps } from '@/types/vendor'
 import { useFadeInUp, usePulse } from '@/lib/animations'
-
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3959 // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  return R * c
-}
-
-// Helper function to extract coordinates from live session
-const extractCoordinates = (liveSession: any): { lat: number; lng: number } | null => {
-  if (!liveSession || typeof liveSession.latitude !== 'number' || typeof liveSession.longitude !== 'number') {
-    return null
-  }
-  
-  return { lat: liveSession.latitude, lng: liveSession.longitude }
-}
-
-function getSessionDuration(startTime: string): string {
-  const start = new Date(startTime)
-  const now = new Date()
-  const elapsed = (now.getTime() - start.getTime()) / (1000 * 60 * 60)
-  
-  const hours = Math.floor(elapsed)
-  const minutes = Math.floor((elapsed % 1) * 60)
-  
-  if (hours > 0) {
-    return `Active for ${hours}h ${minutes}m`
-  }
-  return `Active for ${minutes}m`
-}
-
-function formatTimeRemaining(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
-  
-  if (minutes > 0) {
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
-  return `${remainingSeconds}s`
-}
+import { GetDirectionsButton } from './GetDirectionsButton'
+import { 
+  extractCoordinatesFromVendor,
+  calculateSessionDuration,
+  calculateTimeRemaining,
+  formatTimeRemaining,
+  getVendorDistance
+} from '@/lib/vendor-utils'
 
 export function VendorCard({ vendor, status, onClick, userLocation }: VendorCardProps) {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
@@ -72,10 +35,7 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
   useEffect(() => {
     if (vendor.live_session?.auto_end_time && vendor.live_session.is_active) {
       const updateTimer = () => {
-        const now = new Date().getTime()
-        const endTime = new Date(vendor.live_session!.auto_end_time!).getTime()
-        const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
-        
+        const remaining = calculateTimeRemaining(vendor)
         setTimeRemaining(remaining)
       }
       
@@ -88,15 +48,8 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
     }
   }, [vendor.live_session?.auto_end_time, vendor.live_session?.is_active])
 
-  const coordinates = vendor.live_session ? extractCoordinates(vendor.live_session) : null
-  const distance = userLocation && coordinates
-    ? calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        coordinates.lat,
-        coordinates.lng
-      )
-    : null
+  const coordinates = extractCoordinatesFromVendor(vendor)
+  const distance = getVendorDistance(vendor, userLocation)
 
   return (
     <div 
@@ -147,7 +100,7 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
         {distance && (
           <div className="absolute top-3 right-3">
             <div className="bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-xs font-medium">
-              {distance.toFixed(1)} mi
+              {distance}
             </div>
           </div>
         )}
@@ -198,16 +151,22 @@ export function VendorCard({ vendor, status, onClick, userLocation }: VendorCard
           {vendor.live_session && status !== 'offline' && (
             <div className="flex items-center space-x-2 text-sm text-gray-600">
               <Clock className="w-4 h-4" />
-              <span>{getSessionDuration(vendor.live_session.start_time)}</span>
+              <span>{calculateSessionDuration(vendor)}</span>
             </div>
           )}
         </div>
 
-        {/* Action Button */}
-        <div className="mt-4">
+        {/* Action Buttons */}
+        <div className="mt-4 space-y-2">
           <button className="w-full bg-mission-teal text-white py-2 px-4 rounded-lg font-medium hover:bg-bay-cypress transition-colors">
             View Details
           </button>
+          {coordinates && (
+            <GetDirectionsButton 
+              destination={coordinates}
+              vendorName={vendor.business_name}
+            />
+          )}
         </div>
       </div>
     </div>

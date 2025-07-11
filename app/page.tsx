@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { MapPin, Search, Star, Clock, Users } from 'lucide-react'
-import { VendorMap } from '@/components/VendorMap'
+import VendorMap from '@/components/VendorMap'
 import { VendorCard } from '@/components/VendorCard'
 import { SearchBar } from '@/components/SearchBar'
 import { Navigation } from '@/components/Navigation'
@@ -15,6 +15,7 @@ import { USER_ROLES } from '@/lib/constants'
 import toast from 'react-hot-toast'
 
 import { VendorWithLiveSession } from '@/types/vendor'
+import { getVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils'
 
 type Vendor = VendorWithLiveSession
 
@@ -30,7 +31,7 @@ export default function HomePage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [loadingVendors, setLoadingVendors] = useState(true)
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
-  const [mapBounds, setMapBounds] = useState<google.maps.LatLngBounds | null>(null)
+  const [mapBounds, setMapBounds] = useState<{north: number, south: number, east: number, west: number} | null>(null)
   const [displayedVendors, setDisplayedVendors] = useState<Vendor[]>([])
 
   const supabase = createClient()
@@ -112,11 +113,13 @@ export default function HomePage() {
           .map(session => session.vendor_id)
           .filter((id): id is string => id !== null)
 
-        // Then get vendors for those IDs
+        // Then get vendors for those IDs (only approved and active vendors)
         const { data: vendorsData, error: vendorsError } = await supabase
           .from('vendors')
           .select('*')
           .in('id', vendorIds)
+          .eq('is_approved', true)
+          .eq('is_active', true)
 
         if (vendorsError) {
           console.error('Error fetching vendors:', vendorsError)
@@ -146,6 +149,44 @@ export default function HomePage() {
     fetchVendors()
 
     // Set up real-time subscription for vendor updates
+    const handleRealtimeUpdate = async (payload) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload
+
+      if (eventType === 'INSERT') {
+        const { data: vendorData, error } = await supabase
+          .from('vendors')
+          .select('*')
+          .eq('id', newRecord.vendor_id)
+          .eq('is_approved', true)
+          .eq('is_active', true)
+          .single()
+
+        if (error) {
+          console.error('Error fetching new vendor:', error)
+          return
+        }
+
+        if (vendorData) {
+          const newVendor = { ...vendorData, live_session: newRecord }
+          setVendors(currentVendors => [...currentVendors, newVendor])
+        }
+      } else if (eventType === 'UPDATE') {
+        if (!newRecord.is_active) {
+          // If session becomes inactive, remove the vendor
+          setVendors(currentVendors => currentVendors.filter(v => v.id !== newRecord.vendor_id))
+        } else {
+          // If session is updated (e.g., location change), update the vendor's session
+          setVendors(currentVendors =>
+            currentVendors.map(v =>
+              v.id === newRecord.vendor_id ? { ...v, live_session: newRecord } : v
+            )
+          )
+        }
+      } else if (eventType === 'DELETE') {
+        setVendors(currentVendors => currentVendors.filter(v => v.id !== oldRecord.vendor_id))
+      }
+    }
+
     const channel = supabase
       .channel('vendor-updates')
       .on(
@@ -155,9 +196,7 @@ export default function HomePage() {
           schema: 'public',
           table: 'vendor_live_sessions',
         },
-        () => {
-          fetchVendors()
-        }
+        handleRealtimeUpdate
       )
       .subscribe()
 
@@ -211,19 +250,18 @@ export default function HomePage() {
         return false
       }
 
-      const vendorLatLng = new google.maps.LatLng(
-        vendor.live_session.latitude,
-        vendor.live_session.longitude
-      )
+      const lat = vendor.live_session.latitude
+      const lng = vendor.live_session.longitude
       
-      return mapBounds.contains(vendorLatLng)
+      return lat >= mapBounds.south && lat <= mapBounds.north &&
+             lng >= mapBounds.west && lng <= mapBounds.east
     })
 
     setDisplayedVendors(boundsFiltered)
   }, [filteredVendors, mapBounds])
 
   // Handle map bounds change
-  const handleMapBoundsChange = (bounds: google.maps.LatLngBounds) => {
+  const handleMapBoundsChange = (bounds: {north: number, south: number, east: number, west: number}) => {
     setMapBounds(bounds)
   }
 
@@ -246,25 +284,7 @@ export default function HomePage() {
     router.push(`/vendor/${vendorId}`)
   }
 
-  const getVendorStatus = (vendor: Vendor) => {
-    if (!vendor.live_session || !vendor.live_session.is_active) return 'offline'
-    
-    const startTime = new Date(vendor.live_session.start_time)
-    const now = new Date()
-    const hoursActive = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60)
-    
-    // If end_time exists and we're past it, show as offline
-    if (vendor.live_session.end_time && now > new Date(vendor.live_session.end_time)) {
-      return 'offline'
-    }
-    
-    // If we've been active for more than 8 hours, show as closing
-    if (hoursActive >= 7) {
-      return 'closing'
-    }
-    
-    return 'open'
-  }
+
 
   if (loading || loadingVendors) {
     return (
@@ -474,9 +494,8 @@ export default function HomePage() {
           <div className="h-full">
             <VendorMap
               vendors={filteredVendors}
-              userLocation={userLocation}
+              userLocation={userLocation || undefined}
               onVendorClick={handleVendorClick}
-              getVendorStatus={getVendorStatus}
               onMapBoundsChange={handleMapBoundsChange}
             />
           </div>

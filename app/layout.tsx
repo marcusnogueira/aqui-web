@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -44,11 +46,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const cookieStore = cookies()
+  const supabase = createSupabaseServerClient(cookieStore)
+  const { data: { session } } = await supabase.auth.getSession()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -60,7 +66,7 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <Providers>
+        <Providers session={session}>
           {children}
           <Toaster
             position="top-center"

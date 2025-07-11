@@ -1,16 +1,19 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { loadGoogleMaps } from '@/lib/google-maps-loader'
+import { useState } from 'react'
 
 interface PlaceResult {
   formatted_address: string
   place_id: string
-  geometry?: google.maps.places.PlaceGeometry
-  address_components?: google.maps.GeocoderAddressComponent[]
+  geometry?: {
+    location: {
+      lat(): number
+      lng(): number
+    }
+  }
 }
 
-interface GooglePlacesAutocompleteProps {
+interface AddressInputProps {
   value: string
   onChange: (value: string) => void
   onPlaceSelect?: (place: PlaceResult) => void
@@ -21,7 +24,9 @@ interface GooglePlacesAutocompleteProps {
   name?: string
 }
 
-export default function GooglePlacesAutocomplete({
+// Simple address input component to replace Google Places Autocomplete
+// This maintains the same interface but without Google Maps dependency
+export default function AddressInput({
   value,
   onChange,
   onPlaceSelect,
@@ -30,110 +35,92 @@ export default function GooglePlacesAutocomplete({
   disabled = false,
   id,
   name
-}: GooglePlacesAutocompleteProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const initializeAutocomplete = async () => {
-      try {
-        await loadGoogleMaps()
-        setIsLoaded(true)
-
-        if (inputRef.current && !autocompleteRef.current) {
-          // Initialize autocomplete
-          autocompleteRef.current = new google.maps.places.Autocomplete(
-            inputRef.current,
-            {
-              types: ['establishment', 'geocode'],
-              fields: [
-                'formatted_address',
-                'place_id',
-                'geometry.location',
-                'address_components'
-              ]
-            }
-          )
-
-          // Add place selection listener
-          autocompleteRef.current.addListener('place_changed', () => {
-            const place = autocompleteRef.current?.getPlace()
-            
-            if (place && place.formatted_address) {
-              const placeResult: PlaceResult = {
-                formatted_address: place.formatted_address,
-                place_id: place.place_id || '',
-                geometry: place.geometry,
-                address_components: place.address_components
-              }
-
-              onChange(place.formatted_address)
-              onPlaceSelect?.(placeResult)
-            }
-          })
-        }
-      } catch (err) {
-        console.error('Error loading Google Maps:', err)
-        setError('Failed to load Google Maps. Please check your API key.')
-      }
-    }
-
-    if (!isLoaded) {
-      initializeAutocomplete()
-    }
-
-    return () => {
-      if (autocompleteRef.current) {
-        google.maps.event.clearInstanceListeners(autocompleteRef.current)
-      }
-    }
-  }, [isLoaded, onChange, onPlaceSelect])
+}: AddressInputProps) {
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
+    const newValue = e.target.value
+    onChange(newValue)
+    
+    // Simple local suggestions based on common address patterns
+    if (newValue.length > 2) {
+      const commonSuggestions = [
+        `${newValue}, San Francisco, CA`,
+        `${newValue}, Oakland, CA`,
+        `${newValue}, Berkeley, CA`,
+        `${newValue}, San Jose, CA`
+      ].filter(suggestion => 
+        suggestion.toLowerCase().includes(newValue.toLowerCase())
+      )
+      setSuggestions(commonSuggestions.slice(0, 3))
+      setShowSuggestions(true)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
   }
 
-  if (error) {
-    return (
-      <div className="relative">
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={handleInputChange}
-          placeholder={placeholder}
-          className={`${className} border-red-300`}
-          disabled={disabled}
-          id={id}
-          name={name}
-        />
-        <div className="absolute top-full left-0 mt-1 text-xs text-red-600">
-          {error}
-        </div>
-      </div>
-    )
+  const handleSuggestionClick = (suggestion: string) => {
+    onChange(suggestion)
+    setShowSuggestions(false)
+    
+    // Create a mock place result for compatibility
+    const mockPlace: PlaceResult = {
+      formatted_address: suggestion,
+      place_id: `mock_${Date.now()}`,
+      geometry: {
+        location: {
+          lat: () => 37.7749, // Default to San Francisco
+          lng: () => -122.4194
+        }
+      }
+    }
+    
+    onPlaceSelect?.(mockPlace)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && suggestions.length > 0) {
+      e.preventDefault()
+      handleSuggestionClick(suggestions[0])
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+    }
   }
 
   return (
     <div className="relative">
       <input
-        ref={inputRef}
         type="text"
         value={value}
         onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+        onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
         placeholder={placeholder}
         className={className}
-        disabled={disabled || !isLoaded}
+        disabled={disabled}
         id={id}
         name={name}
       />
-      {!isLoaded && (
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+      
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          {suggestions.map((suggestion, index) => (
+            <div
+              key={index}
+              className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-sm"
+              onClick={() => handleSuggestionClick(suggestion)}
+            >
+              {suggestion}
+            </div>
+          ))}
         </div>
       )}
     </div>
   )
 }
+
+// Export with the original name for backward compatibility
+export { AddressInput as GooglePlacesAutocomplete }

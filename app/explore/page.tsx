@@ -1,51 +1,81 @@
-'use client'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { Navigation } from '@/components/Navigation' // Assuming you have a Navigation component
+import VendorMap from '@/components/VendorMap' // VendorMap component
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
-import { clientAuth } from '@/lib/auth-helpers'
-import { USER_ROLES } from '@/lib/constants'
+export default async function ExplorePage() {
+  const cookieStore = cookies()
+  const supabase = createSupabaseServerClient(cookieStore)
 
-export default function ExplorePage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  // Authentication is optional - unauthenticated users can view vendors
 
-  useEffect(() => {
-    checkAuthAndRedirect()
-  }, [router])
+  // Fetch active and approved vendors with their live sessions
+  const { data: liveSessions, error: liveSessionsError } = await supabase
+    .from('vendor_live_sessions')
+    .select('*')
+    .eq('is_active', true)
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null)
 
-  const checkAuthAndRedirect = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        const userProfile = await clientAuth.getUserProfile(user.id)
-        
-        // If user is a vendor, redirect to vendor dashboard
-        if (userProfile?.active_role === USER_ROLES.VENDOR) {
-          router.replace('/vendor/dashboard')
-          return
-        }
-      }
-      
-      // For customers or unauthenticated users, redirect to home page (main explore interface)
-      router.replace('/')
-    } catch (error) {
-      console.error('Error checking auth for explore page:', error)
-      // On error, still redirect to home page
-      router.replace('/')
-    } finally {
-      setLoading(false)
+  if (liveSessionsError) {
+    console.error('Error fetching live sessions for explore page:', liveSessionsError)
+    return (
+      <div>
+        <Navigation />
+        <main className="p-4">
+          <h1 className="text-2xl font-bold">Explore Vendors</h1>
+          <p className="text-red-500">Could not load vendor data. Please try again later.</p>
+        </main>
+      </div>
+    )
+  }
+
+  const vendorIds = liveSessions?.map(session => session.vendor_id).filter((id): id is string => id !== null) || []
+  
+  const { data: vendors, error } = vendorIds.length > 0 
+    ? await supabase
+        .from('vendors')
+        .select('*')
+        .in('id', vendorIds)
+        .eq('is_approved', true)
+        .eq('is_active', true)
+    : { data: [], error: null }
+
+  // Combine vendors with their live sessions
+  const vendorsWithLiveSessions = vendors?.map(vendor => {
+    const liveSession = liveSessions?.find(session => session.vendor_id === vendor.id)
+    return {
+      ...vendor,
+      live_session: liveSession
     }
+  }) || []
+
+  if (error) {
+    console.error('Error fetching vendors for explore page:', error)
+    // Render a fallback or error state
+    return (
+      <div>
+        <Navigation />
+        <main className="p-4">
+          <h1 className="text-2xl font-bold">Explore Vendors</h1>
+          <p className="text-red-500">Could not load vendor data. Please try again later.</p>
+        </main>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Redirecting to explore...</p>
-      </div>
+    <div>
+      <Navigation />
+      <main className="p-4">
+        <h1 className="text-2xl font-bold mb-4">Explore Vendors</h1>
+        <div className="h-[600px] w-full">
+          {/* The VendorMap component will need to be a client component */}
+          <VendorMap vendors={vendorsWithLiveSessions} userLocation={undefined} />
+        </div>
+      </main>
     </div>
   )
 }

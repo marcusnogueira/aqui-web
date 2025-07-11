@@ -36,6 +36,23 @@ export const signInWithGoogle = async () => {
   return data
 }
 
+// Helper function to sign in with email and password (for testing)
+export const signInWithPassword = async (email: string, password: string) => {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+  
+  if (error) {
+    console.error('Error signing in with email/password:', error)
+    throw error
+  }
+  
+  return data
+}
+
 // Helper function to sign out
 export const signOut = async () => {
   const supabase = createClient()

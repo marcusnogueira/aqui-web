@@ -16,7 +16,8 @@ import {
   Download,
   LogOut,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react'
 
 interface AdminUser {
@@ -35,6 +36,7 @@ interface NavItem {
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Vendor Management', href: '/admin/vendors', icon: Store },
+  { name: 'Vendor Status Control', href: '/admin/vendor-status', icon: Settings },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Moderation Queue', href: '/admin/moderation', icon: Shield },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },

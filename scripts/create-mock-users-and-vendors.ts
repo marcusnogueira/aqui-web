@@ -57,8 +57,8 @@ async function createUsersAndVendors() {
 
       console.log(`✅ Created user ${user.email}`)
 
-      // 🏪 Insert Vendor
-      const { error: vendorError } = await supabase.from('vendors').insert({
+      // 🏪 Insert Vendor and get its ID
+      const { data: newVendor, error: vendorError } = await supabase.from('vendors').insert({
         user_id: authUser.user.id,
         business_name: user.name,
         description: `Mock vendor in ${user.city}`,
@@ -69,13 +69,30 @@ async function createUsersAndVendors() {
         total_reviews: 10,
         latitude: user.lat,
         longitude: user.lon
+      }).select('id').single()
+
+      if (vendorError || !newVendor) {
+        console.error(`❌ Failed to create vendor for ${user.email}:`, vendorError?.message)
+        errorCount++
+        continue // Skip to next user if vendor creation fails
+      }
+
+      console.log(`✅ Vendor added for ${user.name}`)
+
+      // 🔴 Insert Live Session
+      const { error: sessionError } = await supabase.from('vendor_live_sessions').insert({
+        vendor_id: newVendor.id,
+        is_active: true,
+        latitude: user.lat,
+        longitude: user.lon,
+        start_time: new Date().toISOString()
       })
 
-      if (vendorError) {
-        console.error(`❌ Failed to create vendor for ${user.email}:`, vendorError.message)
+      if (sessionError) {
+        console.error(`❌ Failed to create live session for ${user.name}:`, sessionError.message)
         errorCount++
       } else {
-        console.log(`✅ Vendor added for ${user.name}`)
+        console.log(`✅ Live session started for ${user.name}`)
         successCount++
       }
     } catch (error) {
@@ -91,14 +108,12 @@ async function createUsersAndVendors() {
 }
 
 // Run the script
-if (require.main === module) {
-  createUsersAndVendors()
-    .then(() => {
-      console.log('✅ Script completed successfully')
-      process.exit(0)
-    })
-    .catch((error) => {
-      console.error('❌ Script failed:', error)
-      process.exit(1)
-    })
-}
+createUsersAndVendors()
+  .then(() => {
+    console.log('✅ Script completed successfully')
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error('❌ Script failed:', error)
+    process.exit(1)
+  })

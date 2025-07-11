@@ -5,58 +5,64 @@ import { createBrowserClient } from '@supabase/ssr'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import type { Database } from '@/types/database'
+import type { Session, SupabaseClient, User } from '@supabase/supabase-js'
 
-const supabase = createBrowserClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-interface AppContextType {
-  user: any
+type SupabaseContextType = {
+  supabase: SupabaseClient<Database>
+  session: Session | null
+  user: User | null
   loading: boolean
 }
 
-const AppContext = createContext<AppContextType>({
-  user: null,
-  loading: true,
-})
+const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
 
-export const useApp = () => {
-  const context = useContext(AppContext)
-  if (!context) {
-    throw new Error('useApp must be used within AppProvider')
+export const useSupabase = () => {
+  const context = useContext(SupabaseContext)
+  if (context === undefined) {
+    throw new Error('useSupabase must be used within a SupabaseProvider')
   }
   return context
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+export const useUser = () => {
+  const { user, loading } = useSupabase()
+  return { user, loading }
+}
+
+export function Providers({
+  children,
+  session,
+}: {
+  children: React.ReactNode
+  session: Session | null
+}) {
+  const [supabase] = useState(() =>
+    createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  )
+  const [user, setUser] = useState<User | null>(session?.user ?? null)
+  const [loading, setLoading] = useState(session === null)
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user || null)
-      setLoading(false)
-    }
-
-    getUser()
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null)
+      (event, session) => {
+        setUser(session?.user ?? null)
         setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   return (
     <I18nextProvider i18n={i18n}>
-      <AppContext.Provider value={{ user, loading }}>
+      <SupabaseContext.Provider value={{ supabase, session, user, loading }}>
         {children}
-      </AppContext.Provider>
+      </SupabaseContext.Provider>
     </I18nextProvider>
   )
 }

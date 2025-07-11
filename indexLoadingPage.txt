@@ -1,0 +1,7 @@
+index loads rather than webapge
+### For Future Reference:
+If you encounter the directory listing again, it means there are port conflicts. You can:
+
+1. Check what's running on port 3000: lsof -ti:3000
+2. Kill conflicting processes: kill -9 <process_ids>
+3. Restart the server: npm run dev

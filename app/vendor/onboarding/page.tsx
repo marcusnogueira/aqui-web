@@ -26,7 +26,7 @@ export default function VendorOnboardingPage() {
     place_id?: string
     latitude?: number
     longitude?: number
-    address_components?: google.maps.GeocoderAddressComponent[]
+    address_components?: any[]
   }>({})
   
   const [isSubmitting, setIsSubmitting] = useState(false)

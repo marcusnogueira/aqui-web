@@ -1,10 +1,15 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+// NOTE: This guard is not perfect, but it's a good first line of defense.
+// For a more robust solution, consider using a library like `server-only`.
+if (typeof window !== 'undefined') {
+  throw new Error('This file should only be used on the server.');
+}
+
+import { createServerClient } from '@supabase/ssr'
+import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { Database } from '@/types/database'
 
-export const createSupabaseServerClient = (
-  cookieStore: ReturnType<typeof cookies>
-) => {
+// Server-side Supabase client that accepts cookies
+export const createSupabaseServerClient = (cookieStore: ReadonlyRequestCookies) => {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,23 +18,13 @@ export const createSupabaseServerClient = (
         get(name: string) {
           return cookieStore.get(name)?.value
         },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // The `set` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
+        set(name: string, value: string, options: any) {
+          // In server components, we can't set cookies
+          // This is handled by middleware or client-side code
         },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // The `delete` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
+        remove(name: string, options: any) {
+          // In server components, we can't remove cookies
+          // This is handled by middleware or client-side code
         },
       },
     }

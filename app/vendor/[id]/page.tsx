@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase';
-import { clientAuth } from '@/lib/auth-helpers';
+import { createClient } from '@/lib/supabase-client';
 import { Database } from '@/types/database';
 import { VendorWithDetails } from '@/types/vendor';
 import { Star, MapPin, Clock, Phone, Mail, Heart, MessageSquare, Flag, X, Navigation } from 'lucide-react';
 import { useHeartBeat } from '@/lib/animations';
+import { GetDirectionsButton } from '@/components/GetDirectionsButton';
+import { getDetailedVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils';
 
 type VendorLocation = Database['public']['Tables']['vendor_static_locations']['Row'];
 type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['Row'];
@@ -61,7 +62,11 @@ export default function VendorProfilePage() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        const userData = await clientAuth.getUserProfile(authUser.id);
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
         setUser(userData);
         
         // Check if vendor is favorited
@@ -138,23 +143,13 @@ export default function VendorProfilePage() {
         .is('end_time', null)
         .single();
 
-      // Determine status
-      let status: 'live' | 'closing_soon' | 'offline' = 'offline';
-      let isLive = false;
-      
-      if (liveSession && liveSession.is_active && liveSession.start_time && !liveSession.end_time) {
-        isLive = true;
-        const now = new Date();
-        const sessionStart = new Date(liveSession.start_time);
-        const estimatedEnd = new Date(sessionStart.getTime() + (liveSession.was_scheduled_duration || 120) * 60000);
-        const timeUntilEnd = estimatedEnd.getTime() - now.getTime();
-        
-        if (timeUntilEnd > 30 * 60000) { // More than 30 minutes left
-          status = 'live';
-        } else {
-          status = 'closing_soon';
-        }
-      }
+      // Determine vendor status using shared utility
+      const statusInfo = getDetailedVendorStatus({
+        ...vendorData,
+        live_session: liveSession
+      });
+      const status = statusInfo;
+      const isLive = statusInfo === 'live' || statusInfo === 'closing_soon';
 
       const vendorWithDetails: VendorProfileData = {
         ...vendorData,
@@ -201,20 +196,8 @@ export default function VendorProfilePage() {
     }
   };
 
-  const openDirections = (location: VendorLocation) => {
-    if (!location.address) return;
-    // Create Google Maps URL with the vendor's address
-    const address = encodeURIComponent(location.address);
-    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${address}`;
-    
-    // If we have coordinates, use them for more precise directions
-    if (location.latitude && location.longitude) {
-      const coordsUrl = `https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`;
-      window.open(coordsUrl, '_blank');
-    } else {
-      window.open(googleMapsUrl, '_blank');
-    }
-  };
+  // Extract coordinates for directions
+  const coordinates = vendor ? extractCoordinatesFromVendor(vendor) : null;
 
   const submitReview = async () => {
     if (!user || !newReview.comment.trim()) return;
@@ -456,14 +439,13 @@ export default function VendorProfilePage() {
                     <MapPin className="w-5 h-5 text-gray-500" />
                     <span className="text-gray-600">{vendor.location.address}</span>
                   </div>
-                  <button
-                    onClick={() => openDirections(vendor.location!)}
-                    className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    aria-label="Get directions to vendor"
-                  >
-                    <Navigation className="w-4 h-4" />
-                    <span className="text-sm">Directions</span>
-                  </button>
+                  {coordinates && (
+                    <GetDirectionsButton
+                      destination={coordinates}
+                      vendorName={vendor.business_name}
+                      className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    />
+                  )}
                 </div>
               )}
 
