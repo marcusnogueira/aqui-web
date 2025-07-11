@@ -177,11 +177,8 @@ export default function HomePage() {
         const userProfile = await clientAuth.getUserProfile(authUser.id)
         setUser(userProfile)
         
-        // If user is a vendor, redirect to vendor dashboard
-        if (userProfile?.active_role === USER_ROLES.VENDOR) {
-          router.push('/vendor/dashboard')
-          return
-        }
+        // Note: Removed automatic vendor dashboard redirect
+        // Users should manually navigate via profile menu
       }
     } catch (error) {
       console.error('Auth check error:', error)
