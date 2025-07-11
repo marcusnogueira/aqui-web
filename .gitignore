@@ -138,3 +138,7 @@ create-vendor-reports.js
 check-*.js
 mock-data.sql
 .vercel
+
+# Test results and artifacts
+test-results/
+playwright-report/
