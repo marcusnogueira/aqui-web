@@ -218,7 +218,7 @@ async function insertMockData() {
             vendor_id: vendor.id,
             user_id: authUsers[reviewerIndex]?.id,
             rating: 3 + Math.floor(Math.random() * 3), // Rating 3-5
-            comment: reviewTexts[i % reviewTexts.length],
+            review: reviewTexts[i % reviewTexts.length],
             created_at: new Date(Date.now() - Math.random() * 7 * 24 * 3600000).toISOString(), // Within last week
             updated_at: new Date().toISOString()
           });
@@ -264,7 +264,7 @@ async function insertMockData() {
         console.log(`✅ Inserted ${favoriteData.length} favorites`);
       }
       
-      // Step 7: Insert admin users
+      // Step 7: Create admin user
       console.log('\n👑 Creating admin user...');
       try {
         const { data: adminAuthData, error: adminAuthError } = await supabase.auth.admin.createUser({
@@ -282,22 +282,17 @@ async function insertMockData() {
         } else {
           console.log('✅ Created admin auth user');
           
-          // Insert admin user record
+          // Update user to set admin flag
           const { data: adminData, error: adminError } = await supabase
-            .from('admin_users')
-            .insert([{
-              id: uuidv4(),
-              user_id: adminAuthData.user.id,
-              role: 'admin',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }])
+            .from('users')
+            .update({ is_admin: true })
+            .eq('id', adminAuthData.user.id)
             .select();
           
           if (adminError) {
-            console.log('❌ Admin users insert error:', adminError.message);
+            console.log('❌ Admin user update error:', adminError.message);
           } else {
-            console.log('✅ Inserted admin user record');
+            console.log('✅ Set admin flag for user');
           }
         }
       } catch (err) {

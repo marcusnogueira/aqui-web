@@ -27,23 +27,3 @@ export const getCurrentUserServer = async () => {
   
   return user
 }
-
-// Helper function to check if user is admin on server
-// WARNING: This function is inconsistent with other admin checks in the codebase
-export const isUserAdminServer = async (userId: string) => {
-  console.warn('⚠️ DEPRECATED: isUserAdminServer from supabase-server.ts is inconsistent. Use proper admin authentication instead.')
-  
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('admin_users')
-    .select('id')
-    .eq('user_id', userId)
-    .single()
-  
-  if (error) {
-    console.error('Error checking admin status on server:', error)
-    return false
-  }
-  
-  return !!data
-}

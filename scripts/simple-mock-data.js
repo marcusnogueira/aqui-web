@@ -193,7 +193,7 @@ async function insertSimpleMockData() {
             vendor_id: vendor.id,
             user_id: authUsers[reviewerIndex]?.id,
             rating: 4 + Math.floor(Math.random() * 2), // Rating 4-5
-            comment: reviewTexts[i % reviewTexts.length]
+            review: reviewTexts[i % reviewTexts.length]
           });
         }
       });

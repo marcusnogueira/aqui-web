@@ -61,10 +61,7 @@ export const getCurrentUser = async () => {
 }
 
 // Helper function to check if user is admin
-// WARNING: This function is inconsistent with other admin checks in the codebase
 export const isUserAdmin = async (userId: string) => {
-  console.warn('⚠️ DEPRECATED: isUserAdmin from supabase.ts is inconsistent. Use proper admin authentication instead.')
-  
   const supabase = createClient()
   const { data, error } = await supabase
     .from('users')
