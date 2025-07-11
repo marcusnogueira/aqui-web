@@ -122,6 +122,77 @@
   @apply bg-red-500 text-white;
 }
 
+/* Fluid Design Utilities */
+@layer utilities {
+  .fluid-text-sm {
+    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  }
+  
+  .fluid-text-base {
+    font-size: clamp(0.875rem, 2vw, 1rem);
+  }
+  
+  .fluid-text-lg {
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
+  }
+  
+  .fluid-text-xl {
+    font-size: clamp(1.125rem, 3vw, 1.25rem);
+  }
+  
+  .fluid-text-2xl {
+    font-size: clamp(1.25rem, 4vw, 1.5rem);
+  }
+  
+  .fluid-spacing-sm {
+    padding: clamp(0.5rem, 2vw, 1rem);
+  }
+  
+  .fluid-spacing-md {
+    padding: clamp(1rem, 3vw, 1.5rem);
+  }
+  
+  .fluid-spacing-lg {
+    padding: clamp(1.5rem, 5vw, 3rem);
+  }
+  
+  .fluid-gap {
+    gap: clamp(0.5rem, 2vw, 1rem);
+  }
+  
+  .fluid-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+  
+  .fluid-container {
+    width: min(100% - 2rem, 1200px);
+    margin-inline: auto;
+  }
+  
+  .intrinsic-size {
+    width: fit-content;
+    min-width: min-content;
+    max-width: max-content;
+  }
+}
+
+/* Container Queries Support */
+@container (min-width: 400px) {
+  .container-responsive {
+    display: flex;
+    flex-direction: row;
+  }
+}
+
+@container (max-width: 399px) {
+  .container-responsive {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 /* Animation keyframes for AQUI app */
 @keyframes heartbeat {
   0% {

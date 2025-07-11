@@ -43,6 +43,8 @@ export interface VendorMapProps {
   userLocation: { lat: number; lng: number } | undefined
   onVendorClick?: (vendorId: string) => void
   onMapBoundsChange?: (bounds: any) => void
+  onLocationRequest?: () => void
+  isLocating?: boolean
 }
 
 // Utility types for vendor operations

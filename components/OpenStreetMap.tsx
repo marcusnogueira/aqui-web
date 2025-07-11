@@ -30,6 +30,8 @@ interface OpenStreetMapProps {
   className?: string
   enableGeolocation?: boolean
   showAttribution?: boolean
+  onLocationRequest?: () => void
+  isLocating?: boolean
 }
 
 
@@ -43,7 +45,9 @@ export default function OpenStreetMap({
   userLocation,
   className = '',
   enableGeolocation = false,
-  showAttribution = true
+  showAttribution = true,
+  onLocationRequest,
+  isLocating = false
 }: OpenStreetMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<Map | null>(null)
@@ -152,7 +156,7 @@ export default function OpenStreetMap({
     }
   }, [isIntersecting, center, zoom, enableGeolocation, showAttribution, onBoundsChange])
 
-  // Add user location marker
+  // Add user location marker and handle location updates
   useEffect(() => {
     if (!map.current || !userLocation) return
 
@@ -162,6 +166,15 @@ export default function OpenStreetMap({
     })
       .setLngLat([userLocation.lng, userLocation.lat])
       .addTo(map.current)
+
+    // If this is a location update (not initial load), smoothly fly to the new location
+    if (isLoaded && map.current) {
+      map.current.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 15,
+        duration: 2000
+      })
+    }
 
     return () => {
       userMarker.remove()
@@ -344,6 +357,34 @@ export default function OpenStreetMap({
         className="w-full h-full min-h-[400px] rounded-lg"
         style={{ minHeight: '400px' }}
       />
+      
+      {/* Location Button - Floating Action Button */}
+      {onLocationRequest && isLoaded && (
+        <button
+          onClick={onLocationRequest}
+          disabled={isLocating}
+          className={`absolute bottom-4 right-4 w-12 h-12 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-10 ${
+            isLocating 
+              ? 'bg-blue-400 cursor-not-allowed' 
+              : 'bg-white hover:bg-gray-50 active:bg-gray-100 hover:shadow-xl'
+          } border border-gray-200`}
+          title={isLocating ? 'Getting your location...' : 'Get my location'}
+        >
+          {isLocating ? (
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+          ) : (
+            <svg 
+              className="w-5 h-5 text-gray-700" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="3" strokeWidth="2"/>
+              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" strokeWidth="2"/>
+            </svg>
+          )}
+        </button>
+      )}
       
       {!isIntersecting && (
         <div className="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center">

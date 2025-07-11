@@ -487,11 +487,11 @@ export default function VendorDashboardPage() {
     <div className="min-h-screen" style={{ backgroundColor: '#FBF2E3' }}>
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+        <div className="fluid-container">
+          <div className="flex justify-between items-center fluid-spacing-sm">
             <div>
-              <h1 className="text-2xl font-semibold" style={{ color: '#222222' }}>{vendor.business_name}</h1>
-              <p style={{ color: '#777777' }}>{vendor.subcategory}</p>
+              <h1 className="fluid-text-2xl font-semibold" style={{ color: '#222222' }}>{vendor.business_name}</h1>
+              <p className="fluid-text-base" style={{ color: '#777777' }}>{vendor.subcategory}</p>
             </div>
             <div className="flex items-center space-x-4">
               {liveSession ? (
@@ -530,8 +530,8 @@ export default function VendorDashboardPage() {
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
+        <div className="fluid-container">
+          <nav className="flex fluid-gap">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -550,35 +550,35 @@ export default function VendorDashboardPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="fluid-container fluid-spacing-md">
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="fluid-grid">
             {/* Stats Cards */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 className="text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Rating</h3>
-              <div className="text-3xl font-bold" style={{ color: '#3A938A' }}>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Rating</h3>
+              <div className="fluid-text-2xl font-bold" style={{ color: '#3A938A' }}>
                 0.0
               </div>
-              <p style={{ color: '#777777' }}>No reviews yet</p>
+              <p className="fluid-text-sm" style={{ color: '#777777' }}>No reviews yet</p>
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 className="text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Status</h3>
-              <div className={`text-3xl font-bold`}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Status</h3>
+              <div className={`fluid-text-2xl font-bold`}
                    style={{ color: liveSession ? '#3A938A' : '#777777' }}>
                 {liveSession ? 'Live' : 'Offline'}
               </div>
-              <p style={{ color: '#777777' }}>
+              <p className="fluid-text-sm" style={{ color: '#777777' }}>
                 {liveSession ? 'Currently serving customers' : 'Not currently active'}
               </p>
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 className="text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Locations</h3>
-              <div className="text-3xl font-bold" style={{ color: '#3A938A' }}>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Locations</h3>
+              <div className="fluid-text-2xl font-bold" style={{ color: '#3A938A' }}>
                 {staticLocations.length}
               </div>
-              <p style={{ color: '#777777' }}>Saved locations</p>
+              <p className="fluid-text-sm" style={{ color: '#777777' }}>Saved locations</p>
             </div>
           </div>
         )}

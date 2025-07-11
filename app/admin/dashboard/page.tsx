@@ -229,18 +229,18 @@ export default function AdminDashboard() {
       {/* Modern Header */}
       <div ref={headerRef} className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#D85D28]/5 to-[#3A938A]/5"></div>
-        <div className="relative px-6 py-8 sm:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative fluid-container fluid-spacing-md">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between fluid-gap">
             <div className="mb-6 sm:mb-0">
               <div className="flex items-center space-x-3 mb-2">
                 <div className="w-12 h-12 bg-gradient-to-br from-[#D85D28] to-[#B54A1F] rounded-xl flex items-center justify-center shadow-lg">
                   <Activity className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  <h1 className="fluid-text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     Admin Dashboard
                   </h1>
-                  <p className="text-slate-600 font-medium">Welcome back, {admin.username}</p>
+                  <p className="fluid-text-base text-slate-600 font-medium">Welcome back, {admin.username}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4 text-sm text-slate-500">
@@ -266,8 +266,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div ref={statsRef} className="px-6 sm:px-8 -mt-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div ref={statsRef} className="fluid-container -mt-4">
+        <div className="fluid-grid">
           {statsLoading ? (
             // Loading skeleton
             Array.from({ length: 4 }).map((_, index) => (
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
               return (
                 <div
                   key={stat.title}
-                  className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:border-white/40 transform hover:-translate-y-1"
+                  className="group relative bg-white/80 backdrop-blur-sm rounded-2xl fluid-spacing-sm shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:border-white/40 transform hover:-translate-y-1 container-responsive"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity duration-300 rounded-2xl" style={{ backgroundImage: `linear-gradient(135deg, ${stat.color.split(' ')[1]}, ${stat.color.split(' ')[3]})` }}></div>
                   <div className="relative">
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
                       <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                         <Icon className="w-6 h-6 text-white" />
                       </div>
-                      <div className={`flex items-center space-x-1 text-sm font-medium ${
+                      <div className={`flex items-center space-x-1 fluid-text-sm font-medium ${
                         stat.changeType === 'positive' ? 'text-emerald-600' : 
                         stat.changeType === 'negative' ? 'text-red-600' : 'text-slate-600'
                       }`}>
@@ -319,8 +319,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Admin Profile & System Status */}
-      <div className="px-6 sm:px-8 mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="fluid-container fluid-spacing-md">
+        <div className="fluid-grid">
           {/* Enhanced Admin Profile */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center space-x-4">
@@ -380,14 +380,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions Section */}
-      <div ref={actionsRef} className="px-6 sm:px-8 mt-12">
-        <div className="flex items-center space-x-3 mb-8">
+      <div ref={actionsRef} className="fluid-container fluid-spacing-lg">
+        <div className="flex items-center fluid-gap fluid-spacing-sm">
           <div className="w-8 h-8 bg-gradient-to-br from-[#D85D28] to-[#B54A1F] rounded-lg flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Actions</h2>
+          <h2 className="fluid-text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Quick Actions</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="fluid-grid">
           {quickActions.map((action, index) => {
             const Icon = action.icon
             return (
@@ -440,14 +440,14 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div ref={activityRef} className="px-6 sm:px-8 mt-12 mb-12">
-        <div className="flex items-center space-x-3 mb-8">
+      <div ref={activityRef} className="fluid-container fluid-spacing-lg">
+        <div className="flex items-center fluid-gap fluid-spacing-sm">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
             <Activity className="w-4 h-4 text-white" />
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Recent Activity</h2>
+          <h2 className="fluid-text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Recent Activity</h2>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 fluid-spacing-md container-responsive">
           <div className="space-y-6">
             {[
               { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50', title: 'New vendor application approved', time: '2 hours ago', type: 'success' },

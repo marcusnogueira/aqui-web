@@ -11,7 +11,7 @@ import {
   VendorWithLiveSession
 } from '@/lib/vendor-utils'
 
-export default function VendorMap({ vendors, userLocation, onVendorClick, onMapBoundsChange }: VendorMapProps) {
+export default function VendorMap({ vendors, userLocation, onVendorClick, onMapBoundsChange, onLocationRequest, isLocating }: VendorMapProps) {
   // Convert vendors to markers format
   const markers = vendors
     .map(vendor => {
@@ -49,7 +49,9 @@ export default function VendorMap({ vendors, userLocation, onVendorClick, onMapB
       userLocation={userLocation}
       onMarkerClick={onVendorClick}
       onBoundsChange={onMapBoundsChange}
-      enableGeolocation={true}
+      onLocationRequest={onLocationRequest}
+      isLocating={isLocating}
+      enableGeolocation={false}
       showAttribution={true}
       className="w-full h-full"
     />

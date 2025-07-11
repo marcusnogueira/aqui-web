@@ -33,8 +33,137 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
   const [mapBounds, setMapBounds] = useState<{north: number, south: number, east: number, west: number} | null>(null)
   const [displayedVendors, setDisplayedVendors] = useState<Vendor[]>([])
+  const [isLocating, setIsLocating] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [leftPanelWidth, setLeftPanelWidth] = useState(40) // percentage - for manual resize only
 
   const supabase = createClient()
+
+  // Handle mouse and touch events for fluid resizing
+  useEffect(() => {
+    const getClientX = (e: MouseEvent | TouchEvent) => {
+      return 'touches' in e ? e.touches[0]?.clientX || 0 : e.clientX
+    }
+
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDragging) return
+      
+      const container = document.querySelector('main')
+      if (!container) return
+      
+      const rect = container.getBoundingClientRect()
+      const clientX = getClientX(e)
+      const newWidth = ((clientX - rect.left) / rect.width) * 100
+      
+      // Fluid constraints with smooth transitions
+      const constrainedWidth = Math.max(15, Math.min(85, newWidth))
+      setLeftPanelWidth(constrainedWidth)
+    }
+    
+    const handleEnd = () => {
+      setIsDragging(false)
+    }
+    
+    if (isDragging) {
+      // Mouse events
+      document.addEventListener('mousemove', handleMove)
+      document.addEventListener('mouseup', handleEnd)
+      // Touch events
+      document.addEventListener('touchmove', handleMove, { passive: false })
+      document.addEventListener('touchend', handleEnd)
+      
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+      document.body.style.touchAction = 'none'
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMove)
+      document.removeEventListener('mouseup', handleEnd)
+      document.removeEventListener('touchmove', handleMove)
+      document.removeEventListener('touchend', handleEnd)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.body.style.touchAction = ''
+    }
+  }, [isDragging])
+
+  // Function to request user location
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by this browser')
+      return
+    }
+
+    setIsLocating(true)
+    
+    // First attempt with high accuracy
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }
+        setUserLocation(newLocation)
+        setIsLocating(false)
+        toast.success('Location updated successfully')
+      },
+      (error) => {
+        console.error('High accuracy location failed:', error)
+        
+        // If high accuracy fails due to timeout, try with lower accuracy
+        if (error.code === error.TIMEOUT) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const newLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              }
+              setUserLocation(newLocation)
+              setIsLocating(false)
+              toast.success('Location updated successfully (approximate)')
+            },
+            (fallbackError) => {
+              console.error('Fallback location failed:', fallbackError)
+              setIsLocating(false)
+              
+              let errorMessage = 'Unable to get your location'
+              if (fallbackError.code === fallbackError.PERMISSION_DENIED) {
+                errorMessage = 'Location access denied. Please enable location permissions in your browser settings.'
+              } else if (fallbackError.code === fallbackError.POSITION_UNAVAILABLE) {
+                errorMessage = 'Location information is unavailable. Please check your GPS or network connection.'
+              } else if (fallbackError.code === fallbackError.TIMEOUT) {
+                errorMessage = 'Location request timed out. Please try again or check your GPS signal.'
+              }
+              
+              toast.error(errorMessage)
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 600000
+            }
+          )
+        } else {
+          setIsLocating(false)
+          
+          let errorMessage = 'Unable to get your location'
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = 'Location access denied. Please enable location permissions in your browser settings.'
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = 'Location information is unavailable. Please check your GPS or network connection.'
+          }
+          
+          toast.error(errorMessage)
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000
+      }
+    )
+  }
 
   // Check authentication and handle role-based routing
   useEffect(() => {
@@ -61,26 +190,11 @@ export default function HomePage() {
     }
   }
 
-  // Get user location
+  // Default to San Francisco location
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
-        },
-        (error) => {
-          console.error('Error getting location:', error)
-          // Default to San Francisco if location access denied
-          setUserLocation({ lat: 37.7749, lng: -122.4194 })
-        }
-      )
-    } else {
-      // Default location if geolocation not supported
-      setUserLocation({ lat: 37.7749, lng: -122.4194 })
-    }
+    // Always start with San Francisco as default
+    // Users can manually request their location using the location button
+    setUserLocation({ lat: 37.7749, lng: -122.4194 })
   }, [])
 
   // Fetch vendors
@@ -306,7 +420,7 @@ export default function HomePage() {
               <div className="w-8 h-8 bg-mission-teal rounded-full flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-chili-orange">AQUI</h1>
+              <h1 className="fluid-text-2xl font-bold text-chili-orange">AQUI</h1>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -327,7 +441,7 @@ export default function HomePage() {
 
       {/* Search Bar */}
       <div className="bg-white border-b border-gray-200 flex-shrink-0">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
+        <div className="fluid-container fluid-spacing-sm">
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -338,7 +452,7 @@ export default function HomePage() {
 
       {/* Stats Bar */}
       <div className="bg-white border-b border-gray-200 flex-shrink-0">
-        <div className="px-4 sm:px-6 lg:px-8 py-3">
+        <div className="fluid-container py-3">
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
@@ -358,37 +472,59 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Main Content - Airbnb-style dual pane layout */}
-      <main className="flex-1 flex overflow-hidden">
+      {/* View Toggle - Prominent above map */}
+      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="fluid-container py-3">
+          <div className="flex items-center justify-center">
+            <div className="flex bg-gray-100 rounded-lg p-1 shadow-sm">
+              <button
+                onClick={() => setViewMode('map')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  viewMode === 'map'
+                    ? 'bg-white text-mission-teal shadow-sm border border-gray-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <MapPin className="w-4 h-4" />
+                <span>Map View</span>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  viewMode === 'list'
+                    ? 'bg-white text-mission-teal shadow-sm border border-gray-200'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <Search className="w-4 h-4" />
+                <span>List View</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Fluid responsive layout */}
+      <main className="flex-1 flex overflow-hidden relative">
         {/* Left Panel - Vendor List */}
-        <div className="w-full lg:w-2/5 xl:w-1/3 flex flex-col bg-white border-r border-gray-200">
+        <div 
+          className={`flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-out ${
+            viewMode === 'list' ? 'w-full lg:block' : 'hidden lg:flex'
+          }`}
+          style={{ 
+            width: viewMode === 'map' ? `clamp(20%, ${leftPanelWidth}%, 80%)` : '100%',
+            minWidth: viewMode === 'map' ? '300px' : 'auto',
+            maxWidth: viewMode === 'map' ? '80vw' : '100%'
+          }}
+        >
           {/* Results Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+          <div className="fluid-spacing-sm border-b border-gray-200">
+            <div className="flex items-center justify-between fluid-gap">
+              <h2 className="fluid-text-lg font-semibold text-gray-900">
                 {displayedVendors.length} vendors found
               </h2>
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors lg:hidden ${
-                    viewMode === 'list'
-                      ? 'bg-white text-mission-teal shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  List
-                </button>
-                <button
-                  onClick={() => setViewMode('map')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors lg:hidden ${
-                    viewMode === 'map'
-                      ? 'bg-white text-mission-teal shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Map
-                </button>
+              <div className="flex items-center space-x-2">
+ 
               </div>
             </div>
           </div>
@@ -402,11 +538,11 @@ export default function HomePage() {
                 <p className="text-gray-600 text-center px-6">Try adjusting your search or filters</p>
               </div>
             ) : (
-              <div className="space-y-4 p-4">
+              <div className="fluid-spacing-sm space-y-4">
                 {displayedVendors.map((vendor) => (
                   <div
                     key={vendor.id}
-                    className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                    className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden container-responsive"
                     onClick={() => handleVendorClick(vendor.id)}
                     onMouseEnter={() => {
                       // Highlight marker on map when hovering card
@@ -486,16 +622,53 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Right Panel - Map (hidden on mobile when list view is selected) */}
-        <div className={`flex-1 relative ${
-          viewMode === 'list' ? 'hidden lg:block' : 'block'
-        }`}>
+        {/* Fluid Resizer - enhanced for touch and accessibility */}
+        <div 
+          className={`w-2 bg-gray-200 hover:bg-mission-teal cursor-col-resize flex-shrink-0 relative group transition-all duration-300 ease-out ${
+            viewMode === 'list' ? 'hidden' : 'hidden lg:block'
+          } touch-action-none`}
+          onMouseDown={(e) => {
+            setIsDragging(true)
+            e.preventDefault()
+          }}
+          onTouchStart={(e) => {
+            setIsDragging(true)
+            e.preventDefault()
+          }}
+          role="separator"
+          aria-label="Resize panels"
+          tabIndex={0}
+        >
+          <div className="absolute inset-y-0 -left-2 -right-2 group-hover:bg-mission-teal group-hover:bg-opacity-20 transition-all duration-200"></div>
+          {/* Enhanced drag indicator */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60 group-hover:opacity-100 transition-all duration-200">
+            <div className="flex flex-col space-y-1">
+              <div className="w-1 h-2 bg-gray-400 group-hover:bg-white rounded-full transition-colors"></div>
+              <div className="w-1 h-2 bg-gray-400 group-hover:bg-white rounded-full transition-colors"></div>
+              <div className="w-1 h-2 bg-gray-400 group-hover:bg-white rounded-full transition-colors"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Map */}
+        <div 
+          className={`relative transition-all duration-300 ease-out ${
+            viewMode === 'list' ? 'hidden' : 'w-full lg:block'
+          }`}
+          style={{ 
+            width: viewMode === 'map' ? `clamp(20%, ${100 - leftPanelWidth}%, 80%)` : '100%',
+            minWidth: viewMode === 'map' ? '300px' : 'auto',
+            flex: viewMode === 'map' ? '1 1 auto' : 'none'
+          }}
+        >
           <div className="h-full">
             <VendorMap
               vendors={filteredVendors}
               userLocation={userLocation || undefined}
               onVendorClick={handleVendorClick}
               onMapBoundsChange={handleMapBoundsChange}
+              onLocationRequest={requestUserLocation}
+              isLocating={isLocating}
             />
           </div>
         </div>
