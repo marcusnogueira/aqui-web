@@ -107,9 +107,9 @@ export default function AddressInput({
       
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-          {predictions.map((prediction, index) => (
+          {suggestions.map((suggestion, index) => (
             <div
-              key={prediction.place_id}
+              key={`suggestion-${index}`}
               className="px-4 py-2 cursor-pointer hover:bg-muted text-sm"
               onClick={() => handleSuggestionClick(suggestion)}
             >
