@@ -82,6 +82,8 @@ test.describe('Authenticated User Flow', () => {
 
     // Navigate to the page that the OAuth callback would redirect to
     await page.goto('/explore');
+    // Should redirect to homepage
+    await expect(page).toHaveURL('/');
 
     // Verify that the page loaded correctly and doesn't show an auth error
     // Check that the URL does not contain an error parameter

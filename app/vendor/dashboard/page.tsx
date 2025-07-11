@@ -107,7 +107,7 @@ export default function VendorDashboardPage() {
   const switchToCustomerMode = async () => {
     try {
       await clientAuth.switchRole(USER_ROLES.CUSTOMER)
-      router.push('/explore')
+      router.push('/')
     } catch (error) {
       console.error('Error switching to customer mode:', error)
       alert('Failed to switch to customer mode. Please try again.')

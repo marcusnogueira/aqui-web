@@ -128,6 +128,8 @@ test.describe('Comprehensive Application E2E Tests', () => {
       console.log('📍 Step 5: Navigate to explore page');
       try {
         await page.goto(`${BASE_URL}/explore`);
+    // Should redirect to homepage
+    await expect(page).toHaveURL(`${BASE_URL}/`);
         await page.waitForLoadState('networkidle');
         await page.screenshot({ path: 'test-results/customer-explore.png' });
         console.log('✅ Explore page loaded');

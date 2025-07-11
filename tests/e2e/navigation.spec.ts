@@ -14,7 +14,7 @@ test.describe('Navigation', () => {
     
     // Test navigation to Explore page
     await page.goto('/explore');
-    await expect(page).toHaveURL('/explore');
+  await expect(page).toHaveURL('/'); // Should redirect to homepage
   });
 
   test('should handle 404 pages gracefully', async ({ page }) => {

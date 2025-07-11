@@ -64,7 +64,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
       if (newRole === USER_ROLES.VENDOR) {
         window.location.href = '/vendor/dashboard'
       } else {
-        window.location.href = '/explore'
+        window.location.href = '/'
       }
     } catch (error) {
       console.error('Error switching role:', error)

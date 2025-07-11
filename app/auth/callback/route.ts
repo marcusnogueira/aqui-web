@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   console.log('Successfully exchanged code for session.')
 
   // The rest of your user creation logic can go here.
-  // For now, we will just redirect to a protected route.
+  // Redirect to homepage instead of explore
 
-  return NextResponse.redirect(`${requestUrl.origin}/explore`)
+  return NextResponse.redirect(`${requestUrl.origin}/`)
 }
