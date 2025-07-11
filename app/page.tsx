@@ -147,9 +147,8 @@ export default function HomePage() {
     }
 
     fetchVendors()
-
     // Set up real-time subscription for vendor updates
-    const handleRealtimeUpdate = async (payload) => {
+    const handleRealtimeUpdate = async (payload: any) => {
       const { eventType, new: newRecord, old: oldRecord } = payload
 
       if (eventType === 'INSERT') {
