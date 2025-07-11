@@ -6,7 +6,7 @@ test.describe('Admin Panel', () => {
     
     // Check if admin login elements are present
     await expect(page.locator('text=Admin Login')).toBeVisible();
-    await expect(page.locator('text=Access the AQUI administration panel')).toBeVisible();
+    await expect(page.locator('text=Access the Aqui administration panel')).toBeVisible();
     await expect(page.locator('input[placeholder*="Username"], input[name="username"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button:has-text("Sign in")')).toBeVisible();

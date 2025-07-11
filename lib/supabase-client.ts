@@ -36,7 +36,7 @@ export const signInWithGoogle = async () => {
   return data
 }
 
-// Helper function to sign in with email and password (for testing)
+// Helper function to sign in with email and password
 export const signInWithPassword = async (email: string, password: string) => {
   const supabase = createClient()
   
@@ -47,6 +47,59 @@ export const signInWithPassword = async (email: string, password: string) => {
   
   if (error) {
     console.error('Error signing in with email/password:', error)
+    throw error
+  }
+  
+  return data
+}
+
+// Helper function to sign up with email and password
+export const signUpWithPassword = async (email: string, password: string) => {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  })
+  
+  if (error) {
+    console.error('Error signing up with email/password:', error)
+    throw error
+  }
+  
+  return data
+}
+
+// Helper function to send password reset email
+export const sendPasswordResetEmail = async (email: string) => {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/`,
+  })
+  
+  if (error) {
+    console.error('Error sending password reset email:', error)
+    throw error
+  }
+  
+  return data
+}
+
+
+// Helper function to sign in with Apple
+export const signInWithApple = async () => {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'apple',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  })
+  
+  if (error) {
+    console.error('Error signing in with Apple:', error)
     throw error
   }
   

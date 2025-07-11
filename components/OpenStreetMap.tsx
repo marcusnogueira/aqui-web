@@ -341,7 +341,7 @@ export default function OpenStreetMap({
 
   if (error) {
     return (
-      <div className={`bg-gray-100 rounded-lg p-8 text-center ${className}`}>
+      <div className={`bg-muted rounded-lg p-8 text-center ${className}`}>
         <div className="text-red-600">
           <h3 className="text-lg font-semibold mb-2">Map Error</h3>
           <p>{error}</p>

@@ -157,7 +157,7 @@ export default function VendorOnboardingPage() {
               Sign Out
             </button>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome to AQUI Vendors!</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome to Aqui Vendors!</h1>
           <p className="text-gray-600 mt-2">
             Let's set up your business profile to start connecting with your community.
           </p>

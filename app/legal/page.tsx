@@ -20,11 +20,11 @@ export default function LegalPage() {
 
 ## 1. Acceptance of Terms
 
-By accessing or using the AQUI platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of these terms, then you may not access the Service.
+By accessing or using the Aqui platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of these terms, then you may not access the Service.
 
 ## 2. Description of Service
 
-AQUI is an online marketplace platform that connects customers with local vendors and service providers. The platform facilitates transactions between independent vendors and customers but does not directly provide goods or services.
+Aqui is an online marketplace platform that connects customers with local vendors and service providers. The platform facilitates transactions between independent vendors and customers but does not directly provide goods or services.
 
 ## 3. User Accounts
 
@@ -50,7 +50,7 @@ AQUI is an online marketplace platform that connects customers with local vendor
 ### 4.2 Vendor Content
 - Vendors are solely responsible for their listings, descriptions, and promotional content
 - Content must be accurate, not misleading, and comply with our content guidelines
-- Vendors retain ownership of their content but grant AQUI a license to display it
+- Vendors retain ownership of their content but grant Aqui a license to display it
 
 ## 5. Customer Responsibilities
 
@@ -82,13 +82,13 @@ AQUI is an online marketplace platform that connects customers with local vendor
 ## 7. Transactions and Payments
 
 ### 7.1 Transaction Facilitation
-- AQUI facilitates transactions but is not a party to agreements between vendors and customers
+- Aqui facilitates transactions but is not a party to agreements between vendors and customers
 - Payment processing is handled through secure third-party providers
 - Platform fees may apply to transactions
 
 ### 7.2 Disputes
 - Disputes should first be resolved directly between vendors and customers
-- AQUI may provide mediation services but is not obligated to resolve disputes
+- Aqui may provide mediation services but is not obligated to resolve disputes
 - Chargebacks and refunds are subject to vendor policies and payment processor terms
 
 ## 8. Privacy and Data
@@ -106,12 +106,12 @@ AQUI is an online marketplace platform that connects customers with local vendor
 ## 9. Intellectual Property
 
 ### 9.1 Platform Rights
-- AQUI owns all rights to the platform, including software, design, and trademarks
+- Aqui owns all rights to the platform, including software, design, and trademarks
 - Users may not copy, modify, or distribute platform content without permission
 
 ### 9.2 User Content
 - Users retain ownership of content they create
-- By posting content, users grant AQUI a license to use, display, and distribute it
+- By posting content, users grant Aqui a license to use, display, and distribute it
 
 ## 10. Disclaimers and Limitations
 
@@ -121,13 +121,13 @@ AQUI is an online marketplace platform that connects customers with local vendor
 - Users interact with vendors at their own risk
 
 ### 10.2 Limitation of Liability
-- AQUI's liability is limited to the maximum extent permitted by law
+- Aqui's liability is limited to the maximum extent permitted by law
 - We are not liable for indirect, incidental, or consequential damages
-- Total liability shall not exceed the fees paid to AQUI in the preceding 12 months
+- Total liability shall not exceed the fees paid to Aqui in the preceding 12 months
 
 ## 11. Indemnification
 
-Users agree to indemnify and hold AQUI harmless from claims arising from:
+Users agree to indemnify and hold Aqui harmless from claims arising from:
 - Use of the platform
 - Violation of these Terms
 - Infringement of third-party rights
@@ -137,7 +137,7 @@ Users agree to indemnify and hold AQUI harmless from claims arising from:
 
 ### 12.1 Account Termination
 - Users may terminate their accounts at any time
-- AQUI may suspend or terminate accounts for Terms violations
+- Aqui may suspend or terminate accounts for Terms violations
 - Termination does not affect existing transaction obligations
 
 ### 12.2 Effect of Termination
@@ -146,7 +146,7 @@ Users agree to indemnify and hold AQUI harmless from claims arising from:
 
 ## 13. Modifications
 
-- AQUI reserves the right to modify these Terms at any time
+- Aqui reserves the right to modify these Terms at any time
 - Users will be notified of material changes
 - Continued use constitutes acceptance of modified Terms
 
@@ -186,7 +186,7 @@ For questions about these Terms, contact us at:
 
 ## 1. Introduction
 
-AQUI ("we," "our," or "us") respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our marketplace platform.
+Aqui ("we," "our," or "us") respects your privacy and is committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our marketplace platform.
 
 ## 2. Information We Collect
 
@@ -416,7 +416,7 @@ To exercise your privacy rights:
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6">
             <h1 className="text-3xl font-bold text-gray-900">Legal Documents</h1>
-            <p className="mt-2 text-gray-600">Terms of Service and Privacy Policy for AQUI</p>
+            <p className="mt-2 text-gray-600">Terms of Service and Privacy Policy for Aqui</p>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ test.describe('Homepage', () => {
     await page.goto('/');
     
     // Check if the main elements are present
-    await expect(page.locator('text=AQUI')).toBeVisible();
+    await expect(page.locator('text=Aqui')).toBeVisible();
     await expect(page.locator('text=Sign In')).toBeVisible();
     
     // Check if the vendor counters are present
@@ -20,14 +20,14 @@ test.describe('Homepage', () => {
     await page.click('button:has-text("Sign In"), a:has-text("Sign In")');
     
     // Check if modal appears
-    await expect(page.locator('text=Welcome to AQUI')).toBeVisible();
+    await expect(page.locator('text=Welcome to Aqui')).toBeVisible();
     await expect(page.locator('text=Continue with Google')).toBeVisible();
     
     // Close modal
     await page.click('button:has-text("Cancel")');
     
     // Check if modal is closed
-    await expect(page.locator('text=Welcome to AQUI')).not.toBeVisible();
+    await expect(page.locator('text=Welcome to Aqui')).not.toBeVisible();
   });
 
   test('should display no vendors message when no data', async ({ page }) => {
@@ -44,7 +44,7 @@ test.describe('Homepage', () => {
     await page.goto('/');
     
     // Check if main elements are still visible on mobile
-    await expect(page.locator('text=AQUI')).toBeVisible();
+    await expect(page.locator('text=Aqui')).toBeVisible();
     await expect(page.locator('text=Sign In')).toBeVisible();
   });
 

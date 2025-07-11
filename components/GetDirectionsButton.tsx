@@ -58,7 +58,7 @@ export function GetDirectionsButton({
   // Variant styles
   const variantStyles = {
     primary: 'bg-mission-teal text-white hover:bg-bay-cypress',
-    secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+    secondary: 'bg-muted text-muted-foreground hover:bg-muted/80',
     outline: 'border border-mission-teal text-mission-teal hover:bg-mission-teal hover:text-white'
   }
 
@@ -121,7 +121,7 @@ export function GetDirectionsButton({
       </button>
       
       {showProvider && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           via {providerName}
         </p>
       )}

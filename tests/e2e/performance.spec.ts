@@ -7,7 +7,7 @@ test.describe('Performance Tests', () => {
     await page.goto('/');
     
     // Wait for main content to be visible
-    await expect(page.locator('text=AQUI')).toBeVisible();
+    await expect(page.locator('text=Aqui')).toBeVisible();
     
     const loadTime = Date.now() - startTime;
     
@@ -70,7 +70,7 @@ test.describe('Performance Tests', () => {
     
     // Wait for all pages to load main content
     await Promise.all(
-      pages.map(page => expect(page.locator('text=AQUI')).toBeVisible())
+      pages.map(page => expect(page.locator('text=Aqui')).toBeVisible())
     );
     
     const loadTime = Date.now() - startTime;

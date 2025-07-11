@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { MapPin, Search, Star, Clock, Users } from 'lucide-react'
+import { MapPin, Search, Star, Clock, Users, Sun, Moon } from 'lucide-react'
+import { useTheme } from '@/lib/theme-manager'
 import VendorMap from '@/components/VendorMap'
 import { VendorCard } from '@/components/VendorCard'
 import { SearchBar } from '@/components/SearchBar'
@@ -22,6 +23,8 @@ type Vendor = VendorWithLiveSession
 export default function HomePage() {
   const router = useRouter()
   const { t } = useTranslation()
+  const { theme, toggleTheme, themeIcon } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [vendors, setVendors] = useState<Vendor[]>([])
@@ -164,6 +167,11 @@ export default function HomePage() {
       }
     )
   }
+
+  // Handle mounting for next-themes
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Check authentication and handle role-based routing
   useEffect(() => {
@@ -398,33 +406,46 @@ export default function HomePage() {
 
   if (loading || loadingVendors) {
     return (
-      <div className="min-h-screen bg-market-cream flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mission-teal mx-auto mb-4"></div>
-          <p className="text-bay-cypress font-medium">{t('common.loading')}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-medium">{t('common.loading')}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
+      <header className="bg-background shadow-sm border-b border-border flex-shrink-0">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-mission-teal rounded-full flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-white" />
+            <div 
+              className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => {
+                if (mounted) {
+                  toggleTheme()
+                }
+              }}
+              title="Toggle theme"
+            >
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h1 className="fluid-text-2xl font-bold text-chili-orange">AQUI</h1>
+              <h1 className="fluid-text-2xl font-bold text-primary">Aqui</h1>
+              {mounted && (
+                <span className="text-lg" role="img" aria-label="theme toggle">
+                  {themeIcon}
+                </span>
+              )}
             </div>
             
             <div className="flex items-center space-x-4">
               {!user ? (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="bg-mission-teal text-white px-4 py-2 rounded-lg font-medium hover:bg-bay-cypress transition-colors"
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
                 >
                   {t('auth.signIn')}
                 </button>
@@ -437,7 +458,7 @@ export default function HomePage() {
       </header>
 
       {/* Search Bar */}
-      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="bg-background border-b border-border flex-shrink-0">
         <div className="fluid-container fluid-spacing-sm">
           <SearchBar
             value={searchQuery}
@@ -448,9 +469,9 @@ export default function HomePage() {
       </div>
 
       {/* Stats Bar */}
-      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="bg-background border-b border-border flex-shrink-0">
         <div className="fluid-container py-3">
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -470,16 +491,16 @@ export default function HomePage() {
       </div>
 
       {/* View Toggle - Prominent above map */}
-      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="bg-background border-b border-border flex-shrink-0">
         <div className="fluid-container py-3">
           <div className="flex items-center justify-center">
-            <div className="flex bg-gray-100 rounded-lg p-1 shadow-sm">
+            <div className="flex bg-muted rounded-lg p-1 shadow-sm">
               <button
                 onClick={() => setViewMode('map')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   viewMode === 'map'
-                    ? 'bg-white text-mission-teal shadow-sm border border-gray-200'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-background text-primary shadow-sm border border-border'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                 }`}
               >
                 <MapPin className="w-4 h-4" />
@@ -489,8 +510,8 @@ export default function HomePage() {
                 onClick={() => setViewMode('list')}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                   viewMode === 'list'
-                    ? 'bg-white text-mission-teal shadow-sm border border-gray-200'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-background text-primary shadow-sm border border-border'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                 }`}
               >
                 <Search className="w-4 h-4" />
@@ -505,7 +526,7 @@ export default function HomePage() {
       <main className="flex-1 flex overflow-hidden relative">
         {/* Left Panel - Vendor List */}
         <div 
-          className={`flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-out ${
+          className={`flex flex-col bg-background border-r border-border transition-all duration-300 ease-out ${
             viewMode === 'list' ? 'w-full lg:block' : 'hidden lg:flex'
           }`}
           style={{ 
@@ -515,9 +536,9 @@ export default function HomePage() {
           }}
         >
           {/* Results Header */}
-          <div className="fluid-spacing-sm border-b border-gray-200">
+          <div className="fluid-spacing-sm border-b border-border">
             <div className="flex items-center justify-between fluid-gap">
-              <h2 className="fluid-text-lg font-semibold text-gray-900">
+              <h2 className="fluid-text-lg font-semibold text-foreground">
                 {displayedVendors.length} vendors found
               </h2>
               <div className="flex items-center space-x-2">
@@ -530,16 +551,16 @@ export default function HomePage() {
           <div className="flex-1 overflow-y-auto">
             {displayedVendors.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12">
-                <Search className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('search.noResults')}</h3>
-                <p className="text-gray-600 text-center px-6">Try adjusting your search or filters</p>
+                <Search className="w-12 h-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('search.noResults')}</h3>
+                <p className="text-muted-foreground text-center px-6">Try adjusting your search or filters</p>
               </div>
             ) : (
               <div className="fluid-spacing-sm space-y-4">
                 {displayedVendors.map((vendor) => (
                   <div
                     key={vendor.id}
-                    className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden container-responsive"
+                    className="bg-card rounded-lg border border-border hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden container-responsive"
                     onClick={() => handleVendorClick(vendor.id)}
                     onMouseEnter={() => {
                       // Highlight marker on map when hovering card
@@ -554,7 +575,7 @@ export default function HomePage() {
                   >
                     <div className="flex">
                       {/* Image */}
-                      <div className="relative w-24 h-24 bg-gray-200 flex-shrink-0">
+                      <div className="relative w-24 h-24 bg-muted flex-shrink-0">
                         {vendor.profile_image_url ? (
                           <img
                             src={vendor.profile_image_url}
@@ -562,7 +583,7 @@ export default function HomePage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                          <div className="w-full h-full flex items-center justify-center bg-muted">
                             <div className="text-2xl">🍽️</div>
                           </div>
                         )}
@@ -585,11 +606,11 @@ export default function HomePage() {
                       {/* Content */}
                       <div className="flex-1 p-3">
                         <div className="flex items-start justify-between mb-1">
-                          <h3 className="font-semibold text-gray-900 text-sm line-clamp-1">{vendor.business_name}</h3>
+                          <h3 className="font-semibold text-foreground text-sm line-clamp-1">{vendor.business_name}</h3>
                           {vendor.average_rating && vendor.total_reviews && vendor.total_reviews > 0 && (
                             <div className="flex items-center space-x-1 ml-2">
                               <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-xs font-medium text-gray-900">
+                              <span className="text-xs font-medium text-foreground">
                                 {vendor.average_rating.toFixed(1)}
                               </span>
                             </div>
@@ -597,15 +618,15 @@ export default function HomePage() {
                         </div>
                         
                         {vendor.subcategory && (
-                          <p className="text-xs text-gray-600 mb-1">{vendor.subcategory}</p>
+                          <p className="text-xs text-muted-foreground mb-1">{vendor.subcategory}</p>
                         )}
                         
                         {vendor.description && (
-                          <p className="text-xs text-gray-600 line-clamp-2 mb-2">{vendor.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{vendor.description}</p>
                         )}
                         
                         {vendor.live_session && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
                             <span>Live session active</span>
                           </div>
@@ -621,7 +642,7 @@ export default function HomePage() {
 
         {/* Fluid Resizer - enhanced for touch and accessibility */}
         <div 
-          className={`w-2 bg-gray-200 hover:bg-mission-teal cursor-col-resize flex-shrink-0 relative group transition-all duration-300 ease-out ${
+          className={`w-2 bg-border hover:bg-primary cursor-col-resize flex-shrink-0 relative group transition-all duration-300 ease-out ${
             viewMode === 'list' ? 'hidden' : 'hidden lg:block'
           } touch-action-none`}
           onMouseDown={(e) => {
@@ -636,13 +657,13 @@ export default function HomePage() {
           aria-label="Resize panels"
           tabIndex={0}
         >
-          <div className="absolute inset-y-0 -left-2 -right-2 group-hover:bg-mission-teal group-hover:bg-opacity-20 transition-all duration-200"></div>
+          <div className="absolute inset-y-0 -left-2 -right-2 group-hover:bg-primary group-hover:bg-opacity-20 transition-all duration-200"></div>
           {/* Enhanced drag indicator */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60 group-hover:opacity-100 transition-all duration-200">
             <div className="flex flex-col space-y-1">
-              <div className="w-1 h-2 bg-gray-400 group-hover:bg-white rounded-full transition-colors"></div>
-              <div className="w-1 h-2 bg-gray-400 group-hover:bg-white rounded-full transition-colors"></div>
-              <div className="w-1 h-2 bg-gray-400 group-hover:bg-white rounded-full transition-colors"></div>
+              <div className="w-1 h-2 bg-muted-foreground group-hover:bg-primary-foreground rounded-full transition-colors"></div>
+              <div className="w-1 h-2 bg-muted-foreground group-hover:bg-primary-foreground rounded-full transition-colors"></div>
+              <div className="w-1 h-2 bg-muted-foreground group-hover:bg-primary-foreground rounded-full transition-colors"></div>
             </div>
           </div>
         </div>

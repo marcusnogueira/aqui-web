@@ -28,20 +28,20 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'AQUI',
+    title: 'Aqui',
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: 'website',
-    siteName: 'AQUI',
-    title: 'AQUI - Find Local Food Vendors',
+    siteName: 'Aqui',
+    title: 'Aqui - Find Local Food Vendors',
     description: 'Discover amazing local food vendors in your area with real-time location tracking.',
   },
   twitter: {
     card: 'summary',
-    title: 'AQUI - Find Local Food Vendors',
+    title: 'Aqui - Find Local Food Vendors',
     description: 'Discover amazing local food vendors in your area with real-time location tracking.',
   },
 }
@@ -65,7 +65,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-background text-foreground`}>
         <Providers session={session}>
           {children}
           <Toaster

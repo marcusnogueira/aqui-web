@@ -148,7 +148,7 @@ test.describe('Accessibility Tests', () => {
     await page.click('button:has-text("Sign In"), a:has-text("Sign In")');
     
     // Check if focus is trapped in modal
-    await expect(page.locator('text=Welcome to AQUI')).toBeVisible();
+    await expect(page.locator('text=Welcome to Aqui')).toBeVisible();
     
     // Test keyboard navigation within modal
     await page.keyboard.press('Tab');
@@ -163,7 +163,7 @@ test.describe('Accessibility Tests', () => {
     await page.keyboard.press('Escape');
     
     // Modal should close
-    await expect(page.locator('text=Welcome to AQUI')).not.toBeVisible();
+    await expect(page.locator('text=Welcome to Aqui')).not.toBeVisible();
   });
 
   test('should have proper page titles', async ({ page }) => {

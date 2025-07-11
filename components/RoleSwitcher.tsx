@@ -95,19 +95,19 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
     <div className="relative">
       <div className="flex items-center space-x-2">
         {/* Current Role Indicator */}
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-muted-foreground">
           {currentRole === USER_ROLES.VENDOR ? 'Store' : 'User'}
         </span>
         
         {/* Role Switch Buttons */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-muted rounded-lg p-1">
           <button
             onClick={() => handleRoleSwitch(USER_ROLES.CUSTOMER)}
             disabled={loading}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
               currentRole === USER_ROLES.CUSTOMER
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             } disabled:opacity-50`}
           >
             Customer
@@ -118,8 +118,8 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
             disabled={loading}
             className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
               currentRole === USER_ROLES.VENDOR
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             } disabled:opacity-50`}
           >
             {hasVendorProfile ? 'Vendor' : 'Become Vendor'}
@@ -141,7 +141,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
       
       {/* Role Description */}
       <div className="mt-1">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-muted-foreground">
           {currentRole === USER_ROLES.VENDOR 
             ? 'Managing your business' 
             : hasVendorProfile 

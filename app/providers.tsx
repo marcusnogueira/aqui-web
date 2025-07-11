@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { I18nextProvider } from 'react-i18next'
+import { ThemeProvider as NextThemesProvider } from 'next-themes'
 import i18n from '@/lib/i18n'
 import type { Database } from '@/types/database'
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js'
@@ -27,6 +28,20 @@ export const useSupabase = () => {
 export const useUser = () => {
   const { user, loading } = useSupabase()
   return { user, loading }
+}
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NextThemesProvider 
+      attribute="class" 
+      defaultTheme="system" 
+      enableSystem
+      storageKey="aqui-theme"
+      disableTransitionOnChange={false}
+    >
+      {children}
+    </NextThemesProvider>
+  )
 }
 
 export function Providers({
@@ -61,7 +76,7 @@ export function Providers({
   return (
     <I18nextProvider i18n={i18n}>
       <SupabaseContext.Provider value={{ supabase, session, user, loading }}>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </SupabaseContext.Provider>
     </I18nextProvider>
   )

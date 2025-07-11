@@ -5,57 +5,16 @@
 
 @layer base {
   :root {
-    --background: 251 242 227; /* market-cream */
-    --foreground: 33 99 97; /* bay-cypress */
-    --card: 255 255 255;
-    --card-foreground: 33 99 97;
-    --popover: 255 255 255;
-    --popover-foreground: 33 99 97;
-    --primary: 58 147 138; /* mission-teal */
-    --primary-foreground: 255 255 255;
-    --secondary: 246 177 69; /* golden-plantain */
-    --secondary-foreground: 33 99 97;
-    --muted: 245 245 245;
-    --muted-foreground: 115 115 115;
-    --accent: 216 93 40; /* chili-orange */
-    --accent-foreground: 255 255 255;
-    --destructive: 239 68 68;
-    --destructive-foreground: 255 255 255;
-    --border: 229 229 229;
-    --input: 229 229 229;
-    --ring: 58 147 138;
     --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 33 99 97;
-    --foreground: 251 242 227;
-    --card: 33 99 97;
-    --card-foreground: 251 242 227;
-    --popover: 33 99 97;
-    --popover-foreground: 251 242 227;
-    --primary: 58 147 138;
-    --primary-foreground: 255 255 255;
-    --secondary: 246 177 69;
-    --secondary-foreground: 33 99 97;
-    --muted: 64 64 64;
-    --muted-foreground: 163 163 163;
-    --accent: 216 93 40;
-    --accent-foreground: 255 255 255;
-    --destructive: 239 68 68;
-    --destructive-foreground: 255 255 255;
-    --border: 64 64 64;
-    --input: 64 64 64;
-    --ring: 58 147 138;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200 dark:border-gray-700;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-sans;
   }
 }
 
@@ -65,16 +24,29 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f3f4f6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3A938A;
+  background: #3a938a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #216361;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 /* Map styles */

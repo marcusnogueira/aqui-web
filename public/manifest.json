@@ -1,6 +1,6 @@
 {
-  "name": "AQUI - Find Local Vendors",
-  "short_name": "AQUI",
+  "name": "Aqui - Find Local Vendors",
+  "short_name": "Aqui",
   "description": "Discover amazing local food vendors in real-time",
   "start_url": "/",
   "display": "standalone",

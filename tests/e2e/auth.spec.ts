@@ -9,7 +9,7 @@ test.describe('Authentication Flow', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Wait for the modal to appear and assert its title
-    await expect(page.getByRole('heading', { name: 'Welcome to AQUI' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Welcome to Aqui' })).toBeVisible();
 
     // The sign-in function triggers a navigation to an external OAuth provider.
     // We can't fully test the external login, but we can verify the initial redirect.

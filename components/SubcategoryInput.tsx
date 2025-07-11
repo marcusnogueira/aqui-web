@@ -121,7 +121,7 @@ export function SubcategoryInput({
         onFocus={handleInputFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent ${className}`}
+        className={`w-full px-4 py-2 text-foreground placeholder:text-muted-foreground border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${className}`}
         placeholder={placeholder}
         autoComplete="off"
       />
@@ -129,15 +129,15 @@ export function SubcategoryInput({
       {showSuggestions && suggestions.length > 0 && (
         <div 
           ref={suggestionsRef}
-          className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+          className="absolute z-10 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto"
         >
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion}
               type="button"
-              className={`w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none ${
-                index === highlightedIndex ? 'bg-gray-50' : ''
-              }`}
+              className={`w-full px-4 py-2 text-left text-foreground hover:bg-muted focus:bg-muted focus:outline-none ${
+              index === highlightedIndex ? 'bg-muted' : ''
+            }`}
               onClick={() => handleSuggestionClick(suggestion)}
               onMouseEnter={() => setHighlightedIndex(index)}
             >
@@ -146,7 +146,7 @@ export function SubcategoryInput({
           ))}
           
           {businessType && (
-            <div className="px-4 py-2 text-xs text-gray-500 border-t border-gray-100">
+            <div className="px-4 py-2 text-xs text-muted-foreground border-t border-border">
               Suggestions for {businessType} • Type to search or enter custom
             </div>
           )}
