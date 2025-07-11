@@ -128,7 +128,7 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-8">Join the Movement</h2>
           <div className="space-x-4">
             <button 
-              onClick={() => router.push('/')
+              onClick={() => router.push('/')}
               className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
               Explore
