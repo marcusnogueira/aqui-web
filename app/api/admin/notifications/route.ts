@@ -29,8 +29,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         users:recipient_id (
-          email,
-          full_name
+          email
         )
       `)
       .order('created_at', { ascending: false })

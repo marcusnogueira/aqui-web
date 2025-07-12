@@ -21,9 +21,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Check if this is an admin route
-  if (pathname.startsWith('/admin')) {
-    // Skip login page
-    if (pathname === '/admin/login') {
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    // Skip login page and login API
+    if (pathname === '/admin/login' || pathname === '/api/admin/login') {
       return NextResponse.next()
     }
     
@@ -31,7 +31,15 @@ export async function middleware(request: NextRequest) {
     const adminToken = request.cookies.get('admin-token')?.value
     
     if (!adminToken || !(await verifyAdminToken(adminToken))) {
-      // Redirect to admin login
+      // For API routes, return 401 Unauthorized
+      if (pathname.startsWith('/api/admin')) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { 'content-type': 'application/json' } }
+        )
+      }
+      
+      // For web routes, redirect to admin login
       const loginUrl = new URL('/admin/login', request.url)
       return NextResponse.redirect(loginUrl)
     }

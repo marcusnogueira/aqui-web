@@ -9,21 +9,21 @@ import { BUSINESS_CATEGORIES } from '@/lib/constants'
 
 interface AnalyticsData {
   userGrowth: { date: string; users: number; vendors: number }[]
-  searchTrends: { term: string; count: number }[]
-  vendorActivity: { date: string; live_sessions: number; total_vendors: number }[]
-  platformStats: {
-    total_users: number
-    total_vendors: number
-    total_searches: number
-    total_reviews: number
-    active_sessions: number
+  vendorGrowth: { date: string; users: number; vendors: number }[]
+  liveSessionsStats: { date: string; sessions: number; totalDuration: number; averageDuration: number }[]
+  feedbackStats: {
+    total: number
+    byType: { GENERAL: number; FEATURE: number; BUG: number }
+    byStatus: { pending: number; reviewed: number; resolved: number; dismissed: number }
   }
-  categoryDistribution: { business_type: string; count: number }[]
-  recentActivity: {
-    new_users_today: number
-    new_vendors_today: number
-    searches_today: number
-    reviews_today: number
+  revenueData: { date: string; revenue: number; transactions: number }[]
+  topVendors: { id: string; name: string; type: string; sessions: number; revenue: number }[]
+  summary: {
+    totalUsers: number
+    totalVendors: number
+    activeVendors: number
+    totalLiveSessions: number
+    totalFeedback: number
   }
 }
 
@@ -43,59 +43,29 @@ export default function AnalyticsPage() {
     try {
       setLoading(true)
       
-      // Mock data for now - this would come from API endpoints
-      const mockData: AnalyticsData = {
-        userGrowth: [
-          { date: '2024-01-01', users: 120, vendors: 15 },
-          { date: '2024-01-02', users: 135, vendors: 18 },
-          { date: '2024-01-03', users: 142, vendors: 20 },
-          { date: '2024-01-04', users: 158, vendors: 22 },
-          { date: '2024-01-05', users: 167, vendors: 25 },
-          { date: '2024-01-06', users: 180, vendors: 28 },
-          { date: '2024-01-07', users: 195, vendors: 30 }
-        ],
-        searchTrends: [
-          { term: 'tacos', count: 245 },
-          { term: 'pizza', count: 189 },
-          { term: 'coffee', count: 156 },
-          { term: 'burgers', count: 134 },
-          { term: 'ice cream', count: 98 }
-        ],
-        vendorActivity: [
-          { date: '2024-01-01', live_sessions: 8, total_vendors: 15 },
-          { date: '2024-01-02', live_sessions: 12, total_vendors: 18 },
-          { date: '2024-01-03', live_sessions: 15, total_vendors: 20 },
-          { date: '2024-01-04', live_sessions: 18, total_vendors: 22 },
-          { date: '2024-01-05', live_sessions: 22, total_vendors: 25 },
-          { date: '2024-01-06', live_sessions: 25, total_vendors: 28 },
-          { date: '2024-01-07', live_sessions: 28, total_vendors: 30 }
-        ],
-        platformStats: {
-          total_users: 1250,
-          total_vendors: 85,
-          total_searches: 5420,
-          total_reviews: 342,
-          active_sessions: 28
+      const response = await fetch(`/api/admin/analytics?dateRange=${dateRange}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        categoryDistribution: [
-          { business_type: 'Food & Beverage', count: 35 },
-          { business_type: 'Vintage & Thrift', count: 20 },
-          { business_type: 'Handmade Crafts & Jewelry', count: 15 },
-          { business_type: 'Books & Zines', count: 10 },
-          { business_type: 'Art Prints & Stickers', count: 5 }
-        ],
-        recentActivity: {
-          new_users_today: 12,
-          new_vendors_today: 3,
-          searches_today: 156,
-          reviews_today: 8
-        }
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
       
-      setData(mockData)
+      const result = await response.json()
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch analytics data')
+      }
+      
+      setData(result.data)
     } catch (error) {
       console.error('Error fetching analytics:', error)
       toast.error('Failed to load analytics data')
+      setData(null)
     } finally {
       setLoading(false)
     }
@@ -207,8 +177,8 @@ export default function AnalyticsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{data.platformStats.total_users.toLocaleString()}</p>
-                <p className="text-sm text-green-600">+{data.recentActivity.new_users_today} today</p>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalUsers.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">Platform users</p>
               </div>
             </div>
           </div>
@@ -220,8 +190,8 @@ export default function AnalyticsPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Vendors</p>
-                <p className="text-2xl font-bold text-gray-900">{data.platformStats.total_vendors}</p>
-                <p className="text-sm text-green-600">+{data.recentActivity.new_vendors_today} today</p>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalVendors}</p>
+                <p className="text-sm text-green-600">{data.summary.activeVendors} active</p>
               </div>
             </div>
           </div>
@@ -229,12 +199,12 @@ export default function AnalyticsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
-                <Search className="h-6 w-6 text-yellow-600" />
+                <TrendingUp className="h-6 w-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Searches</p>
-                <p className="text-2xl font-bold text-gray-900">{data.platformStats.total_searches.toLocaleString()}</p>
-                <p className="text-sm text-green-600">+{data.recentActivity.searches_today} today</p>
+                <p className="text-sm font-medium text-gray-600">Live Sessions</p>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalLiveSessions.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">In period</p>
               </div>
             </div>
           </div>
@@ -242,12 +212,12 @@ export default function AnalyticsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+                <Eye className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{data.platformStats.active_sessions}</p>
-                <p className="text-sm text-gray-500">Live now</p>
+                <p className="text-sm font-medium text-gray-600">Feedback</p>
+                <p className="text-2xl font-bold text-gray-900">{data.summary.totalFeedback}</p>
+                <p className="text-sm text-orange-600">{data.feedbackStats.byStatus.pending} pending</p>
               </div>
             </div>
           </div>
@@ -255,12 +225,14 @@ export default function AnalyticsPage() {
           <div className="bg-white p-6 rounded-lg shadow">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
-                <Eye className="h-6 w-6 text-purple-600" />
+                <Search className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Reviews</p>
-                <p className="text-2xl font-bold text-gray-900">{data.platformStats.total_reviews}</p>
-                <p className="text-sm text-green-600">+{data.recentActivity.reviews_today} today</p>
+                <p className="text-sm font-medium text-gray-600">Revenue</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${data.revenueData.reduce((sum, day) => sum + day.revenue, 0).toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-500">In period</p>
               </div>
             </div>
           </div>
@@ -300,11 +272,11 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Vendor Activity Chart */}
+          {/* Live Sessions Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Vendor Activity</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Live Sessions Activity</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.vendorActivity}>
+              <BarChart data={data.liveSessionsStats}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="date" 
@@ -313,8 +285,13 @@ export default function AnalyticsPage() {
                 <YAxis />
                 <Tooltip 
                   labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                  formatter={(value, name) => {
+                    if (name === 'sessions') return [value, 'Sessions']
+                    if (name === 'totalDuration') return [`${value} min`, 'Total Duration']
+                    return [value, name]
+                  }}
                 />
-                <Bar dataKey="live_sessions" fill="#D85D28" name="Live Sessions" />
+                <Bar dataKey="sessions" fill="#D85D28" name="sessions" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -322,64 +299,114 @@ export default function AnalyticsPage() {
 
         {/* Charts Row 2 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Search Trends */}
+          {/* Revenue Chart */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Top Search Terms</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue Trends</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.searchTrends} layout="horizontal">
+              <LineChart data={data.revenueData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="term" type="category" width={80} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#3A938A" />
-              </BarChart>
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                />
+                <YAxis 
+                  tickFormatter={(value) => `$${value.toLocaleString()}`}
+                />
+                <Tooltip 
+                  labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                  formatter={(value, name) => {
+                    if (name === 'revenue') return [`$${value.toLocaleString()}`, 'Revenue']
+                    if (name === 'transactions') return [value, 'Transactions']
+                    return [value, name]
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="revenue" 
+                  stroke="#10B981" 
+                  strokeWidth={2}
+                  name="revenue"
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Business Type Distribution */}
+          {/* Top Vendors */}
           <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Vendor Business Types</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={data.categoryDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ business_type, percent }) => `${business_type} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {data.categoryDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Top Vendors by Sessions</h3>
+            {data.topVendors.length > 0 ? (
+              <div className="space-y-4">
+                {data.topVendors.map((vendor, index) => (
+                  <div key={vendor.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 bg-[#D85D28] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{vendor.name}</p>
+                        <p className="text-sm text-gray-500">{vendor.type}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">{vendor.sessions} sessions</p>
+                      <p className="text-sm text-green-600">${vendor.revenue.toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Store className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No vendor data available</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Recent Activity Summary */}
+        {/* Feedback Statistics Summary */}
         <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Today's Activity Summary</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-2xl font-bold text-blue-600">{data.recentActivity.new_users_today}</p>
-              <p className="text-sm text-blue-600">New Users</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Feedback Overview</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Feedback by Type */}
+            <div>
+              <h4 className="text-md font-medium text-gray-700 mb-3">By Type</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="text-blue-700 font-medium">General</span>
+                  <span className="text-blue-600 font-bold">{data.feedbackStats.byType.GENERAL}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-green-700 font-medium">Feature Request</span>
+                  <span className="text-green-600 font-bold">{data.feedbackStats.byType.FEATURE}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                  <span className="text-red-700 font-medium">Bug Report</span>
+                  <span className="text-red-600 font-bold">{data.feedbackStats.byType.BUG}</span>
+                </div>
+              </div>
             </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <p className="text-2xl font-bold text-[#D85D28]">{data.recentActivity.new_vendors_today}</p>
-              <p className="text-sm text-[#D85D28]">New Vendors</p>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <p className="text-2xl font-bold text-yellow-600">{data.recentActivity.searches_today}</p>
-              <p className="text-sm text-yellow-600">Searches</p>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">{data.recentActivity.reviews_today}</p>
-              <p className="text-sm text-green-600">Reviews</p>
+            
+            {/* Feedback by Status */}
+            <div>
+              <h4 className="text-md font-medium text-gray-700 mb-3">By Status</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                  <span className="text-yellow-700 font-medium">Pending</span>
+                  <span className="text-yellow-600 font-bold">{data.feedbackStats.byStatus.pending}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="text-blue-700 font-medium">Reviewed</span>
+                  <span className="text-blue-600 font-bold">{data.feedbackStats.byStatus.reviewed}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-green-700 font-medium">Resolved</span>
+                  <span className="text-green-600 font-bold">{data.feedbackStats.byStatus.resolved}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-700 font-medium">Dismissed</span>
+                  <span className="text-gray-600 font-bold">{data.feedbackStats.byStatus.dismissed}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

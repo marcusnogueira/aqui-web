@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('vendors')
-      .select('*,users(id,email,full_name),vendor_live_sessions(id,is_active,start_time,end_time)', { count: 'exact' })
+      .select('*,users!vendors_user_id_fkey(id,email),vendor_live_sessions(id,is_active,start_time,end_time)', { count: 'exact' })
 
     // Apply filters - Enhanced search across all relevant vendor fields
     if (search) {

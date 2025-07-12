@@ -10,18 +10,19 @@ interface VendorFeedback {
   id: string
   vendor_id: string
   vendor_name: string
-  customer_id: string
-  customer_name: string
+  customer_id: string | null
+  customer_name: string | null
   feedback_type: keyof typeof FEEDBACK_TYPES
   subject: string
   message: string
-  rating?: number
+  rating?: number | null
   status: 'pending' | 'reviewed' | 'resolved' | 'dismissed'
   priority: keyof typeof PRIORITY_LEVELS
   created_at: string
-  updated_at: string
-  admin_notes: string | null
-  resolved_by?: string
+  updated_at?: string
+  admin_notes?: string | null
+  resolved_by?: string | null
+  resolved_at?: string | null
 }
 
 interface FeedbackStats {
@@ -51,89 +52,41 @@ export default function FeedbackPage() {
     search: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [itemsPerPage] = useState(10)
 
   useEffect(() => {
     fetchFeedback()
     fetchStats()
-  }, [filters, currentPage])
+  }, [currentPage, filters])
+
+  useEffect(() => {
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [filters.status, filters.type, filters.priority, filters.search])
 
   const fetchFeedback = async () => {
+    setLoading(true)
     try {
-      setLoading(true)
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        ...(filters.status !== 'all' && { status: filters.status }),
+        ...(filters.type !== 'all' && { type: filters.type }),
+        ...(filters.priority !== 'all' && { priority: filters.priority }),
+        ...(filters.search && { search: filters.search })
+      })
       
-      // Mock data for now - this would come from API
-      const mockFeedback: VendorFeedback[] = [
-        {
-          id: '1',
-          vendor_id: 'v1',
-          vendor_name: 'Taco Express',
-          customer_id: 'c1',
-          customer_name: 'John Doe',
-          feedback_type: 'GENERAL',
-          subject: 'Long wait time',
-          message: 'Had to wait 45 minutes for my order. The app said 15 minutes.',
-          rating: 2,
-          status: 'pending',
-          priority: 'HIGH',
-          created_at: '2024-01-07T10:30:00Z',
-          updated_at: '2024-01-07T10:30:00Z',
-          admin_notes: null
-        },
-        {
-          id: '2',
-          vendor_id: 'v2',
-          vendor_name: 'Coffee Corner',
-          customer_id: 'c2',
-          customer_name: 'Jane Smith',
-          feedback_type: 'FEATURE',
-          subject: 'Add more payment options',
-          message: 'Would love to see Apple Pay and Google Pay options added.',
-          status: 'reviewed',
-          priority: 'MEDIUM',
-          created_at: '2024-01-06T14:20:00Z',
-          updated_at: '2024-01-07T09:15:00Z',
-          admin_notes: 'Forwarded to development team',
-          resolved_by: 'admin@aqui.com'
-        },
-        {
-          id: '3',
-          vendor_id: 'v3',
-          vendor_name: 'Ice Cream Dreams',
-          customer_id: 'c3',
-          customer_name: 'Mike Johnson',
-          feedback_type: 'GENERAL',
-          subject: 'Amazing service!',
-          message: 'The vendor was super friendly and the ice cream was delicious. Great experience!',
-          rating: 5,
-          status: 'resolved',
-          priority: 'LOW',
-          created_at: '2024-01-05T16:45:00Z',
-          updated_at: '2024-01-06T08:30:00Z',
-          admin_notes: 'Positive feedback shared with vendor',
-          resolved_by: 'admin@aqui.com'
-        },
-        {
-          id: '4',
-          vendor_id: 'v4',
-          vendor_name: 'Burger Bliss',
-          customer_id: 'c4',
-          customer_name: 'Sarah Wilson',
-          feedback_type: 'BUG',
-          subject: 'App crashed during order',
-          message: 'The app crashed when I tried to place my order. Lost my cart items.',
-          status: 'pending',
-          priority: 'CRITICAL',
-          created_at: '2024-01-07T12:00:00Z',
-          updated_at: '2024-01-07T12:00:00Z',
-          admin_notes: null
-        }
-      ]
+      const response = await fetch(`/api/admin/feedback?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch feedback')
+      }
       
-      setFeedback(mockFeedback)
+      const data = await response.json()
+      setFeedback(data.feedback)
+      setTotalPages(data.totalPages || 1)
     } catch (error) {
       console.error('Error fetching feedback:', error)
-      toast.error('Failed to load feedback')
+      toast.error('Failed to load feedback data')
     } finally {
       setLoading(false)
     }
@@ -141,40 +94,41 @@ export default function FeedbackPage() {
 
   const fetchStats = async () => {
     try {
-      // Mock stats data
-      const mockStats: FeedbackStats = {
-        total: 156,
-        pending: 23,
-        reviewed: 45,
-        resolved: 78,
-        dismissed: 10,
-        by_type: {
-          GENERAL: 77,
-          FEATURE: 67,
-          BUG: 12
-        },
-        avg_rating: 3.8
+      const response = await fetch('/api/admin/feedback?stats=true')
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats')
       }
       
-      setStats(mockStats)
+      const data = await response.json()
+      setStats(data.stats)
     } catch (error) {
       console.error('Error fetching stats:', error)
+      toast.error('Failed to load feedback statistics')
     }
   }
 
-  const updateFeedbackStatus = async (id: string, status: string, notes?: string) => {
+  const updateFeedbackStatus = async (id: string, status: string) => {
     try {
-      // This would be an API call
+      const response = await fetch('/api/admin/feedback', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id,
+          status
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update feedback status')
+      }
+      
+      const data = await response.json()
+      
+      // Update local state
       setFeedback(prev => prev.map(item => 
-        item.id === id 
-          ? { 
-              ...item, 
-              status: status as any, 
-              admin_notes: notes || null,
-              resolved_by: 'admin@aqui.com',
-              updated_at: new Date().toISOString()
-            }
-          : item
+        item.id === id ? data.feedback : item
       ))
       
       toast.success('Feedback status updated successfully')
@@ -227,8 +181,7 @@ export default function FeedbackPage() {
       rating: item.rating,
       status: item.status,
       priority: item.priority,
-      created_at: item.created_at,
-      admin_notes: item.admin_notes
+      created_at: item.created_at
     }))
     
     const csv = [
@@ -249,24 +202,8 @@ export default function FeedbackPage() {
     toast.success('Feedback data exported successfully')
   }
 
-  const filteredFeedback = feedback.filter(item => {
-    if (filters.status !== 'all' && item.status !== filters.status) return false
-    if (filters.type !== 'all' && item.feedback_type !== filters.type) return false
-    if (filters.priority !== 'all' && item.priority !== filters.priority) return false
-    if (filters.search && !(
-      item.subject.toLowerCase().includes(filters.search.toLowerCase()) ||
-      item.vendor_name.toLowerCase().includes(filters.search.toLowerCase()) ||
-      item.customer_name.toLowerCase().includes(filters.search.toLowerCase())
-    )) return false
-    return true
-  })
-
-  const paginatedFeedback = filteredFeedback.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
-
-  const totalPages = Math.ceil(filteredFeedback.length / itemsPerPage)
+  // Feedback is already filtered and paginated by the API
+  const paginatedFeedback = feedback
 
   if (loading) {
     return (
@@ -397,86 +334,98 @@ export default function FeedbackPage() {
 
         {/* Feedback List */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedFeedback.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{item.subject}</p>
-                        <p className="text-sm text-gray-500 truncate max-w-xs">{item.message}</p>
-                        {item.rating && (
-                          <div className="flex items-center mt-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < item.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.vendor_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.customer_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {getTypeIcon(item.feedback_type)}
-                        <span className="ml-2 text-sm text-gray-900 capitalize">{item.feedback_type.replace('_', ' ')}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(item.priority)}`}>
-                        {item.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => {
-                          setSelectedFeedback(item)
-                          setShowModal(true)
-                        }}
-                        className="text-[#D85D28] hover:text-[#B54A1F]"
-                        aria-label="View feedback details"
-                      >
-                        View
-                      </button>
-                    </td>
+          {paginatedFeedback.length === 0 ? (
+            <div className="text-center py-12">
+              <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No feedback found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {filters.search || filters.status !== 'all' || filters.type !== 'all' || filters.priority !== 'all'
+                  ? 'Try adjusting your filters to see more results.'
+                  : 'No vendor feedback has been submitted yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedFeedback.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{item.subject}</p>
+                          <p className="text-sm text-gray-500 truncate max-w-xs">{item.message}</p>
+                          {item.rating && (
+                            <div className="flex items-center mt-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-3 w-3 ${
+                                    i < item.rating! ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.vendor_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.customer_name || 'Anonymous'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          {getTypeIcon(item.feedback_type)}
+                          <span className="ml-2 text-sm text-gray-900 capitalize">{item.feedback_type.replace('_', ' ')}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(item.priority)}`}>
+                          {item.priority}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedFeedback(item)
+                            setShowModal(true)
+                          }}
+                          className="text-[#D85D28] hover:text-[#B54A1F]"
+                          aria-label="View feedback details"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredFeedback.length)} of {filteredFeedback.length} results
+              Page {currentPage} of {totalPages}
             </div>
             <div className="flex space-x-2">
               <button
@@ -526,7 +475,7 @@ export default function FeedbackPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Customer</label>
-                      <p className="text-sm text-gray-900">{selectedFeedback.customer_name}</p>
+                      <p className="text-sm text-gray-900">{selectedFeedback.customer_name || 'Anonymous'}</p>
                     </div>
                   </div>
                   
@@ -593,23 +542,15 @@ export default function FeedbackPage() {
                       <label className="block font-medium">Created</label>
                       <p>{new Date(selectedFeedback.created_at).toLocaleString()}</p>
                     </div>
-                    <div>
-                      <label className="block font-medium">Updated</label>
-                      <p>{new Date(selectedFeedback.updated_at).toLocaleString()}</p>
-                    </div>
+                    {selectedFeedback.updated_at && (
+                      <div>
+                        <label className="block font-medium">Updated</label>
+                        <p>{new Date(selectedFeedback.updated_at).toLocaleString()}</p>
+                      </div>
+                    )}
                   </div>
                   
-                  {selectedFeedback.status === 'pending' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Admin Notes</label>
-                      <textarea
-                        id="admin-notes"
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-                        placeholder="Add notes about this feedback..."
-                      />
-                    </div>
-                  )}
+
                 </div>
                 
                 <div className="flex justify-end space-x-3 mt-6">
@@ -623,8 +564,7 @@ export default function FeedbackPage() {
                     <>
                       <button
                         onClick={() => {
-                          const notes = (document.getElementById('admin-notes') as HTMLTextAreaElement)?.value
-                          updateFeedbackStatus(selectedFeedback.id, 'reviewed', notes)
+                          updateFeedbackStatus(selectedFeedback.id, 'reviewed')
                         }}
                         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                       >
@@ -632,8 +572,7 @@ export default function FeedbackPage() {
                       </button>
                       <button
                         onClick={() => {
-                          const notes = (document.getElementById('admin-notes') as HTMLTextAreaElement)?.value
-                          updateFeedbackStatus(selectedFeedback.id, 'resolved', notes)
+                          updateFeedbackStatus(selectedFeedback.id, 'resolved')
                         }}
                         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
                       >
@@ -644,8 +583,7 @@ export default function FeedbackPage() {
                   {selectedFeedback.status === 'reviewed' && (
                     <button
                       onClick={() => {
-                        const notes = (document.getElementById('admin-notes') as HTMLTextAreaElement)?.value
-                        updateFeedbackStatus(selectedFeedback.id, 'resolved', notes)
+                        updateFeedbackStatus(selectedFeedback.id, 'resolved')
                       }}
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
                     >

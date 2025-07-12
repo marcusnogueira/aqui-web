@@ -126,13 +126,13 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
     
-    // Set secure HTTP-only cookie scoped to /admin path
+    // Set secure HTTP-only cookie scoped to root path
     response.cookies.set('admin-token', token, {
       httpOnly: true,
       secure: !!process.env.VERCEL_URL, // Only secure in production environments
       sameSite: 'lax',
       maxAge: ADMIN_SESSION.MAX_AGE_SECONDS,
-      path: '/admin'
+      path: '/'
     })
     console.log('[ADMIN LOGIN] Cookie set. Sending response.');
     
@@ -162,7 +162,7 @@ export async function DELETE(request: NextRequest) {
     secure: !!process.env.VERCEL_URL, // Match secure flag for proper deletion
     sameSite: 'lax',
     maxAge: 0,
-    path: '/admin'
+    path: '/'
   })
   
   return response

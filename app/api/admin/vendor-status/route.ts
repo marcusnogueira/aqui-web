@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .from('vendors')
       .select(`
         *,
-        users(id, email, full_name),
+        users!vendors_user_id_fkey(id, email),
         vendor_live_sessions(id, is_active, start_time, end_time, latitude, longitude, address)
       `)
 
