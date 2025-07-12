@@ -9,7 +9,7 @@ import VendorMap from '@/components/VendorMap'
 import { VendorCard } from '@/components/VendorCard'
 import { SearchBar } from '@/components/SearchBar'
 import { Navigation } from '@/components/Navigation'
-import { AuthModal } from '@/components/AuthModal'
+import AuthModal from '@/components/AuthModal'
 import { createClient } from '@/lib/supabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
@@ -594,7 +594,7 @@ export default function HomePage() {
                             getVendorStatus(vendor) === 'open' ? 'bg-green-500' :
                             getVendorStatus(vendor) === 'closing' ? 'bg-yellow-500' : 'bg-gray-500'
                           }`}>
-                            <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                            <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
                             <span className="text-xs">
                               {getVendorStatus(vendor) === 'open' ? 'Open' :
                                getVendorStatus(vendor) === 'closing' ? 'Closing' : 'Offline'}
@@ -694,7 +694,7 @@ export default function HomePage() {
 
       {/* Auth Modal */}
       {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       )}
     </div>
   )

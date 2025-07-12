@@ -30,12 +30,7 @@ const resources = {
       // Auth
       'auth.signIn': 'Sign In',
       'auth.signOut': 'Sign Out',
-      'auth.signUp': 'Sign Up',
       'auth.signInWithGoogle': 'Sign in with Google',
-      'auth.email': 'Email',
-      'auth.password': 'Password',
-      'auth.confirmPassword': 'Confirm Password',
-      'auth.forgotPassword': 'Forgot Password?',
       
       // Vendor
       'vendor.status.open': 'Open',
@@ -92,12 +87,7 @@ const resources = {
       // Auth
       'auth.signIn': 'Iniciar Sesión',
       'auth.signOut': 'Cerrar Sesión',
-      'auth.signUp': 'Registrarse',
       'auth.signInWithGoogle': 'Iniciar sesión con Google',
-      'auth.email': 'Correo',
-      'auth.password': 'Contraseña',
-      'auth.confirmPassword': 'Confirmar Contraseña',
-      'auth.forgotPassword': '¿Olvidaste tu contraseña?',
       
       // Vendor
       'vendor.status.open': 'Abierto',

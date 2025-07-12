@@ -1,37 +1,31 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Shield } from 'lucide-react'
-import { signInWithGoogle, signUpWithPassword, sendPasswordResetEmail, signInWithApple } from '@/lib/supabase-client'
-import { signInWithPassword } from '@/lib/supabase-client'
-import { useSlideInBottom } from '@/lib/animations'
+import { signInWithGoogle, signInWithApple } from '@/lib/supabase-client'
 
 interface AuthModalProps {
+  isOpen: boolean
   onClose: () => void
 }
 
-export function AuthModal({ onClose }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [loading, setLoading] = useState(false)
-  const [isSigningUp, setIsSigningUp] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'error' | 'success' | ''>('')
   const router = useRouter()
-  const modalRef = useSlideInBottom()
 
-  const setMessageWithType = (msg: string, type: 'error' | 'success') => {
+  const setMessageWithType = useCallback((msg: string, type: 'error' | 'success') => {
     setMessage(msg)
     setMessageType(type)
-  }
+  }, [])
 
-  const clearMessage = () => {
+  const clearMessage = useCallback(() => {
     setMessage('')
     setMessageType('')
-  }
+  }, [])
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     try {
       setLoading(true)
       clearMessage()
@@ -43,9 +37,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [onClose, clearMessage, setMessageWithType])
 
-  const handleAppleSignIn = async () => {
+  const handleAppleSignIn = useCallback(async () => {
     try {
       setLoading(true)
       clearMessage()
@@ -57,84 +51,19 @@ export function AuthModal({ onClose }: AuthModalProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [onClose, clearMessage, setMessageWithType])
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    clearMessage()
-    try {
-      if (isSigningUp) {
-        await signUpWithPassword(email, password)
-        setMessageWithType('Check your email for a confirmation link!', 'success')
-      } else {
-        await signInWithPassword(email, password)
-        onClose()
-        window.location.reload()
-      }
-    } catch (error: any) {
-      setMessageWithType(error.message, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const handlePasswordReset = async () => {
-    if (!email) {
-      setMessageWithType('Please enter your email address to reset your password.', 'error')
-      return
-    }
-    setLoading(true)
-    clearMessage()
-    try {
-      await sendPasswordResetEmail(email)
-      setMessageWithType('Check your email for a password reset link.', 'success')
-    } catch (error: any) {
-      setMessageWithType(error.message, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div ref={modalRef} className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 relative animate-slideInBottom shadow-lg">
+      <div className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 relative shadow-lg animate-in slide-in-from-bottom-4 duration-300">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Aqui</h2>
-          <p className="text-muted-foreground mb-6">{isSigningUp ? 'Create an account' : 'Sign in to your account'}</p>
-
-          <form onSubmit={handleEmailAuth} className="space-y-4">
-            <div>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-input border border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-primary-foreground rounded-lg px-4 py-3 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Loading...' : (isSigningUp ? 'Sign Up' : 'Sign In')}
-            </button>
-          </form>
+          <p className="text-muted-foreground mb-6">Sign in to your account</p>
 
           {message && (
-            <div className={`mt-4 p-3 rounded-lg text-sm transition-all duration-200 ${
+            <div className={`mb-4 p-3 rounded-lg text-sm transition-all duration-200 ${
               messageType === 'success' 
                 ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
                 : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
@@ -142,33 +71,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
               {message}
             </div>
           )}
-
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => {
-                setIsSigningUp(!isSigningUp)
-                clearMessage()
-              }}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isSigningUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-            </button>
-            <button
-              onClick={handlePasswordReset}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot Password?
-            </button>
-          </div>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-background px-2 text-muted-foreground">OR</span>
-            </div>
-          </div>
 
           <div className="space-y-3">
             <button

@@ -9,7 +9,7 @@ export const createClient = () => createBrowserClient<Database>(
 
 // Google OAuth configuration
 export const googleOAuthConfig = {
-  client_id: '302608057971-thr442m69jncv8mrc19qnnode38fcibr.apps.googleusercontent.com',
+  client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
   redirect_uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback`,
 }
 
@@ -36,55 +36,7 @@ export const signInWithGoogle = async () => {
   return data
 }
 
-// Helper function to sign in with email and password
-export const signInWithPassword = async (email: string, password: string) => {
-  const supabase = createClient()
-  
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  
-  if (error) {
-    console.error('Error signing in with email/password:', error)
-    throw error
-  }
-  
-  return data
-}
 
-// Helper function to sign up with email and password
-export const signUpWithPassword = async (email: string, password: string) => {
-  const supabase = createClient()
-  
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  })
-  
-  if (error) {
-    console.error('Error signing up with email/password:', error)
-    throw error
-  }
-  
-  return data
-}
-
-// Helper function to send password reset email
-export const sendPasswordResetEmail = async (email: string) => {
-  const supabase = createClient()
-  
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/`,
-  })
-  
-  if (error) {
-    console.error('Error sending password reset email:', error)
-    throw error
-  }
-  
-  return data
-}
 
 
 // Helper function to sign in with Apple

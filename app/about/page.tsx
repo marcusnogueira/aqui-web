@@ -1,7 +1,7 @@
 'use client';
 
 import { Navigation } from '@/components/Navigation';
-import { AuthModal } from '@/components/AuthModal';
+import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -10,7 +10,7 @@ export default function AboutPage() {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -21,18 +21,18 @@ export default function AboutPage() {
               <span className="text-white font-bold text-xl">A</span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             Bringing Street Vendors to the Digital Map — One Stand at a Time.
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             AQUÍ is a community-first platform that helps local vendors thrive, and helps you discover them.
           </p>
         </div>
 
         {/* Our Mission */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Our Mission</h2>
-          <div className="space-y-4 text-gray-700 dark:text-gray-300">
+          <h2 className="text-3xl font-bold text-foreground mb-6">Our Mission</h2>
+        <div className="space-y-4 text-foreground">
             <p>
               We're on a mission to empower local food stands, pop-up shops, and informal vendors by giving 
               them the digital tools they deserve — without the complexity or corporate noise.
@@ -46,8 +46,8 @@ export default function AboutPage() {
 
         {/* Why We Built This */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Why We Built This</h2>
-          <div className="space-y-4 text-gray-700 dark:text-gray-300">
+          <h2 className="text-3xl font-bold text-foreground mb-6">Why We Built This</h2>
+        <div className="space-y-4 text-foreground">
             <p>
               Too many vendors are hidden in plain sight — no websites, no delivery apps, no visibility.
             </p>
@@ -64,44 +64,44 @@ export default function AboutPage() {
 
         {/* How It Works */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">How It Works</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-8">How It Works</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-market-cream dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="w-8 h-8 bg-chili-orange rounded-full"></div>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Vendors Go Live</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <MapPin className="w-8 h-8 text-mission-teal" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Vendors Go Live</h3>
+          <p className="text-sm text-muted-foreground">
                 Share your real-time or static location
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-market-cream dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="w-8 h-8 bg-chili-orange rounded-full"></div>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Show Your Menu</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Menu className="w-8 h-8 text-mission-teal" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Show Your Menu</h3>
+          <p className="text-sm text-muted-foreground">
                 Upload images, PDF menus, and daily specials
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-market-cream dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="w-8 h-8 bg-chili-orange rounded-full"></div>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Customers Explore</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-mission-teal" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Customers Explore</h3>
+          <p className="text-sm text-muted-foreground">
                 Find you via map or list view
               </p>
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-market-cream dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="w-8 h-8 bg-chili-orange rounded-full"></div>
-              </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Community Powered</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-mission-teal" />
+          </div>
+          <h3 className="font-semibold text-foreground mb-2">Community Powered</h3>
+          <p className="text-sm text-muted-foreground">
                 Reviews and discovery come from real people
               </p>
             </div>
@@ -112,7 +112,7 @@ export default function AboutPage() {
         <section className="mb-12">
           <div className="bg-gradient-to-r from-chili-orange to-bay-cypress rounded-lg p-8 text-center text-white">
             <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-background bg-opacity-20 rounded-full flex items-center justify-center">
                 <span className="text-2xl">⭐</span>
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function AboutPage() {
 
         {/* Join the Movement */}
         <section className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Join the Movement</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-8">Join the Movement</h2>
           <div className="space-x-4">
             <button 
               onClick={() => router.push('/')}
@@ -144,7 +144,7 @@ export default function AboutPage() {
       </div>
       
       {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       )}
     </div>
   );

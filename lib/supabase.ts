@@ -9,7 +9,7 @@ export const createClient = () => createBrowserClient<Database>(
 
 // Google OAuth configuration
 export const googleOAuthConfig = {
-  client_id: '302608057971-thr442m69jncv8mrc19qnnode38fcibr.apps.googleusercontent.com',
+  client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
   redirect_uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback`,
 }
 

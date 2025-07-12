@@ -1,7 +1,7 @@
 'use client';
 
 import { Navigation } from '@/components/Navigation';
-import { AuthModal } from '@/components/AuthModal';
+import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -21,7 +21,7 @@ export default function FAQPage() {
               <span className="text-white font-bold text-xl">?</span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             Frequently Asked Questions
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -35,12 +35,12 @@ export default function FAQPage() {
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <span className="text-orange-500 font-bold">👤</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">For Customers</h2>
+            <h2 className="text-3xl font-bold text-foreground">For Customers</h2>
           </div>
           
           <div className="space-y-8">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: How do I find vendors near me?
               </h3>
               <div className="text-gray-700 space-y-3">
@@ -55,8 +55,8 @@ export default function FAQPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+          <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: How do I keep up with my favorite vendors?
               </h3>
               <p className="text-gray-700">
@@ -65,8 +65,8 @@ export default function FAQPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: Can I leave reviews for vendors?
               </h3>
               <p className="text-gray-700">
@@ -75,8 +75,8 @@ export default function FAQPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: How do I report a vendor?
               </h3>
               <p className="text-gray-700">
@@ -93,12 +93,12 @@ export default function FAQPage() {
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <span className="text-orange-500 font-bold">🧑‍🍳</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">For Vendors</h2>
+            <h2 className="text-3xl font-bold text-foreground">For Vendors</h2>
           </div>
           
           <div className="space-y-8">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: How do I join as a vendor?
               </h3>
               <p className="text-gray-700">
@@ -107,8 +107,8 @@ export default function FAQPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: What can I sell on AQUÍ?
               </h3>
               <div className="text-gray-700 space-y-3">
@@ -123,8 +123,8 @@ export default function FAQPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: Do I need a license to join AQUÍ?
               </h3>
               <p className="text-gray-700">
@@ -133,8 +133,8 @@ export default function FAQPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+               <h3 className="text-xl font-semibold text-foreground mb-3">
                 Q: How do I update my location or availability?
               </h3>
               <p className="text-gray-700">
@@ -151,11 +151,11 @@ export default function FAQPage() {
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <span className="text-orange-500 font-bold">📧</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Contact Us</h2>
+            <h2 className="text-3xl font-bold text-foreground">Contact Us</h2>
           </div>
           
-          <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+          <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
+             <h3 className="text-xl font-semibold text-foreground mb-4">
               How do I contact the AQUÍ team?
             </h3>
             <div className="text-gray-700 space-y-2">
@@ -178,7 +178,7 @@ export default function FAQPage() {
 
         {/* Join the Movement */}
         <section className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Join the Movement</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-8">Join the Movement</h2>
           <div className="space-x-4">
             <button 
               onClick={() => router.push('/')}
@@ -197,7 +197,7 @@ export default function FAQPage() {
       </div>
       
       {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
       )}
     </div>
   );
