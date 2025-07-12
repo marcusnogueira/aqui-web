@@ -5,6 +5,8 @@ import { PAGINATION, VENDOR_STATUSES, ERROR_MESSAGES, HTTP_STATUS, SUCCESS_MESSA
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
+// Force dynamic rendering since we use authentication cookies
+export const dynamic = 'force-dynamic'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,9 +31,18 @@ export async function GET(request: NextRequest) {
       .from('vendors')
       .select('*,users(id,email,full_name),vendor_live_sessions(id,is_active,start_time,end_time)', { count: 'exact' })
 
-    // Apply filters
+    // Apply filters - Enhanced search across all relevant vendor fields
     if (search) {
-      query = query.or(`business_name.ilike.%${search}%,description.ilike.%${search}%`)
+      query = query.or(`
+        business_name.ilike.%${search}%,
+        description.ilike.%${search}%,
+        business_type.ilike.%${search}%,
+        subcategory.ilike.%${search}%,
+        address.ilike.%${search}%,
+        city.ilike.%${search}%,
+        tags.ilike.%${search}%,
+        contact_email.ilike.%${search}%
+      `)
     }
 
     if (status === VENDOR_STATUSES.APPROVED) {

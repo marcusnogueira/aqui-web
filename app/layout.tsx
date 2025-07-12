@@ -3,8 +3,9 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { Database } from '@/types/database'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -52,7 +53,25 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const cookieStore = cookies()
-  const supabase = createSupabaseServerClient(cookieStore)
+  
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          // Can't set cookies in layout, handled by middleware
+        },
+        remove(name: string, options: any) {
+          // Can't remove cookies in layout, handled by middleware
+        },
+      },
+    }
+  )
+  
   const { data: { session } } = await supabase.auth.getSession()
 
   return (

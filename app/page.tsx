@@ -330,11 +330,36 @@ export default function HomePage() {
       return
     }
 
-    const filtered = vendors.filter(vendor =>
-      vendor.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.subcategory?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const query = searchQuery.toLowerCase().trim()
+    
+    const filtered = vendors.filter(vendor => {
+      // Core business information
+      const businessNameMatch = vendor.business_name?.toLowerCase().includes(query)
+      const descriptionMatch = vendor.description?.toLowerCase().includes(query)
+      const subcategoryMatch = vendor.subcategory?.toLowerCase().includes(query)
+      const businessTypeMatch = vendor.business_type?.toLowerCase().includes(query)
+      
+      // Location-based search
+      const addressMatch = vendor.address?.toLowerCase().includes(query)
+      const cityMatch = vendor.city?.toLowerCase().includes(query)
+      
+      // Tags search (if vendor has tags)
+      const tagsMatch = vendor.tags?.some(tag => 
+        tag.toLowerCase().includes(query)
+      )
+      
+      // Contact information search
+      const emailMatch = vendor.contact_email?.toLowerCase().includes(query)
+      
+      return businessNameMatch || 
+             descriptionMatch || 
+             subcategoryMatch || 
+             businessTypeMatch || 
+             addressMatch || 
+             cityMatch || 
+             tagsMatch || 
+             emailMatch
+    })
 
     setFilteredVendors(filtered)
 

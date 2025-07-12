@@ -46,7 +46,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function Providers({
   children,
-  session,
+  session: initialSession,
 }: {
   children: React.ReactNode
   session: Session | null
@@ -57,13 +57,15 @@ export function Providers({
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
   )
-  const [user, setUser] = useState<User | null>(session?.user ?? null)
-  const [loading, setLoading] = useState(session === null)
+  const [session, setSession] = useState<Session | null>(initialSession)
+  const [user, setUser] = useState<User | null>(initialSession?.user ?? null)
+  const [loading, setLoading] = useState(initialSession === null)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null)
+      (event, newSession) => {
+        setSession(newSession)
+        setUser(newSession?.user ?? null)
         setLoading(false)
       }
     )

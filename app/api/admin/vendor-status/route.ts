@@ -5,6 +5,8 @@ import { ERROR_MESSAGES, HTTP_STATUS, SUCCESS_MESSAGES } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
+// Force dynamic rendering since we use authentication cookies
+export const dynamic = 'force-dynamic'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,9 +32,18 @@ export async function GET(request: NextRequest) {
         vendor_live_sessions(id, is_active, start_time, end_time, latitude, longitude, address)
       `)
 
-    // Apply search filter
+    // Apply search filter - Enhanced search across all relevant vendor fields
     if (search) {
-      query = query.or(`business_name.ilike.%${search}%,description.ilike.%${search}%`)
+      query = query.or(`
+        business_name.ilike.%${search}%,
+        description.ilike.%${search}%,
+        business_type.ilike.%${search}%,
+        subcategory.ilike.%${search}%,
+        address.ilike.%${search}%,
+        city.ilike.%${search}%,
+        tags.ilike.%${search}%,
+        contact_email.ilike.%${search}%
+      `)
     }
 
     // Apply status filters

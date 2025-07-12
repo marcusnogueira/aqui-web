@@ -5,6 +5,8 @@ import { ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
+// Force dynamic rendering since we use authentication cookies
+export const dynamic = 'force-dynamic'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

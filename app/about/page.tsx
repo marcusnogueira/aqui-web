@@ -4,6 +4,7 @@ import { Navigation } from '@/components/Navigation';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { MapPin, Menu, Search, Users } from 'lucide-react';
 
 export default function AboutPage() {
   const router = useRouter();

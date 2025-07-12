@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,25 @@ export async function GET(request: NextRequest) {
   }
 
   const cookieStore = cookies()
-  const supabase = createSupabaseServerClient(cookieStore)
+  
+  // Create a proper server client that can set cookies
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
   
   // Exchange code for session
   const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
@@ -30,10 +49,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${requestUrl.origin}?error=auth_failed&message=${encodeURIComponent(exchangeError.message)}`)
   }
 
-  console.log('Successfully exchanged code for session.')
+  console.log('Successfully exchanged code for session:', data.user?.email)
 
-  // The rest of your user creation logic can go here.
-  // Redirect to homepage instead of explore
-
+  // Redirect to homepage
   return NextResponse.redirect(`${requestUrl.origin}/`)
 }
