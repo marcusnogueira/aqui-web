@@ -17,17 +17,29 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'error' | 'success' | ''>('')
   const router = useRouter()
   const modalRef = useSlideInBottom()
+
+  const setMessageWithType = (msg: string, type: 'error' | 'success') => {
+    setMessage(msg)
+    setMessageType(type)
+  }
+
+  const clearMessage = () => {
+    setMessage('')
+    setMessageType('')
+  }
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true)
+      clearMessage()
       await signInWithGoogle()
       onClose()
     } catch (error) {
       console.error('Error signing in:', error)
-      setMessage('Error signing in with Google.')
+      setMessageWithType('Error signing in with Google.', 'error')
     } finally {
       setLoading(false)
     }
@@ -36,11 +48,12 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const handleAppleSignIn = async () => {
     try {
       setLoading(true)
+      clearMessage()
       await signInWithApple()
       onClose()
     } catch (error) {
       console.error('Error signing in:', error)
-      setMessage('Error signing in with Apple.')
+      setMessageWithType('Error signing in with Apple.', 'error')
     } finally {
       setLoading(false)
     }
@@ -49,18 +62,18 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setMessage('')
+    clearMessage()
     try {
       if (isSigningUp) {
         await signUpWithPassword(email, password)
-        setMessage('Check your email for a confirmation link!')
+        setMessageWithType('Check your email for a confirmation link!', 'success')
       } else {
         await signInWithPassword(email, password)
         onClose()
         window.location.reload()
       }
     } catch (error: any) {
-      setMessage(error.message)
+      setMessageWithType(error.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -68,16 +81,16 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
   const handlePasswordReset = async () => {
     if (!email) {
-      setMessage('Please enter your email address to reset your password.')
+      setMessageWithType('Please enter your email address to reset your password.', 'error')
       return
     }
     setLoading(true)
-    setMessage('')
+    clearMessage()
     try {
       await sendPasswordResetEmail(email)
-      setMessage('Check your email for a password reset link.')
+      setMessageWithType('Check your email for a password reset link.', 'success')
     } catch (error: any) {
-      setMessage(error.message)
+      setMessageWithType(error.message, 'error')
     } finally {
       setLoading(false)
     }
@@ -85,10 +98,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div ref={modalRef} className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative animate-slideInBottom">
+      <div ref={modalRef} className="bg-background border border-border rounded-lg p-6 max-w-md w-full mx-4 relative animate-slideInBottom shadow-lg">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Aqui</h2>
-          <p className="text-gray-600 mb-6">{isSigningUp ? 'Create an account' : 'Sign in to your account'}</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Welcome to Aqui</h2>
+          <p className="text-muted-foreground mb-6">{isSigningUp ? 'Create an account' : 'Sign in to your account'}</p>
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
@@ -97,7 +110,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D85D28]"
+                className="w-full px-3 py-2 bg-input border border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
                 required
               />
             </div>
@@ -107,31 +120,42 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D85D28]"
+                className="w-full px-3 py-2 bg-input border border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#D85D28] text-white rounded-lg px-4 py-3 hover:bg-[#B8491F] transition-colors disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground rounded-lg px-4 py-3 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Loading...' : (isSigningUp ? 'Sign Up' : 'Sign In')}
             </button>
           </form>
 
-          {message && <p className="mt-4 text-sm text-red-500">{message}</p>}
+          {message && (
+            <div className={`mt-4 p-3 rounded-lg text-sm transition-all duration-200 ${
+              messageType === 'success' 
+                ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
+                : 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+            }`}>
+              {message}
+            </div>
+          )}
 
           <div className="flex justify-between items-center mt-4">
             <button
-              onClick={() => setIsSigningUp(!isSigningUp)}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                setIsSigningUp(!isSigningUp)
+                clearMessage()
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {isSigningUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
             </button>
             <button
               onClick={handlePasswordReset}
-              className="text-sm text-gray-500 hover:text-gray-700"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Forgot Password?
             </button>
@@ -139,10 +163,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">OR</span>
+              <span className="bg-background px-2 text-muted-foreground">OR</span>
             </div>
           </div>
 
@@ -150,7 +174,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
             <button
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-3 bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center space-x-3 bg-background border border-border rounded-lg px-4 py-3 text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -163,7 +187,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
             <button
               onClick={handleAppleSignIn}
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-3 bg-black text-white rounded-lg px-4 py-3 hover:bg-gray-800 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center space-x-3 bg-gray-900 text-white rounded-lg px-4 py-3 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M17.253 13.637c.01.03.018.06.018.092 0 2.22-1.638 3.834-4.332 3.834-1.17 0-2.22-.463-2.986-.9-1.027.69-2.14.95-3.2.95-.03 0-.06-.002-.09-.004-.03-.002-.06-.004-.09-.006-1.92-.12-3.36-1.44-4.2-3.3-.9-1.98-.3-4.29.9-5.85.81-.99 1.83-1.59 2.94-1.62 1.05-.03 2.1.42 2.85.9.84-.63 1.89-.96 3.03-.96.3 0 .6.03.9.09.06.01.12.02.18.03 1.8.24 3.09 1.41 3.84 3.18.09.21.165.42.225.63.06.21.105.42.135.63.09.36.135.72.135 1.08zM14.97 9.02c-.69-.84-1.83-1.35-3.03-1.35-.3 0-.6.03-.9.09-.06.01-.12.02-.18.03-.24.04-.48.09-.72.15-.21.06-.42.12-.63.195-.21.075-.405.165-.6.255-.6.3-1.14.72-1.56 1.23-.45.51-.81 1.11-1.05 1.77-.24.66-.36 1.38-.36 2.16 0 .24.01.48.03.72.01.12.02.24.04.36.07.3.16.6.28.87.12.27.27.54.45.78.36.48.81.9 1.32 1.23.51.33 1.08.54 1.68.63.6.09 1.23.06 1.83-.09.6-.15 1.17-.42 1.68-.78.51-.36.96-.81 1.32-1.32.36-.51.63-1.08.78-1.68.15-.6.18-1.23.09-1.83a3.63 3.63 0 0 0-.54-1.56z"/>
@@ -174,7 +198,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
           <button
             onClick={onClose}
-            className="mt-4 text-gray-500 hover:text-gray-700 text-sm"
+            className="mt-4 text-muted-foreground hover:text-foreground text-sm transition-colors"
           >
             Cancel
           </button>
