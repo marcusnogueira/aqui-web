@@ -18,9 +18,10 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       admin: {
-        id: adminUser.adminId,
+        adminId: adminUser.adminId,
         username: adminUser.username,
-        email: adminUser.email
+        email: adminUser.email,
+        type: 'admin' as const
       }
     })
     

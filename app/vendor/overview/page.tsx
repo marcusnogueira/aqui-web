@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
 import { Store, MapPin, Clock, Users, TrendingUp, Calendar } from 'lucide-react'
@@ -39,12 +39,13 @@ export default function VendorOverviewPage() {
       }
 
       // Get user profile
-      const userProfile = await clientAuth.getUserProfile(authUser.id)
-      if (!userProfile) {
+      const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+      if (!userProfileResult.success || !userProfileResult.data) {
         router.push('/')
         return
       }
 
+      const userProfile = userProfileResult.data
       if (userProfile.active_role !== USER_ROLES.VENDOR) {
         router.push('/')
         return

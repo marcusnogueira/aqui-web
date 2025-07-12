@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/database'
+import { errorHandler, createAuthError, createNetworkError, Result, createResult } from '@/lib/error-handler'
 
 // Client-side Supabase client
 export const createClient = () => createBrowserClient<Database>(
@@ -14,70 +15,92 @@ export const googleOAuthConfig = {
 }
 
 // Helper function to sign in with Google
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (): Promise<Result<any>> => {
   const supabase = createClient()
   
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
+  return errorHandler.wrapAsyncResult(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
-    },
-  })
-  
-  if (error) {
-    console.error('Error signing in with Google:', error)
-    throw error
-  }
-  
-  return data
+    })
+    
+    if (error) {
+      throw createAuthError(
+        `Google sign-in failed: ${error.message}`,
+        'GOOGLE_SIGNIN_FAILED',
+        error
+      )
+    }
+    
+    return data
+  }, 'signInWithGoogle')
 }
 
 
 
 
 // Helper function to sign in with Apple
-export const signInWithApple = async () => {
+export const signInWithApple = async (): Promise<Result<any>> => {
   const supabase = createClient()
   
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'apple',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    },
-  })
-  
-  if (error) {
-    console.error('Error signing in with Apple:', error)
-    throw error
-  }
-  
-  return data
+  return errorHandler.wrapAsyncResult(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    
+    if (error) {
+      throw createAuthError(
+        `Apple sign-in failed: ${error.message}`,
+        'APPLE_SIGNIN_FAILED',
+        error
+      )
+    }
+    
+    return data
+  }, 'signInWithApple')
 }
 
 // Helper function to sign out
-export const signOut = async () => {
+export const signOut = async (): Promise<Result<void>> => {
   const supabase = createClient()
-  const { error } = await supabase.auth.signOut()
   
-  if (error) {
-    console.error('Error signing out:', error)
-    throw error
-  }
+  return errorHandler.wrapAsyncResult(async () => {
+    const { error } = await supabase.auth.signOut()
+    
+    if (error) {
+      throw createAuthError(
+        `Sign-out failed: ${error.message}`,
+        'SIGNOUT_FAILED',
+        error
+      )
+    }
+  }, 'signOut')
 }
 
 // Helper function to get current user
-export const getCurrentUser = async () => {
+export const getCurrentUser = async (): Promise<Result<any>> => {
   const supabase = createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
   
-  if (error) {
-    console.error('Error getting current user:', error)
-    return null
-  }
-  
-  return user
+  return errorHandler.wrapAsyncResult(async () => {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error) {
+      throw createAuthError(
+        `Failed to get current user: ${error.message}`,
+        'GET_USER_FAILED',
+        error
+      )
+    }
+    
+    return user
+  }, 'getCurrentUser')
 }

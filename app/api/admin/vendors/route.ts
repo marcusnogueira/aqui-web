@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { PAGINATION, VENDOR_STATUSES, ERROR_MESSAGES, HTTP_STATUS, SUCCESS_MESSAGES } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
@@ -8,24 +9,23 @@ export const runtime = 'nodejs'
 // Force dynamic rendering since we use authentication cookies
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
+
+    const supabase = createSupabaseServerClient(cookies())
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || PAGINATION.DEFAULT_PAGE.toString())
     const limit = parseInt(searchParams.get('limit') || PAGINATION.DEFAULT_LIMIT.toString())
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') // 'approved', 'pending', 'rejected'
-    const active = searchParams.get('active') // 'true', 'false'
 
     let query = supabase
       .from('vendors')
@@ -45,16 +45,8 @@ export async function GET(request: NextRequest) {
       `)
     }
 
-    if (status === VENDOR_STATUSES.APPROVED) {
-        query = query.eq('is_approved', true)
-      } else if (status === VENDOR_STATUSES.PENDING) {
-      query = query.eq('is_approved', false)
-    }
-
-    if (active === 'true') {
-      query = query.eq('is_active', true)
-    } else if (active === 'false') {
-      query = query.eq('is_active', false)
+    if (status && status !== 'all') {
+      query = query.eq('status', status)
     }
 
     // Apply pagination and get both data and count in a single query
@@ -88,10 +80,12 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
 
+    const supabase = createSupabaseServerClient(cookies())
     const body = await request.json()
     const { vendorId, updates } = body
 
@@ -101,9 +95,9 @@ export async function PATCH(request: NextRequest) {
 
     // Only allow specific fields to be updated
     const allowedUpdates = {
-      is_approved: updates.is_approved,
-      is_active: updates.is_active,
-      admin_notes: updates.admin_notes
+      status: updates.status,
+      admin_notes: updates.admin_notes,
+      rejection_reason: updates.rejection_reason
     }
 
     // Remove undefined values

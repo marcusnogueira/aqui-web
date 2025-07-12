@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const supabase = createClient()
+    const supabase = createSupabaseServerClient(cookies())
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

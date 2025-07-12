@@ -1,4 +1,5 @@
 import { Database } from '@/types/database'
+import { errorHandler, ErrorType, ErrorSeverity } from '@/lib/error-handler'
 
 // Base types from Supabase schema
 export type Vendor = Database['public']['Tables']['vendors']['Row']
@@ -20,7 +21,7 @@ export interface VendorWithDetails extends VendorWithLiveSession {
   reviews?: Review[]
 }
 
-export interface EnrichedVendor extends VendorWithDetails {
+export interface EnrichedVendor extends Omit<VendorWithDetails, 'status'> {
   location?: VendorStaticLocation
   announcements: VendorAnnouncement[]
   specials: VendorSpecial[]
@@ -39,16 +40,34 @@ export interface VendorForMap extends VendorWithLiveSession {
 }
 
 // Coordinate extraction utility
-export const extractCoordinatesFromVendor = (vendor: VendorWithLiveSession): { lat: number; lng: number } | null => {
-  if (!vendor.live_session || 
-      typeof vendor.live_session.latitude !== 'number' || 
-      typeof vendor.live_session.longitude !== 'number') {
-    return null
-  }
-  
-  return { 
-    lat: vendor.live_session.latitude, 
-    lng: vendor.live_session.longitude 
+export const extractCoordinatesFromVendor = (vendor: VendorWithLiveSession): { lat: number; lng: number } => {
+  try {
+    if (!vendor) {
+      throw errorHandler.create(
+        ErrorType.VALIDATION,
+        'Vendor is required for coordinate extraction',
+        ErrorSeverity.MEDIUM,
+        'VENDOR_REQUIRED'
+      )
+    }
+    
+    if (!vendor.live_session || 
+        typeof vendor.live_session.latitude !== 'number' || 
+        typeof vendor.live_session.longitude !== 'number') {
+      throw errorHandler.create(
+        ErrorType.VALIDATION,
+        'Vendor does not have valid live session coordinates',
+        ErrorSeverity.MEDIUM,
+        'INVALID_COORDINATES'
+      )
+    }
+    
+    return { 
+      lat: vendor.live_session.latitude, 
+      lng: vendor.live_session.longitude 
+    }
+  } catch (error) {
+    throw errorHandler.handle(error as Error, 'extractCoordinatesFromVendor')
   }
 }
 
@@ -139,20 +158,30 @@ export const formatDistance = (distance: number): string => {
 export const getVendorDistance = (
   vendor: VendorWithLiveSession,
   userLocation: { lat: number; lng: number } | null
-): string | null => {
-  if (!userLocation) return null
-  
-  const coordinates = extractCoordinatesFromVendor(vendor)
-  if (!coordinates) return null
-  
-  const distance = calculateDistance(
-    userLocation.lat,
-    userLocation.lng,
-    coordinates.lat,
-    coordinates.lng
-  )
-  
-  return formatDistance(distance)
+): string => {
+  try {
+    if (!userLocation) {
+      throw errorHandler.create(
+        ErrorType.VALIDATION,
+        'User location is required for distance calculation',
+        ErrorSeverity.MEDIUM,
+        'USER_LOCATION_REQUIRED'
+      )
+    }
+    
+    const coordinates = extractCoordinatesFromVendor(vendor)
+    
+    const distance = calculateDistance(
+      userLocation.lat,
+      userLocation.lng,
+      coordinates.lat,
+      coordinates.lng
+    )
+    
+    return formatDistance(distance)
+  } catch (error) {
+    throw errorHandler.handle(error as Error, 'getVendorDistance')
+  }
 }
 
 // Vendor status for profile pages

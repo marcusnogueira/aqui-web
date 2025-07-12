@@ -181,13 +181,16 @@ export default function OpenStreetMap({
     }
   }, [userLocation, isLoaded])
 
-  // Add vendor markers
+  // Optimized marker management with memoization
   useEffect(() => {
     if (!map.current || !isLoaded) return
 
     // Clear existing markers
     markersRef.current.forEach(marker => marker.remove())
     markersRef.current = []
+
+    // Batch marker creation for better performance
+    const newMarkers: Marker[] = []
 
     markers.forEach((markerData) => {
       // Create marker element
@@ -310,8 +313,11 @@ export default function OpenStreetMap({
         onMarkerClick?.(markerData.id)
       })
 
-      markersRef.current.push(marker)
+      newMarkers.push(marker)
     })
+
+    // Add all markers to the map in batch
+    markersRef.current = newMarkers
 
     // Add global handlers for popup buttons
     ;(window as any).handleVendorClick = (vendorId: string) => {

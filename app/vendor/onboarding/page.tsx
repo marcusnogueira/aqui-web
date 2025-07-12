@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient, signOut } from '@/lib/supabase'
+import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
@@ -46,11 +46,8 @@ export default function VendorOnboardingPage() {
     setUser(user)
     setFormData(prev => ({ ...prev, contact_email: user.email || '' }))
     
-    // Check if user already has vendor profile
-    const hasVendor = await clientAuth.hasVendorProfile(user.id)
-    if (hasVendor) {
-      router.push('/vendor/dashboard')
-    }
+    // Note: Server-side validation in the API will handle existing vendor check
+    // No need for redundant client-side check here
   }
 
   const businessTypes = [
@@ -119,8 +116,8 @@ export default function VendorOnboardingPage() {
       
       await clientAuth.becomeVendor(vendorData)
 
-      // Navigate to vendor dashboard
-      router.push('/vendor/dashboard?onboarding=complete')
+      // Navigate to confirmation page
+      router.push('/vendor/onboarding/confirmation')
     } catch (error: any) {
       console.error('Error creating vendor:', error)
       setError(error.message || 'Failed to create vendor profile')

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
-import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server';
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { verifyAdminTokenServer } from '@/lib/admin-auth-server';
 import { USER_ROLES, MODERATION_STATUSES, ERROR_MESSAGES, HTTP_STATUS, getTimeAgoISO } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
@@ -8,14 +9,15 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }
       );
     }
 
-    const supabase = createClient();
+    const supabase = createSupabaseServerClient(cookies());
 
     // Get total users count
     const { count: totalUsers, error: usersError } = await supabase
@@ -30,8 +32,7 @@ export async function GET(request: NextRequest) {
     const { count: activeVendors, error: vendorsError } = await supabase
       .from('vendors')
       .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
-      .eq('is_approved', true);
+      .eq('status', 'approved');
 
     if (vendorsError) {
       console.error('Error fetching vendors count:', vendorsError);
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     const { count: pendingApplications, error: applicationsError } = await supabase
       .from('vendors')
       .select('*', { count: 'exact', head: true })
-      .eq('is_approved', false);
+      .eq('status', 'pending');
 
     if (applicationsError) {
       console.error('Error fetching pending applications:', applicationsError);

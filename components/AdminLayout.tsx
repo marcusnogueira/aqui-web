@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { adminAuth } from '@/lib/admin-auth'
+import { adminAuth, AdminUser } from '@/lib/admin-auth'
 import { toast, Toaster } from 'react-hot-toast'
 import { useSpin } from '@/lib/animations'
 import {
@@ -17,13 +17,18 @@ import {
   LogOut,
   Menu,
   X,
-  Settings
+  Settings,
+  Bell,
 } from 'lucide-react'
 
-interface AdminUser {
-  id: string
-  username: string
-  email: string
+
+
+interface Notification {
+  id: string;
+  message: string;
+  link?: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 interface NavItem {
@@ -37,6 +42,7 @@ const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Vendor Management', href: '/admin/vendors', icon: Store },
   { name: 'Vendor Status Control', href: '/admin/vendor-status', icon: Settings },
+  { name: 'Notification Center', href: '/admin/notifications', icon: Bell },
   { name: 'User Management', href: '/admin/users', icon: Users },
   { name: 'Moderation Queue', href: '/admin/moderation', icon: Shield },
   { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -48,6 +54,8 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   const [admin, setAdmin] = useState<AdminUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const spinRef = useSpin(loading)
@@ -56,11 +64,40 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
     checkAuth()
   }, [])
 
+  useEffect(() => {
+    if (admin) {
+      fetchNotifications();
+    }
+  }, [admin]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch('/api/admin/notifications');
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications', error);
+    }
+  };
+
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      await fetch(`/api/admin/notifications/${id}/read`, { method: 'POST' });
+      fetchNotifications(); // Refresh notifications
+    } catch (error) {
+      console.error('Failed to mark notification as read', error);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   const checkAuth = async () => {
     try {
-      const adminUser = await adminAuth.checkAuth()
-      if (adminUser) {
-        setAdmin(adminUser)
+      const result = await adminAuth.checkAuth()
+      if (result.success && result.data) {
+        setAdmin(result.data)
       } else {
         router.push('/admin/login')
       }
@@ -73,11 +110,18 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      await adminAuth.logout()
-      toast.success('Logged out successfully')
-      router.push('/admin/login')
+      const result = await adminAuth.logout()
+      if (result.success) {
+        toast.success('Logged out successfully')
+        router.push('/admin/login')
+      } else {
+        toast.error('Logout failed')
+        console.error('Logout error:', result.error)
+      }
     } catch (error) {
       toast.error('Logout failed')
+      console.error('Logout error:', error)
+      router.push('/admin/login') // Force logout on any error
     }
   }
 
@@ -167,6 +211,44 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
               <div className="ml-3 flex-1">
                 <p className="text-sm font-medium text-gray-700">{admin.username}</p>
                 <p className="text-xs text-gray-500">{admin.email}</p>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="ml-3 text-gray-400 hover:text-gray-600"
+                  title="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                {showNotifications && (
+                  <div className="absolute right-0 bottom-full mb-2 w-80 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                    <div className="p-3 font-semibold border-b">Notifications</div>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <p className="text-center text-gray-500 py-4">No notifications</p>
+                      ) : (
+                        notifications.map(n => (
+                          <div key={n.id} className={`p-3 border-b ${!n.is_read ? 'bg-blue-50' : ''}`}>
+                            <p className="text-sm">{n.message}</p>
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-xs text-gray-400">{new Date(n.created_at).toLocaleString()}</span>
+                              {!n.is_read && (
+                                <button onClick={() => markNotificationAsRead(n.id)} className="text-xs text-blue-500 hover:underline">
+                                  Mark as read
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               <button
                 onClick={handleLogout}

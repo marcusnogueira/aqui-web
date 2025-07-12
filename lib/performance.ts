@@ -1,4 +1,5 @@
 import React from 'react'
+import { errorHandler, ErrorType, ErrorSeverity } from '@/lib/error-handler'
 
 // Performance monitoring utilities
 
@@ -42,15 +43,25 @@ export class PerformanceTimer {
 
 // Memory usage tracking
 export const trackMemoryUsage = () => {
-  if ('memory' in performance) {
+  try {
+    if (!('memory' in performance)) {
+      throw errorHandler.create(
+        ErrorType.EXTERNAL_API,
+        'Memory API not supported in this browser',
+        ErrorSeverity.LOW,
+        'MEMORY_API_UNSUPPORTED'
+      )
+    }
+    
     const memory = (performance as any).memory
     return {
       usedJSHeapSize: memory.usedJSHeapSize,
       totalJSHeapSize: memory.totalJSHeapSize,
       jsHeapSizeLimit: memory.jsHeapSizeLimit
     }
+  } catch (error) {
+    throw errorHandler.handle(error as Error, 'trackMemoryUsage')
   }
-  return null
 }
 
 // Lazy loading utility for heavy components

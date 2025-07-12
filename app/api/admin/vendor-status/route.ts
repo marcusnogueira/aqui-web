@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { ERROR_MESSAGES, HTTP_STATUS, SUCCESS_MESSAGES } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
@@ -8,17 +9,17 @@ export const runtime = 'nodejs'
 // Force dynamic rendering since we use authentication cookies
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
+
+    const supabase = createSupabaseServerClient(cookies())
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
@@ -48,9 +49,11 @@ export async function GET(request: NextRequest) {
 
     // Apply status filters
     if (status === 'approved') {
-      query = query.eq('is_approved', true)
+      query = query.eq('status', 'approved')
     } else if (status === 'pending') {
-      query = query.eq('is_approved', false)
+      query = query.eq('status', 'pending')
+    } else if (status === 'rejected') {
+      query = query.eq('status', 'rejected')
     }
     // Note: 'live' and 'offline' filters are handled in the frontend since they depend on live sessions
 
@@ -72,12 +75,14 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
 
+    const supabase = createSupabaseServerClient(cookies())
     const body = await request.json()
-    const { vendorId, action, value } = body
+    const { vendorId, action, value, rejectionReason } = body
 
     if (!vendorId || !action) {
       return NextResponse.json({ error: ERROR_MESSAGES.MISSING_REQUIRED_FIELDS }, { status: HTTP_STATUS.BAD_REQUEST })
@@ -88,33 +93,51 @@ export async function PATCH(request: NextRequest) {
 
     switch (action) {
       case 'approve':
+        const updateData: any = {
+          status: value ? 'approved' : 'rejected',
+          updated_at: new Date().toISOString()
+        }
+        
+        if (value) {
+          updateData.approved_by = adminUser.adminId
+          updateData.approved_at = new Date().toISOString()
+          updateData.rejection_reason = null
+        } else {
+          updateData.approved_by = null
+          updateData.approved_at = null
+          updateData.rejection_reason = rejectionReason || null
+        }
+        
         result = await supabase
           .from('vendors')
-          .update({
-            is_approved: value,
-            approved_at: value ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', vendorId)
           .select()
           .single()
         
-        message = value ? 'Vendor approved successfully' : 'Vendor approval revoked'
+        message = value ? 'Vendor approved successfully' : 'Vendor rejected successfully'
+        
+        // Create notification for vendor about approval/rejection
+        if (result?.data) {
+          const notificationType = value ? 'vendor_approved' : 'vendor_rejected'
+          const notificationMessage = value 
+            ? `Congratulations! Your vendor application for "${result.data.business_name}" has been approved.`
+            : `Your vendor application for "${result.data.business_name}" has been rejected.${rejectionReason ? ` Reason: ${rejectionReason}` : ''}`
+          
+          await supabase
+            .from('notifications')
+            .insert({
+              recipient_id: result.data.user_id,
+              type: notificationType,
+              message: notificationMessage,
+              link: value ? '/vendor/dashboard' : '/vendor/onboarding'
+            })
+        }
         break
 
       case 'toggle_active':
-        result = await supabase
-          .from('vendors')
-          .update({
-            is_active: value,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', vendorId)
-          .select()
-          .single()
-        
-        message = value ? 'Vendor activated successfully' : 'Vendor deactivated successfully'
-        break
+        // This action is no longer supported with the new status system
+        return NextResponse.json({ error: 'Action not supported with new status system' }, { status: HTTP_STATUS.BAD_REQUEST })
 
       case 'stop_live_session':
         // Stop all active live sessions for this vendor

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server';
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { verifyAdminTokenServer } from '@/lib/admin-auth-server';
 
 // Development-only route for testing admin API schema compatibility
 // This helps detect schema drift when database changes are made
@@ -10,10 +11,7 @@ export const runtime = 'nodejs'
 // Force dynamic rendering since we use authentication cookies
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 export async function POST(request: NextRequest) {
   // Only allow in development environment
@@ -26,12 +24,15 @@ export async function POST(request: NextRequest) {
 
   try {
     // Check admin authentication
-    if (!isAdminAuthenticatedServer(request)) {
+    const adminUser = await verifyAdminTokenServer(request);
+    if (!adminUser) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+
+    const supabase = createSupabaseServerClient(cookies());
     const { table, operation, data } = await request.json();
 
     if (!table || !operation) {

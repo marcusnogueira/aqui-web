@@ -1,19 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { MapPin, Search, Star, Clock, Users, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/lib/theme-manager'
 import VendorMap from '@/components/VendorMap'
-import { VendorCard } from '@/components/VendorCard'
+import VendorCardOptimized from '@/components/VendorCardOptimized'
 import { SearchBar } from '@/components/SearchBar'
 import { Navigation } from '@/components/Navigation'
 import AuthModal from '@/components/AuthModal'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
 import toast from 'react-hot-toast'
+import { useLiveVendors } from '@/lib/hooks/useLiveVendors'
 
 import { VendorWithLiveSession } from '@/types/vendor'
 import { getVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils'
@@ -27,20 +28,26 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [vendors, setVendors] = useState<Vendor[]>([])
-  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [loadingVendors, setLoadingVendors] = useState(true)
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
   const [mapBounds, setMapBounds] = useState<{north: number, south: number, east: number, west: number} | null>(null)
-  const [displayedVendors, setDisplayedVendors] = useState<Vendor[]>([])
+  const [highlightedVendor, setHighlightedVendor] = useState<string | null>(null)
+
   const [isLocating, setIsLocating] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [leftPanelWidth, setLeftPanelWidth] = useState(40) // percentage - for manual resize only
 
   const supabase = createClient()
+  
+  // Use the custom hook for vendor data fetching and real-time updates
+  const { vendors, isLoading: loadingVendors, error: vendorsError, mutate: refreshVendors } = useLiveVendors({
+    searchQuery,
+    userLocation,
+    mapBounds,
+    enabled: !loading // Only fetch vendors after auth check is complete
+  })
 
   // Handle mouse and touch events for fluid resizing
   useEffect(() => {
@@ -182,8 +189,10 @@ export default function HomePage() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
-        const userProfile = await clientAuth.getUserProfile(authUser.id)
-        setUser(userProfile)
+        const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+        if (userProfileResult.success && userProfileResult.data) {
+          setUser(userProfileResult.data)
+        }
         
         // Note: Removed automatic vendor dashboard redirect
         // Users should manually navigate via profile menu
@@ -202,230 +211,26 @@ export default function HomePage() {
     setUserLocation({ lat: 37.7749, lng: -122.4194 })
   }, [])
 
-  // Fetch vendors
+  // Handle vendor errors from the custom hook
   useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        // First, get active live sessions
-        const { data: liveSessionsData, error: sessionsError } = await supabase
-          .from('vendor_live_sessions')
-          .select('*')
-          .eq('is_active', true)
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null)
-
-        if (sessionsError) {
-          console.error('Error fetching live sessions:', sessionsError)
-          toast.error('Failed to load live sessions')
-          return
-        }
-
-        if (!liveSessionsData || liveSessionsData.length === 0) {
-          setVendors([])
-          setFilteredVendors([])
-          setLoadingVendors(false)
-          return
-        }
-
-        // Get vendor IDs from live sessions (filter out null values)
-        const vendorIds = liveSessionsData
-          .map(session => session.vendor_id)
-          .filter((id): id is string => id !== null)
-
-        // Then get vendors for those IDs (only approved and active vendors)
-        const { data: vendorsData, error: vendorsError } = await supabase
-          .from('vendors')
-          .select('*')
-          .in('id', vendorIds)
-          .eq('is_approved', true)
-          .eq('is_active', true)
-
-        if (vendorsError) {
-          console.error('Error fetching vendors:', vendorsError)
-          toast.error('Failed to load vendors')
-          return
-        }
-
-        // Combine vendors with their live sessions
-        const formattedVendors = vendorsData?.map(vendor => {
-          const liveSession = liveSessionsData.find(session => session.vendor_id === vendor.id)
-          return {
-            ...vendor,
-            live_session: liveSession || null
-          }
-        }) || []
-
-        setVendors(formattedVendors)
-        setFilteredVendors(formattedVendors)
-      } catch (error) {
-        console.error('Error:', error)
-        toast.error('Failed to load vendors')
-      } finally {
-        setLoadingVendors(false)
-      }
+    if (vendorsError) {
+      console.error('Vendor fetch error:', vendorsError)
+      toast.error('Failed to load vendors')
     }
+  }, [vendorsError])
 
-    fetchVendors()
-    // Set up real-time subscription for vendor updates
-    const handleRealtimeUpdate = async (payload: any) => {
-      const { eventType, new: newRecord, old: oldRecord } = payload
 
-      if (eventType === 'INSERT') {
-        const { data: vendorData, error } = await supabase
-          .from('vendors')
-          .select('*')
-          .eq('id', newRecord.vendor_id)
-          .eq('is_approved', true)
-          .eq('is_active', true)
-          .single()
 
-        if (error) {
-          console.error('Error fetching new vendor:', error)
-          return
-        }
-
-        if (vendorData) {
-          const newVendor = { ...vendorData, live_session: newRecord }
-          setVendors(currentVendors => [...currentVendors, newVendor])
-        }
-      } else if (eventType === 'UPDATE') {
-        if (!newRecord.is_active) {
-          // If session becomes inactive, remove the vendor
-          setVendors(currentVendors => currentVendors.filter(v => v.id !== newRecord.vendor_id))
-        } else {
-          // If session is updated (e.g., location change), update the vendor's session
-          setVendors(currentVendors =>
-            currentVendors.map(v =>
-              v.id === newRecord.vendor_id ? { ...v, live_session: newRecord } : v
-            )
-          )
-        }
-      } else if (eventType === 'DELETE') {
-        setVendors(currentVendors => currentVendors.filter(v => v.id !== oldRecord.vendor_id))
-      }
-    }
-
-    const channel = supabase
-      .channel('vendor-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vendor_live_sessions',
-        },
-        handleRealtimeUpdate
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
-  // Filter vendors based on search
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredVendors(vendors)
-      return
-    }
-
-    const query = searchQuery.toLowerCase().trim()
-    
-    const filtered = vendors.filter(vendor => {
-      // Core business information
-      const businessNameMatch = vendor.business_name?.toLowerCase().includes(query)
-      const descriptionMatch = vendor.description?.toLowerCase().includes(query)
-      const subcategoryMatch = vendor.subcategory?.toLowerCase().includes(query)
-      const businessTypeMatch = vendor.business_type?.toLowerCase().includes(query)
-      
-      // Location-based search
-      const addressMatch = vendor.address?.toLowerCase().includes(query)
-      const cityMatch = vendor.city?.toLowerCase().includes(query)
-      
-      // Tags search (if vendor has tags)
-      const tagsMatch = vendor.tags?.some(tag => 
-        tag.toLowerCase().includes(query)
-      )
-      
-      // Contact information search
-      const emailMatch = vendor.contact_email?.toLowerCase().includes(query)
-      
-      return businessNameMatch || 
-             descriptionMatch || 
-             subcategoryMatch || 
-             businessTypeMatch || 
-             addressMatch || 
-             cityMatch || 
-             tagsMatch || 
-             emailMatch
-    })
-
-    setFilteredVendors(filtered)
-
-    // Log search
-    if (user && searchQuery.trim()) {
-      supabase
-        .from('search_logs')
-        .insert({
-          user_id: user.id,
-          query: searchQuery,
-          latitude: userLocation?.lat,
-          longitude: userLocation?.lng,
-        })
-        .then(({ error }) => {
-          if (error) console.error('Error logging search:', error)
-        })
-    }
-  }, [searchQuery, vendors, user, userLocation])
-
-  // Filter vendors based on map bounds
-  useEffect(() => {
-    if (!mapBounds) {
-      setDisplayedVendors(filteredVendors)
-      return
-    }
-
-    const boundsFiltered = filteredVendors.filter(vendor => {
-      if (!vendor.live_session || 
-          typeof vendor.live_session.latitude !== 'number' || 
-          typeof vendor.live_session.longitude !== 'number') {
-        return false
-      }
-
-      const lat = vendor.live_session.latitude
-      const lng = vendor.live_session.longitude
-      
-      return lat >= mapBounds.south && lat <= mapBounds.north &&
-             lng >= mapBounds.west && lng <= mapBounds.east
-    })
-
-    setDisplayedVendors(boundsFiltered)
-  }, [filteredVendors, mapBounds])
+  // Vendors are already filtered server-side, no need for additional client-side filtering
 
   // Handle map bounds change
-  const handleMapBoundsChange = (bounds: {north: number, south: number, east: number, west: number}) => {
+  const handleMapBoundsChange = useCallback((bounds: {north: number, south: number, east: number, west: number}) => {
     setMapBounds(bounds)
-  }
+  }, [])
 
-  const handleVendorClick = (vendorId: string) => {
-    // Log vendor click
-    if (user && searchQuery.trim()) {
-      supabase
-        .from('search_logs')
-        .update({ vendor_clicked: vendorId })
-        .eq('user_id', user.id)
-        .eq('query', searchQuery)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .then(({ error }) => {
-          if (error) console.error('Error updating search log:', error)
-        })
-    }
-    
-    // Navigate to vendor profile
+  const handleVendorClick = useCallback((vendorId: string) => {
     router.push(`/vendor/${vendorId}`)
-  }
+  }, [router])
 
 
 
@@ -500,15 +305,15 @@ export default function HomePage() {
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>{displayedVendors.filter(v => getVendorStatus(v) === 'open').length} {t('vendor.status.open')}</span>
+                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'open').length} {t('vendor.status.open')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span>{displayedVendors.filter(v => getVendorStatus(v) === 'closing').length} {t('vendor.status.closing')}</span>
+                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'closing').length} {t('vendor.status.closing')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4" />
-                <span>{displayedVendors.length} vendors found</span>
+                <span>{(vendors || []).length} vendors found</span>
               </div>
             </div>
           </div>
@@ -564,7 +369,7 @@ export default function HomePage() {
           <div className="fluid-spacing-sm border-b border-border">
             <div className="flex items-center justify-between fluid-gap">
               <h2 className="fluid-text-lg font-semibold text-foreground">
-                {displayedVendors.length} vendors found
+                {(vendors || []).length} vendors found
               </h2>
               <div className="flex items-center space-x-2">
  
@@ -574,7 +379,7 @@ export default function HomePage() {
 
           {/* Vendor Cards List */}
           <div className="flex-1 overflow-y-auto">
-            {displayedVendors.length === 0 ? (
+            {!vendors || vendors.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12">
                 <Search className="w-12 h-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">{t('search.noResults')}</h3>
@@ -582,83 +387,24 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="fluid-spacing-sm space-y-4">
-                {displayedVendors.map((vendor) => (
-                  <div
+                {(vendors || []).map((vendor) => (
+                  <VendorCardOptimized
                     key={vendor.id}
-                    className="bg-card rounded-lg border border-border hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden container-responsive"
-                    onClick={() => handleVendorClick(vendor.id)}
-                    onMouseEnter={() => {
-                      // Highlight marker on map when hovering card
-                      const event = new CustomEvent('highlightVendor', { detail: { vendorId: vendor.id } })
-                      window.dispatchEvent(event)
-                    }}
-                    onMouseLeave={() => {
-                      // Remove highlight when leaving card
-                      const event = new CustomEvent('unhighlightVendor', { detail: { vendorId: vendor.id } })
-                      window.dispatchEvent(event)
-                    }}
-                  >
-                    <div className="flex">
-                      {/* Image */}
-                      <div className="relative w-24 h-24 bg-muted flex-shrink-0">
-                        {vendor.profile_image_url ? (
-                          <img
-                            src={vendor.profile_image_url}
-                            alt={vendor.business_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-muted">
-                            <div className="text-2xl">🍽️</div>
-                          </div>
-                        )}
-                        
-                        {/* Status Badge */}
-                        <div className="absolute top-1 left-1">
-                          <div className={`flex items-center space-x-1 px-1.5 py-0.5 rounded-full text-white text-xs font-medium ${
-                            getVendorStatus(vendor) === 'open' ? 'bg-green-500' :
-                            getVendorStatus(vendor) === 'closing' ? 'bg-yellow-500' : 'bg-gray-500'
-                          }`}>
-                            <div className="w-1.5 h-1.5 bg-background rounded-full"></div>
-                            <span className="text-xs">
-                              {getVendorStatus(vendor) === 'open' ? 'Open' :
-                               getVendorStatus(vendor) === 'closing' ? 'Closing' : 'Offline'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 p-3">
-                        <div className="flex items-start justify-between mb-1">
-                          <h3 className="font-semibold text-foreground text-sm line-clamp-1">{vendor.business_name}</h3>
-                          {vendor.average_rating && vendor.total_reviews && vendor.total_reviews > 0 && (
-                            <div className="flex items-center space-x-1 ml-2">
-                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-xs font-medium text-foreground">
-                                {vendor.average_rating.toFixed(1)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {vendor.subcategory && (
-                          <p className="text-xs text-muted-foreground mb-1">{vendor.subcategory}</p>
-                        )}
-                        
-                        {vendor.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{vendor.description}</p>
-                        )}
-                        
-                        {vendor.live_session && (
-                          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
-                            <span>Live session active</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    vendor={vendor}
+                    onClick={handleVendorClick}
+                    onMouseEnter={(vendorId) => {
+                       setHighlightedVendor(vendorId)
+                       // Highlight marker on map when hovering card
+                       const event = new CustomEvent('highlightVendor', { detail: { vendorId } })
+                       window.dispatchEvent(event)
+                     }}
+                     onMouseLeave={() => {
+                       setHighlightedVendor(null)
+                       // Remove highlight when leaving card
+                       const event = new CustomEvent('unhighlightVendor')
+                       window.dispatchEvent(event)
+                     }}
+                  />
                 ))}
               </div>
             )}
@@ -706,7 +452,7 @@ export default function HomePage() {
         >
           <div className="h-full">
             <VendorMap
-              vendors={filteredVendors}
+              vendors={vendors}
               userLocation={userLocation || undefined}
               onVendorClick={handleVendorClick}
               onMapBoundsChange={handleMapBoundsChange}

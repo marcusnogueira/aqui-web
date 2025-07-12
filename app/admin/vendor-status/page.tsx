@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
-import { Search, Power, PowerOff, Play, Square, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
+import { Search, Power, PowerOff, Play, Square, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { AdminVendorView } from '@/types/vendor'
 
@@ -12,7 +12,7 @@ interface VendorStatusStats {
   total: number
   live: number
   approved: number
-  active: number
+  rejected: number
   pending: number
 }
 
@@ -23,6 +23,9 @@ export default function VendorStatusControlPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'live', 'offline', 'approved', 'pending'
   const [updatingVendors, setUpdatingVendors] = useState<Set<string>>(new Set())
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
 
   useEffect(() => {
     fetchVendors()
@@ -62,7 +65,7 @@ export default function VendorStatusControlPage() {
     }
   }
 
-  const updateVendorStatus = async (vendorId: string, action: string, value?: any) => {
+  const updateVendorStatus = async (vendorId: string, action: string, value?: any, rejectionReason?: string) => {
     if (updatingVendors.has(vendorId)) return
     
     try {
@@ -73,7 +76,7 @@ export default function VendorStatusControlPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ vendorId, action, value })
+        body: JSON.stringify({ vendorId, action, value, rejectionReason })
       })
 
       if (!response.ok) throw new Error('Failed to update vendor status')
@@ -95,6 +98,23 @@ export default function VendorStatusControlPage() {
     }
   }
 
+  const handleRejectVendor = () => {
+    if (!selectedVendor || !rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason')
+      return
+    }
+    
+    updateVendorStatus(selectedVendor.id, 'approve', false, rejectionReason)
+    setShowRejectModal(false)
+    setSelectedVendor(null)
+    setRejectionReason('')
+  }
+
+  const openRejectModal = (vendor: Vendor) => {
+    setSelectedVendor(vendor)
+    setShowRejectModal(true)
+  }
+
   const getVendorLiveStatus = (vendor: Vendor) => {
     const activeSessions = vendor.vendor_live_sessions.filter(session => session.is_active)
     return activeSessions.length > 0 ? 'live' : 'offline'
@@ -103,7 +123,7 @@ export default function VendorStatusControlPage() {
   const getStatusBadge = (vendor: Vendor) => {
     const isLive = getVendorLiveStatus(vendor) === 'live'
     
-    if (!vendor.is_approved) {
+    if (vendor.status === 'pending') {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
           <Clock className="w-3 h-3 mr-1" />
@@ -112,7 +132,16 @@ export default function VendorStatusControlPage() {
       )
     }
     
-    if (!vendor.is_active) {
+    if (vendor.status === 'rejected') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <PowerOff className="w-3 h-3 mr-1" />
+          Rejected
+        </span>
+      )
+    }
+    
+    if (vendor.status !== 'approved') {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
           <PowerOff className="w-3 h-3 mr-1" />
@@ -143,13 +172,16 @@ export default function VendorStatusControlPage() {
       return getVendorLiveStatus(vendor) === 'live'
     }
     if (statusFilter === 'offline') {
-      return getVendorLiveStatus(vendor) === 'offline' && vendor.is_active && vendor.is_approved
+      return getVendorLiveStatus(vendor) === 'offline' && vendor.status === 'approved'
     }
     if (statusFilter === 'approved') {
-      return vendor.is_approved
+      return vendor.status === 'approved'
     }
     if (statusFilter === 'pending') {
-      return !vendor.is_approved
+      return vendor.status === 'pending'
+    }
+    if (statusFilter === 'rejected') {
+      return vendor.status === 'rejected'
     }
     return true
   })
@@ -228,12 +260,12 @@ export default function VendorStatusControlPage() {
             
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex items-center">
-                <div className="p-2 bg-[#D85D28] bg-opacity-10 rounded-lg">
-                  <Power className="h-6 w-6 text-[#D85D28]" />
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <XCircle className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
+                  <p className="text-sm font-medium text-gray-600">Rejected</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.rejected}</p>
                 </div>
               </div>
             </div>
@@ -262,9 +294,10 @@ export default function VendorStatusControlPage() {
             >
               <option value="all">All Vendors</option>
               <option value="live">Currently Live</option>
-              <option value="offline">Offline (Active)</option>
+              <option value="offline">Offline (Approved)</option>
               <option value="approved">Approved</option>
               <option value="pending">Pending Approval</option>
+              <option value="rejected">Rejected</option>
             </select>
             
             <button
@@ -365,54 +398,64 @@ export default function VendorStatusControlPage() {
                               </button>
                             )}
                             
-                            {/* Toggle Active Status */}
-                            <button
-                              onClick={() => updateVendorStatus(vendor.id, 'toggle_active', !vendor.is_active)}
-                              disabled={isUpdating}
-                              className={`inline-flex items-center px-2 py-1 border rounded text-xs font-medium disabled:opacity-50 ${
-                                vendor.is_active
-                                  ? 'border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100'
-                                  : 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100'
-                              }`}
-                              title={vendor.is_active ? 'Deactivate vendor' : 'Activate vendor'}
-                            >
-                              {vendor.is_active ? (
-                                <>
-                                  <PowerOff className="w-3 h-3 mr-1" />
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <Power className="w-3 h-3 mr-1" />
-                                  Activate
-                                </>
-                              )}
-                            </button>
+                            {/* Force Start Session (for testing) */}
+                            {!isLive && vendor.status === 'approved' && (
+                              <button
+                                onClick={() => {
+                                  const location = { latitude: 40.7128, longitude: -74.0060, address: 'Test Location' }
+                                  updateVendorStatus(vendor.id, 'force_start_session', location)
+                                }}
+                                disabled={isUpdating}
+                                className="inline-flex items-center px-2 py-1 border border-blue-300 rounded text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+                                title="Start test live session"
+                              >
+                                <Play className="w-3 h-3 mr-1" />
+                                Test Live
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
-                            {/* Approval Toggle */}
-                            {!vendor.is_approved ? (
-                              <button
-                                onClick={() => updateVendorStatus(vendor.id, 'approve', true)}
-                                disabled={isUpdating}
-                                className="inline-flex items-center px-2 py-1 border border-green-300 rounded text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50"
-                                title="Approve vendor"
-                              >
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Approve
-                              </button>
+                            {/* Approval Controls */}
+                            {vendor.status !== 'approved' ? (
+                              <div className="flex space-x-1">
+                                <button
+                                  onClick={() => updateVendorStatus(vendor.id, 'approve', true)}
+                                  disabled={isUpdating}
+                                  className="inline-flex items-center px-2 py-1 border border-green-300 rounded text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 disabled:opacity-50"
+                                  title="Approve vendor"
+                                >
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => openRejectModal(vendor)}
+                                  disabled={isUpdating}
+                                  className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50"
+                                  title="Reject vendor with reason"
+                                >
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Reject
+                                </button>
+                              </div>
                             ) : (
-                              <button
-                                onClick={() => updateVendorStatus(vendor.id, 'approve', false)}
-                                disabled={isUpdating}
-                                className="inline-flex items-center px-2 py-1 border border-yellow-300 rounded text-xs font-medium text-yellow-700 bg-yellow-50 hover:bg-yellow-100 disabled:opacity-50"
-                                title="Revoke approval"
-                              >
-                                <AlertTriangle className="w-3 h-3 mr-1" />
-                                Revoke
-                              </button>
+                              <div className="flex space-x-1">
+                                <button
+                                  onClick={() => openRejectModal(vendor)}
+                                  disabled={isUpdating}
+                                  className="inline-flex items-center px-2 py-1 border border-red-300 rounded text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50"
+                                  title="Reject vendor with reason"
+                                >
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Reject
+                                </button>
+                                {vendor.rejection_reason && (
+                                  <span className="inline-flex items-center px-2 py-1 text-xs text-gray-600" title={`Rejection reason: ${vendor.rejection_reason}`} aria-label={`Rejection reason: ${vendor.rejection_reason}`}>
+                                    <MessageSquare className="w-3 h-3" />
+                                  </span>
+                                )}
+                              </div>
                             )}
                             
                             {/* Loading indicator */}
@@ -431,6 +474,80 @@ export default function VendorStatusControlPage() {
             </table>
           </div>
         </div>
+
+        {/* Rejection Modal */}
+        {showRejectModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Reject Vendor Application
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowRejectModal(false)
+                      setSelectedVendor(null)
+                      setRejectionReason('')
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                    aria-label="Close modal"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                {selectedVendor && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600">
+                      You are about to reject the vendor application for:
+                    </p>
+                    <p className="font-medium text-gray-900 mt-1">
+                      {selectedVendor.business_name}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {selectedVendor.users.email}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="mb-4">
+                  <label htmlFor="rejectionReason" className="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason *
+                  </label>
+                  <textarea
+                    id="rejectionReason"
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28] resize-none"
+                    placeholder="Please provide a clear reason for rejection..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowRejectModal(false)
+                      setSelectedVendor(null)
+                      setRejectionReason('')
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRejectVendor}
+                    disabled={!rejectionReason.trim()}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Reject Vendor
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

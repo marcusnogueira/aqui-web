@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithGoogle, signInWithApple } from '@/lib/supabase-client'
+import { signInWithGoogle, signInWithApple } from '@/lib/supabase/client'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -98,12 +98,23 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </button>
           </div>
 
-          <button
-            onClick={onClose}
-            className="mt-4 text-muted-foreground hover:text-foreground text-sm transition-colors"
-          >
-            Cancel
-          </button>
+          <div className="mt-4 flex flex-col items-center space-y-2">
+            <button
+              onClick={onClose}
+              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >
+              Cancel
+            </button>
+            
+            {/* Discreet admin login link */}
+            <a
+              href="/admin/login"
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors opacity-50 hover:opacity-100"
+              title="Admin Access"
+            >
+              •
+            </a>
+          </div>
         </div>
       </div>
     </div>

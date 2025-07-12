@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { adminAuth } from '@/lib/admin-auth'
+import { adminAuth, AdminUser } from '@/lib/admin-auth'
 import { useFadeInUp, useStaggeredAnimation, useSpin } from '@/lib/animations'
 import {
   Users,
@@ -23,11 +23,7 @@ import {
   Settings
 } from 'lucide-react'
 
-interface AdminUser {
-  id: string
-  username: string
-  email: string
-}
+
 
 interface StatCard {
   title: string
@@ -69,6 +65,11 @@ export default function AdminDashboard() {
   const [quickActionData, setQuickActionData] = useState<QuickActionData | null>(null)
   const [loading, setLoading] = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
+  const [platformSettings, setPlatformSettings] = useState({ 
+    allow_auto_vendor_approval: false,
+    maintenance_mode: false 
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const router = useRouter()
   const headerRef = useFadeInUp({ delay: 100 })
   const statsRef = useFadeInUp({ delay: 200 })
@@ -80,13 +81,69 @@ export default function AdminDashboard() {
   useEffect(() => {
     checkAuth()
     fetchStats()
+    fetchPlatformSettings()
   }, [])
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.settings) {
+          setPlatformSettings({
+            allow_auto_vendor_approval: data.settings.allow_auto_vendor_approval || false,
+            maintenance_mode: data.settings.maintenance_mode || false
+          });
+        }
+      } else {
+        console.error('Failed to fetch platform settings');
+        // Set defaults on error
+        setPlatformSettings({ 
+          allow_auto_vendor_approval: false,
+          maintenance_mode: false 
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching platform settings:', error);
+      // Set defaults on error
+      setPlatformSettings({ 
+        allow_auto_vendor_approval: false,
+        maintenance_mode: false 
+      });
+    }
+  };
+
+  const handleSettingsChange = async (key: keyof typeof platformSettings, value: boolean) => {
+    setIsSavingSettings(true);
+    setPlatformSettings(prev => ({ ...prev, [key]: value }));
+    try {
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value }),
+      });
+      if (!response.ok) {
+        // Revert on failure
+        setPlatformSettings(prev => ({ ...prev, [key]: !value }));
+        console.error('Failed to update settings');
+      }
+    } catch (error) {
+      setPlatformSettings(prev => ({ ...prev, [key]: !value }));
+      console.error('Error updating settings:', error);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const checkAuth = async () => {
     try {
-      const adminUser = await adminAuth.checkAuth()
-      if (adminUser) {
-        setAdmin(adminUser)
+      const result = await adminAuth.checkAuth()
+      if (result.success && result.data) {
+        setAdmin(result.data)
       } else {
         router.push('/admin/login')
       }
@@ -116,10 +173,15 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      await adminAuth.logout()
-      router.push('/admin/login')
+      const result = await adminAuth.logout()
+      if (result.success) {
+        router.push('/admin/login')
+      } else {
+        console.error('Logout error:', result.error)
+      }
     } catch (error) {
       console.error('Logout error:', error)
+      router.push('/admin/login') // Force logout on any error
     }
   }
 
@@ -374,6 +436,64 @@ export default function AdminDashboard() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* System Settings */}
+      <div className="fluid-container fluid-spacing-md">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl flex items-center justify-center">
+              <Settings className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">System Settings</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl">
+              <div>
+                <label htmlFor="auto-approve" className="font-medium text-gray-700">Enable Vendor Auto-Approval</label>
+                <p className="text-sm text-gray-500">When enabled, new vendors are automatically approved.</p>
+              </div>
+              <button
+                id="auto-approve"
+                role="switch"
+                aria-checked={platformSettings.allow_auto_vendor_approval}
+                onClick={() => handleSettingsChange('allow_auto_vendor_approval', !platformSettings.allow_auto_vendor_approval)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  platformSettings.allow_auto_vendor_approval ? 'bg-mission-teal' : 'bg-gray-200'
+                }`}
+                disabled={isSavingSettings}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    platformSettings.allow_auto_vendor_approval ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl">
+              <div>
+                <label htmlFor="maintenance-mode" className="font-medium text-gray-700">Maintenance Mode</label>
+                <p className="text-sm text-gray-500">When enabled, the platform will be in maintenance mode.</p>
+              </div>
+              <button
+                id="maintenance-mode"
+                role="switch"
+                aria-checked={platformSettings.maintenance_mode}
+                onClick={() => handleSettingsChange('maintenance_mode', !platformSettings.maintenance_mode)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  platformSettings.maintenance_mode ? 'bg-red-500' : 'bg-gray-200'
+                }`}
+                disabled={isSavingSettings}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    platformSettings.maintenance_mode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </div>

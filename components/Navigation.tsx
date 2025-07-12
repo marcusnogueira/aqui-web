@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { signOut, createClient } from '@/lib/supabase'
+import { signOut, createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
 
@@ -21,8 +21,10 @@ export function Navigation() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
-        const userProfile = await clientAuth.getUserProfile(authUser.id)
-        setUser(userProfile)
+        const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+        if (userProfileResult.success && userProfileResult.data) {
+          setUser(userProfileResult.data)
+        }
       }
     } catch (error) {
       console.error('Auth check error:', error)

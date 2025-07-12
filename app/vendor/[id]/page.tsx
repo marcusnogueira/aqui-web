@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database';
 import { VendorWithDetails } from '@/types/vendor';
 import { Star, MapPin, Clock, Phone, Mail, Heart, MessageSquare, Flag, X, Navigation } from 'lucide-react';
 import { useHeartBeat } from '@/lib/animations';
 import { GetDirectionsButton } from '@/components/GetDirectionsButton';
-import { getDetailedVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils';
+import { getDetailedVendorStatus, extractCoordinatesFromVendor, VendorWithLiveSession } from '@/lib/vendor-utils';
 
 type VendorLocation = Database['public']['Tables']['vendor_static_locations']['Row'];
 type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['Row'];
@@ -17,7 +17,7 @@ type Review = Database['public']['Tables']['reviews']['Row'];
 type User = Database['public']['Tables']['users']['Row'];
 
 // Extended interface for this specific page with additional computed fields
-interface VendorProfileData extends VendorWithDetails {
+interface VendorProfileData extends Omit<VendorWithDetails, 'status'> {
   location?: VendorLocation;
   announcements: VendorAnnouncement[];
   specials: VendorSpecial[];
@@ -197,7 +197,7 @@ export default function VendorProfilePage() {
   };
 
   // Extract coordinates for directions
-  const coordinates = vendor ? extractCoordinatesFromVendor(vendor) : null;
+  const coordinates = vendor ? extractCoordinatesFromVendor(vendor as unknown as VendorWithLiveSession) : null;
 
   const submitReview = async () => {
     if (!user || !newReview.comment.trim()) return;

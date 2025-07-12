@@ -31,13 +31,6 @@ export type {
 }
 
 // Props interfaces for components
-export interface VendorCardProps {
-  vendor: VendorWithLiveSession
-  status: 'open' | 'closing' | 'offline'
-  onClick: () => void
-  userLocation: { lat: number; lng: number } | null
-}
-
 export interface VendorMapProps {
   vendors: VendorWithLiveSession[]
   userLocation: { lat: number; lng: number } | undefined

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient, signOut } from '@/lib/supabase'
+import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
@@ -25,6 +25,7 @@ export default function VendorDashboardPage() {
   const [announcements, setAnnouncements] = useState<VendorAnnouncement[]>([])
 
   const [staticLocations, setStaticLocations] = useState<VendorStaticLocation[]>([])
+  const [businessTypeKeys, setBusinessTypeKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'locations' | 'announcements' | 'live'>('overview')
 
@@ -49,7 +50,17 @@ export default function VendorDashboardPage() {
 
   useEffect(() => {
     checkAuth()
+    loadBusinessTypes()
   }, [])
+
+  const loadBusinessTypes = async () => {
+    try {
+      const keys = await getBusinessTypeKeys()
+      setBusinessTypeKeys(keys)
+    } catch (error) {
+      console.error('Error loading business types:', error)
+    }
+  }
 
   // Timer countdown effect
   useEffect(() => {
@@ -85,12 +96,13 @@ export default function VendorDashboardPage() {
       }
 
       // Get user profile
-      const userProfile = await clientAuth.getUserProfile(authUser.id)
-      if (!userProfile) {
+      const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+      if (!userProfileResult.success || !userProfileResult.data) {
         router.push('/')
         return
       }
 
+      const userProfile = userProfileResult.data
       if (userProfile.active_role !== USER_ROLES.VENDOR) {
         router.push('/')
         return
@@ -156,33 +168,29 @@ export default function VendorDashboardPage() {
            phone: vendorData.phone || ''
          })
 
-        // Fetch active live session
-        const { data: sessionData } = await supabase
-          .from('vendor_live_sessions')
-          .select('*')
-          .eq('vendor_id', vendorData.id)
-          .eq('is_active', true)
-          .single()
+        // Fetch all vendor-related data in parallel for better performance
+        const [sessionResult, announcementsResult, locationsResult] = await Promise.all([
+          supabase
+             .from('vendor_live_sessions')
+             .select('*')
+             .eq('vendor_id', vendorData.id)
+             .is('end_time', null)
+             .single(),
+          supabase
+            .from('vendor_announcements')
+            .select('*')
+            .eq('vendor_id', vendorData.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('vendor_static_locations')
+            .select('*')
+            .eq('vendor_id', vendorData.id)
+            .order('created_at', { ascending: false })
+        ])
 
-        setLiveSession(sessionData)
-
-        // Fetch announcements
-        const { data: announcementsData } = await supabase
-          .from('vendor_announcements')
-          .select('*')
-          .eq('vendor_id', vendorData.id)
-          .order('created_at', { ascending: false })
-
-        setAnnouncements(announcementsData || [])
-
-        // Fetch static locations
-        const { data: locationsData } = await supabase
-          .from('vendor_static_locations')
-          .select('*')
-          .eq('vendor_id', vendorData.id)
-          .order('created_at', { ascending: false })
-
-        setStaticLocations(locationsData || [])
+        setLiveSession(sessionResult.data)
+        setAnnouncements(announcementsResult.data || [])
+        setStaticLocations(locationsResult.data || [])
       }
     } catch (error) {
       console.error('Error fetching vendor data:', error)
@@ -240,14 +248,14 @@ export default function VendorDashboardPage() {
         throw new Error('Vendor profile not found. Please complete your vendor onboarding.')
       }
       
-      // Check for existing active session to prevent duplicates
+      // Check for existing active session (end_time is NULL) to prevent duplicates
       const { data: existingSession } = await supabase
         .from('vendor_live_sessions')
         .select('id')
         .eq('vendor_id', vendor.id)
-        .eq('is_active', true)
+        .is('end_time', null)
         .single()
-      
+
       if (existingSession) {
         throw new Error('You already have an active live session. Please end it before starting a new one.')
       }
@@ -263,8 +271,7 @@ export default function VendorDashboardPage() {
           longitude: position.coords.longitude,
           address: address,
           start_time: new Date().toISOString(),
-          end_time: null, // Set to null for active sessions
-          is_active: true,
+          end_time: null, // NULL indicates active session
           auto_end_time: autoEndTime
         })
         .select()
@@ -313,12 +320,11 @@ export default function VendorDashboardPage() {
       const { error } = await supabase
         .from('vendor_live_sessions')
         .update({ 
-          is_active: false,
           end_time: new Date().toISOString(),
           ended_by: USER_ROLES.VENDOR
         })
         .eq('vendor_id', vendor.id)
-        .eq('is_active', true)
+        .is('end_time', null)
       
       if (error) throw error
       
@@ -483,8 +489,38 @@ export default function VendorDashboardPage() {
     { id: 'live', label: 'Live Session' }
   ] as const
 
+  const getStatusBanner = () => {
+    if (!vendor || vendor.status === 'approved') {
+      return null;
+    }
+
+    let message = '';
+    let bgColor = 'bg-yellow-100';
+    let textColor = 'text-yellow-800';
+
+    switch (vendor.status) {
+      case 'pending':
+        message = 'Your application is under review. You will be notified once it has been approved.';
+        break;
+      case 'rejected':
+        message = vendor.rejection_reason 
+          ? `Your application was not approved. Reason: ${vendor.rejection_reason}. Please contact support if you need assistance with reapplying.`
+          : 'Your application was not approved. Please contact support for more information.';
+        bgColor = 'bg-red-100';
+        textColor = 'text-red-800';
+        break;
+    }
+
+    return (
+      <div className={`p-4 text-center ${bgColor} ${textColor}`}>
+        <p>{message}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FBF2E3' }}>
+      {getStatusBanner()}
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="fluid-container">
@@ -509,7 +545,7 @@ export default function VendorDashboardPage() {
               ) : (
                 <button
                   onClick={startLiveSession}
-                  disabled={isStartingSession}
+                  disabled={isStartingSession || vendor.status !== 'approved'}
                   className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                   style={{ backgroundColor: '#D85D28', color: '#FBF2E3' }}
                 >
@@ -693,7 +729,7 @@ export default function VendorDashboardPage() {
                          className="w-full px-4 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                        >
                          <option value="">Select business type</option>
-                         {getBusinessTypeKeys().map(type => (
+                         {businessTypeKeys.map(type => (
                            <option key={type} value={type}>{type}</option>
                          ))}
                        </select>

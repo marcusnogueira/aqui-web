@@ -1,7 +1,42 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { jwtVerify } from 'jose'
+
+// Helper function to verify admin token in Edge Runtime
+async function verifyAdminToken(token: string): Promise<boolean> {
+  try {
+    const JWT_SECRET = process.env.JWT_SECRET
+    if (!JWT_SECRET) return false
+    
+    const secretKey = new TextEncoder().encode(JWT_SECRET)
+    const { payload } = await jwtVerify(token, secretKey)
+    
+    return payload && payload.type === 'admin'
+  } catch {
+    return false
+  }
+}
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  
+  // Check if this is an admin route
+  if (pathname.startsWith('/admin')) {
+    // Skip login page
+    if (pathname === '/admin/login') {
+      return NextResponse.next()
+    }
+    
+    // Check for admin authentication
+    const adminToken = request.cookies.get('admin-token')?.value
+    
+    if (!adminToken || !(await verifyAdminToken(adminToken))) {
+      // Redirect to admin login
+      const loginUrl = new URL('/admin/login', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+  
   let response = NextResponse.next({
     request: {
       headers: request.headers,

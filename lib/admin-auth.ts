@@ -1,4 +1,5 @@
 import { jwtVerify } from 'jose'
+import { errorHandler, createAuthError, createNetworkError, Result } from '@/lib/error-handler'
 
 export interface AdminUser {
   adminId: string
@@ -14,44 +15,56 @@ export const adminAuth = {
   /**
    * Login admin user
    */
-  async login(username: string, password: string) {
-    const response = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    })
-    
-    const data = await response.json()
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed')
-    }
-    
-    return data.admin
+  async login(username: string, password: string): Promise<Result<AdminUser>> {
+    return errorHandler.wrapAsyncResult(async () => {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw createAuthError(
+          data.error || 'Login failed',
+          'ADMIN_LOGIN_FAILED',
+          new Error(`HTTP ${response.status}: ${response.statusText}`)
+        )
+      }
+      
+      return data.admin
+    }, 'adminAuth.login')
   },
   
   /**
    * Logout admin user
    */
-  async logout() {
-    const response = await fetch('/api/admin/login', {
-      method: 'DELETE',
-    })
-    
-    if (!response.ok) {
-      throw new Error('Logout failed')
-    }
-    
-    return true
+  async logout(): Promise<Result<boolean>> {
+    return errorHandler.wrapAsyncResult(async () => {
+      const response = await fetch('/api/admin/login', {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        throw createNetworkError(
+          'Logout failed',
+          'ADMIN_LOGOUT_FAILED',
+          new Error(`HTTP ${response.status}: ${response.statusText}`)
+        )
+      }
+      
+      return true
+    }, 'adminAuth.logout')
   },
   
   /**
    * Check if admin is authenticated (client-side)
    */
-  async checkAuth() {
-    try {
+  async checkAuth(): Promise<Result<AdminUser | null>> {
+    return errorHandler.wrapAsyncResult(async () => {
       const response = await fetch('/api/admin/me')
       
       if (response.ok) {
@@ -59,9 +72,15 @@ export const adminAuth = {
         return data.admin
       }
       
-      return null
-    } catch (error) {
-      return null
-    }
+      if (response.status === 401) {
+        return null
+      }
+      
+      throw createNetworkError(
+        'Failed to check admin authentication',
+        'ADMIN_CHECK_AUTH_FAILED',
+        new Error(`HTTP ${response.status}: ${response.statusText}`)
+      )
+    }, 'adminAuth.checkAuth')
   }
 }

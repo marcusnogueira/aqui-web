@@ -27,41 +27,62 @@ export function SubcategoryInput({
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (businessType) {
-      const subcategories = getSubcategoriesForBusinessType(businessType);
-      setSuggestions(subcategories);
-    } else {
-      setSuggestions([]);
-    }
+    const loadSubcategories = async () => {
+      if (businessType) {
+        try {
+          const subcategories = await getSubcategoriesForBusinessType(businessType);
+          setSuggestions(subcategories);
+        } catch (error) {
+          console.error('Error loading subcategories:', error);
+          setSuggestions([]);
+        }
+      } else {
+        setSuggestions([]);
+      }
+    };
+    
+    loadSubcategories();
   }, [businessType]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     onChange(inputValue);
     
-    if (inputValue.trim()) {
-      const filteredSuggestions = searchSubcategories(inputValue, businessType);
-      setSuggestions(filteredSuggestions.slice(0, 8)); // Limit to 8 suggestions
-      setShowSuggestions(true);
-    } else {
-      if (businessType) {
-        const subcategories = getSubcategoriesForBusinessType(businessType);
-        setSuggestions(subcategories.slice(0, 8));
+    try {
+      if (inputValue.trim()) {
+        const filteredSuggestions = await searchSubcategories(inputValue, businessType);
+        setSuggestions(filteredSuggestions.slice(0, 8)); // Limit to 8 suggestions
         setShowSuggestions(true);
       } else {
-        setShowSuggestions(false);
+        if (businessType) {
+          const subcategories = await getSubcategoriesForBusinessType(businessType);
+          setSuggestions(subcategories.slice(0, 8));
+          setShowSuggestions(true);
+        } else {
+          setShowSuggestions(false);
+        }
       }
+    } catch (error) {
+      console.error('Error searching subcategories:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
     setHighlightedIndex(-1);
   };
 
-  const handleInputFocus = () => {
+  const handleInputFocus = async () => {
     if (businessType) {
-      const subcategories = value.trim() 
-        ? searchSubcategories(value, businessType)
-        : getSubcategoriesForBusinessType(businessType);
-      setSuggestions(subcategories.slice(0, 8));
-      setShowSuggestions(true);
+      try {
+        const subcategories = value.trim() 
+          ? await searchSubcategories(value, businessType)
+          : await getSubcategoriesForBusinessType(businessType);
+        setSuggestions(subcategories.slice(0, 8));
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error('Error loading subcategories on focus:', error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
     }
   };
 

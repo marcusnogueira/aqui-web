@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { STATS_TIME_RANGES, ERROR_MESSAGES, HTTP_STATUS, getTimeAgoISO } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
+
+    const supabase = createSupabaseServerClient(cookies())
 
     // Get vendor counts by status
     const { data: vendorStats, error: vendorError } = await supabase
       .from('vendors')
-      .select('is_approved, is_active')
+      .select('status')
 
     if (vendorError) {
       console.error('Error fetching vendor stats:', vendorError)
@@ -32,10 +33,9 @@ export async function GET(request: NextRequest) {
     // Calculate statistics
     const stats = {
       total: vendorStats.length,
-      approved: vendorStats.filter(v => v.is_approved).length,
-      pending: vendorStats.filter(v => !v.is_approved).length,
-      active: vendorStats.filter(v => v.is_active).length,
-      inactive: vendorStats.filter(v => !v.is_active).length
+      approved: vendorStats.filter(v => v.status === 'approved').length,
+      pending: vendorStats.filter(v => v.status === 'pending').length,
+      rejected: vendorStats.filter(v => v.status === 'rejected').length
     }
 
     // Get live session statistics

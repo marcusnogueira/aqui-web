@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
-import { Search, Filter, CheckCircle, XCircle, Clock, Eye, Edit2, MoreHorizontal } from 'lucide-react'
+import { Search, Filter, CheckCircle, XCircle, Clock, Eye, Edit2, MoreHorizontal, Trash2, UserCheck, UserX, Square, CheckSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { AdminVendorView } from '@/types/vendor'
 import { VENDOR_STATUSES, BUSINESS_CATEGORIES, PAGINATION } from '@/lib/constants'
@@ -48,15 +48,20 @@ export default function VendorManagementPage() {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all') // 'all', 'approved', 'pending'
-  const [activeFilter, setActiveFilter] = useState('all') // 'all', 'true', 'false'
+  const [statusFilter, setStatusFilter] = useState('all') // 'all', 'approved', 'pending', 'rejected'
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [showModal, setShowModal] = useState(false)
+  
+  // Batch selection
+  const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set())
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false)
+  const [batchAction, setBatchAction] = useState<'approve' | 'reject' | null>(null)
+  const [batchLoading, setBatchLoading] = useState(false)
 
   useEffect(() => {
     fetchVendors()
     fetchStats()
-  }, [pagination.page, searchTerm, statusFilter, activeFilter])
+  }, [pagination.page, searchTerm, statusFilter])
 
   const fetchVendors = async () => {
     try {
@@ -65,8 +70,7 @@ export default function VendorManagementPage() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        ...(activeFilter !== 'all' && { active: activeFilter })
+        ...(statusFilter !== 'all' && { status: statusFilter })
       })
 
       const response = await fetch(`/api/admin/vendors?${params}`)
@@ -96,51 +100,151 @@ export default function VendorManagementPage() {
     }
   }
 
-  const updateVendor = async (vendorId: string, updates: Partial<Vendor>) => {
+  const updateVendorStatus = async (vendorId: string, status: string) => {
     try {
-      const response = await fetch('/api/admin/vendors', {
+      const response = await fetch(`/api/admin/vendors/${vendorId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) throw new Error(`Failed to update vendor status to ${status}`);
+      
+      toast.success(`Vendor status updated to ${status}`);
+      fetchVendors();
+      fetchStats();
+    } catch (error) {
+      console.error('Error updating vendor status:', error);
+      toast.error('Failed to update vendor status');
+    }
+  };
+
+  const updateVendor = async (vendorId: string, updates: Partial<Vendor>) => {
+    // Separate status update from other updates
+    const { status, ...otherUpdates } = updates;
+
+    if (status) {
+      await updateVendorStatus(vendorId, status as string);
+    }
+
+    if (Object.keys(otherUpdates).length > 0) {
+      try {
+        const response = await fetch(`/api/admin/vendors/${vendorId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(otherUpdates),
+        });
+
+        if (!response.ok) throw new Error('Failed to update vendor details');
+        
+        toast.success('Vendor details updated successfully');
+      } catch (error) {
+        console.error('Error updating vendor details:', error);
+        toast.error('Failed to update vendor details');
+      }
+    }
+
+    fetchVendors();
+    fetchStats();
+    setShowModal(false);
+  }
+
+  // Batch operations
+  const handleSelectAll = () => {
+    if (selectedVendors.size === vendors.length) {
+      setSelectedVendors(new Set())
+    } else {
+      setSelectedVendors(new Set(vendors.map(v => v.id)))
+    }
+  }
+
+  const handleSelectVendor = (vendorId: string) => {
+    const newSelected = new Set(selectedVendors)
+    if (newSelected.has(vendorId)) {
+      newSelected.delete(vendorId)
+    } else {
+      newSelected.add(vendorId)
+    }
+    setSelectedVendors(newSelected)
+  }
+
+  const handleBatchAction = async (action: 'approve' | 'reject') => {
+    setBatchAction(action)
+    setShowBatchConfirm(true)
+  }
+
+  const executeBatchAction = async () => {
+    if (!batchAction || selectedVendors.size === 0) return
+
+    setBatchLoading(true)
+    try {
+      const vendorIds = Array.from(selectedVendors)
+      const response = await fetch('/api/admin/vendors/batch', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ vendorId, updates })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vendorIds,
+          action: batchAction
+        })
       })
 
-      if (!response.ok) throw new Error('Failed to update vendor')
+      if (!response.ok) throw new Error('Failed to execute batch action')
       
-      toast.success('Vendor updated successfully')
+      const result = await response.json()
+      toast.success(`Successfully ${batchAction}d ${result.updated} vendors`)
+      
+      // Reset selection and refresh data
+      setSelectedVendors(new Set())
       fetchVendors()
       fetchStats()
-      setShowModal(false)
     } catch (error) {
-      console.error('Error updating vendor:', error)
-      toast.error('Failed to update vendor')
+      console.error('Error executing batch action:', error)
+      toast.error(`Failed to ${batchAction} vendors`)
+    } finally {
+      setBatchLoading(false)
+      setShowBatchConfirm(false)
+      setBatchAction(null)
+    }
+  }
+
+  const getBatchActionText = () => {
+    switch (batchAction) {
+      case 'approve': return 'approve'
+      case 'reject': return 'reject'
+      default: return ''
     }
   }
 
   const getStatusBadge = (vendor: Vendor) => {
-    if (!vendor.is_approved) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Clock className="w-3 h-3 mr-1" />
-          Pending
-        </span>
-      )
+    switch (vendor.status) {
+      case 'approved':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Approved
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <Clock className="w-3 h-3 mr-1" />
+            Pending
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <XCircle className="w-3 h-3 mr-1" />
+            Rejected
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            {String(vendor.status)}
+          </span>
+        );
     }
-    if (vendor.is_active) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="w-3 h-3 mr-1" />
-          Active
-        </span>
-      )
-    }
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-        <XCircle className="w-3 h-3 mr-1" />
-        Inactive
-      </span>
-    )
   }
 
   const isCurrentlyLive = (vendor: Vendor) => {
@@ -231,27 +335,18 @@ export default function VendorManagementPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filter by status"
             >
-              <option value="all">All Status</option>
-              <option value="approved">Approved</option>
+              <option value="all">All Statuses</option>
               <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
             </select>
             
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-              value={activeFilter}
-              onChange={(e) => setActiveFilter(e.target.value)}
-              aria-label="Filter by activity"
-            >
-              <option value="all">All Activity</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
+            <div></div> {/* Placeholder to maintain grid layout */}
             
             <button
               onClick={() => {
                 setSearchTerm('')
                 setStatusFilter('all')
-                setActiveFilter('all')
               }}
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
             >
@@ -260,12 +355,62 @@ export default function VendorManagementPage() {
           </div>
         </div>
 
+        {/* Batch Actions Toolbar */}
+        {selectedVendors.size > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-blue-900">
+                  {selectedVendors.size} vendor{selectedVendors.size !== 1 ? 's' : ''} selected
+                </span>
+                <button
+                  onClick={() => setSelectedVendors(new Set())}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Clear selection
+                </button>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleBatchAction('approve')}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                >
+                  <UserCheck className="w-4 h-4 mr-1" />
+                  Approve
+                </button>
+                <button
+                  onClick={() => handleBatchAction('reject')}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                >
+                  <UserX className="w-4 h-4 mr-1" />
+                  Reject
+                </button>
+
+
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Vendors Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <button
+                      onClick={handleSelectAll}
+                      className="flex items-center space-x-2 hover:text-gray-700"
+                    >
+                      {selectedVendors.size === vendors.length && vendors.length > 0 ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                      <span>Select</span>
+                    </button>
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Vendor
                   </th>
@@ -292,19 +437,31 @@ export default function VendorManagementPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                       Loading vendors...
                     </td>
                   </tr>
                 ) : vendors.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                       No vendors found
                     </td>
                   </tr>
                 ) : (
                   vendors.map((vendor) => (
-                    <tr key={vendor.id} className="hover:bg-gray-50">
+                    <tr key={vendor.id} className={`hover:bg-gray-50 ${selectedVendors.has(vendor.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleSelectVendor(vendor.id)}
+                          className="flex items-center justify-center w-4 h-4 text-blue-600 hover:text-blue-800"
+                        >
+                          {selectedVendors.has(vendor.id) ? (
+                            <CheckSquare className="w-4 h-4" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
@@ -346,6 +503,24 @@ export default function VendorManagementPage() {
                         {vendor.created_at && new Date(vendor.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {vendor.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => updateVendorStatus(vendor.id, 'approved')}
+                              className="text-green-600 hover:text-green-900 mr-3"
+                              aria-label="Approve vendor"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => updateVendorStatus(vendor.id, 'rejected')}
+                              className="text-red-600 hover:text-red-900 mr-3"
+                              aria-label="Reject vendor"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => {
                             setSelectedVendor(vendor)
@@ -447,37 +622,23 @@ export default function VendorManagementPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Approval Status
+                      Status
                     </label>
                     <select
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-                      value={selectedVendor.is_approved ? 'approved' : 'pending'}
+                      value={String(selectedVendor.status) || ''}
                       onChange={(e) => setSelectedVendor({
                         ...selectedVendor,
-                        is_approved: e.target.value === 'approved'
+                        status: e.target.value as 'approved' | 'pending' | 'rejected'
                       })}
-                      aria-label="Approval status"
+                      aria-label="Vendor status"
                     >
-                      <option value="pending">Pending Approval</option>
+                      <option value="pending">Pending</option>
                       <option value="approved">Approved</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Active Status
-                    </label>
-                    <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-                      value={selectedVendor.is_active ? 'active' : 'inactive'}
-                      onChange={(e) => setSelectedVendor({
-                        ...selectedVendor,
-                        is_active: e.target.value === 'active'
-                      })}
-                      aria-label="Active status"
-                    >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="suspended">Suspended</option>
                     </select>
                   </div>
                   
@@ -507,13 +668,62 @@ export default function VendorManagementPage() {
                   </button>
                   <button
                     onClick={() => updateVendor(selectedVendor.id, {
-                      is_approved: selectedVendor.is_approved,
-                      is_active: selectedVendor.is_active,
+                      status: selectedVendor.status,
                       admin_notes: selectedVendor.admin_notes
                     })}
                     className="px-4 py-2 bg-[#D85D28] text-white rounded-md hover:bg-[#B54A1F]"
                   >
                     Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Batch Action Confirmation Modal */}
+        {showBatchConfirm && batchAction && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Confirm Batch Action
+                </h3>
+                
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600">
+                    Are you sure you want to <strong>{getBatchActionText()}</strong> the following {selectedVendors.size} vendor{selectedVendors.size !== 1 ? 's' : ''}?
+                  </p>
+                  
+                  <div className="mt-3 max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
+                    {vendors
+                      .filter(v => selectedVendors.has(v.id))
+                      .map(vendor => (
+                        <div key={vendor.id} className="text-xs text-gray-700 py-1">
+                          • {vendor.business_name}
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowBatchConfirm(false)
+                      setBatchAction(null)
+                    }}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                    disabled={batchLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executeBatchAction}
+                    disabled={batchLoading}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {batchLoading ? 'Processing...' : `${getBatchActionText().charAt(0).toUpperCase() + getBatchActionText().slice(1)} Vendors`}
                   </button>
                 </div>
               </div>

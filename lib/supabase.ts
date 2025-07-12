@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/database'
+import { errorHandler, ErrorType, ErrorSeverity } from '@/lib/error-handler'
 
 // Client-side Supabase client
 export const createClient = () => createBrowserClient<Database>(
@@ -49,15 +50,22 @@ export const signOut = async () => {
 
 // Helper function to get current user
 export const getCurrentUser = async () => {
-  const supabase = createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  if (error) {
-    console.error('Error getting current user:', error)
-    return null
-  }
-  
-  return user
+  return errorHandler.wrapAsync(async () => {
+    const supabase = createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error) {
+      throw errorHandler.create(
+        ErrorType.AUTHENTICATION,
+        `Failed to get current user: ${error.message}`,
+        ErrorSeverity.MEDIUM,
+        'GET_USER_FAILED',
+        error
+      )
+    }
+    
+    return user
+  }, 'getCurrentUser')
 }
 
 // Helper function to check if user is admin

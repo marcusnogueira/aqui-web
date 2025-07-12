@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { isAdminAuthenticatedServer } from '@/lib/admin-auth-server'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 
 // Force Node.js runtime to support crypto module
@@ -8,17 +9,17 @@ export const runtime = 'nodejs'
 // Force dynamic rendering since we use authentication cookies
 export const dynamic = 'force-dynamic'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    if (!(await isAdminAuthenticatedServer(request))) {
+    const adminUser = await verifyAdminTokenServer(request)
+    if (!adminUser) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
+
+    const supabase = createSupabaseServerClient(cookies())
 
     // Get total vendor count
     const { count: totalVendors, error: totalError } = await supabase
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     const { count: approvedVendors, error: approvedError } = await supabase
       .from('vendors')
       .select('*', { count: 'exact', head: true })
-      .eq('is_approved', true)
+      .eq('status', 'approved')
 
     if (approvedError) {
       console.error('Error getting approved vendors:', approvedError)
@@ -45,21 +46,21 @@ export async function GET(request: NextRequest) {
     const { count: pendingVendors, error: pendingError } = await supabase
       .from('vendors')
       .select('*', { count: 'exact', head: true })
-      .eq('is_approved', false)
+      .eq('status', 'pending')
 
     if (pendingError) {
       console.error('Error getting pending vendors:', pendingError)
       return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
-    // Get active vendor count
-    const { count: activeVendors, error: activeError } = await supabase
+    // Get rejected vendor count
+    const { count: rejectedVendors, error: rejectedError } = await supabase
       .from('vendors')
       .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
+      .eq('status', 'rejected')
 
-    if (activeError) {
-      console.error('Error getting active vendors:', activeError)
+    if (rejectedError) {
+      console.error('Error getting rejected vendors:', rejectedError)
       return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
     }
 
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
       total: totalVendors || 0,
       approved: approvedVendors || 0,
       pending: pendingVendors || 0,
-      active: activeVendors || 0,
+      rejected: rejectedVendors || 0,
       live: liveVendorCount
     }
 

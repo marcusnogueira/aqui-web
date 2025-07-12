@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-server'
-import { USER_ROLES, VENDOR_STATUSES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+import { cookies } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 
 // Force dynamic rendering for cookie usage
 export const dynamic = 'force-dynamic'
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createClient()
+    const supabase = createSupabaseServerClient(cookies())
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -55,6 +56,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Fetch platform settings to check for auto-approval
+    const { data: settings } = await supabase
+      .from('platform_settings')
+      .select('allow_auto_vendor_approval')
+      .eq('id', true)
+      .single()
+
+    const isAutoApproved = settings?.allow_auto_vendor_approval ?? false;
+    const initialStatus = isAutoApproved ? 'approved' : 'pending';
+
     // Prepare vendor data for insertion
     const vendorData = {
       user_id: user.id,
@@ -70,8 +81,7 @@ export async function POST(request: NextRequest) {
       tags: tags || [],
       profile_image_url: profile_image_url || null,
       banner_image_url: banner_image_url || [],
-      is_active: true, // Default to active, admin can deactivate
-      status: VENDOR_STATUSES.PENDING, // Require admin approval
+      status: initialStatus,
     };
 
     // Create vendor profile
@@ -87,6 +97,15 @@ export async function POST(request: NextRequest) {
         { error: ERROR_MESSAGES.INTERNAL_ERROR },
         { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
       )
+    }
+
+    // Create a notification for admins if manual approval is required
+    if (!isAutoApproved) {
+      await supabase.from('notifications').insert({
+        type: 'new_vendor_signup',
+        message: `New vendor "${business_name}" requires approval.`,
+        link: `/admin/vendors?filter=pending`,
+      });
     }
 
     // Create static location if address and coordinates are provided
@@ -123,11 +142,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const message = isAutoApproved
+      ? 'Vendor profile created and approved successfully.'
+      : 'Vendor profile created successfully. It is now pending approval.';
+
     return NextResponse.json({
       success: true,
       vendor: newVendor,
       user: updatedUser,
-      message: 'Vendor profile created successfully. It is now pending approval.'
+      message,
     })
 
   } catch (error) {

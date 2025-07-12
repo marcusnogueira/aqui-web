@@ -10,9 +10,12 @@ export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
 
 // ===== VENDOR STATUSES =====
 export const VENDOR_STATUSES = {
-  APPROVED: 'approved',
   PENDING: 'pending',
+  APPROVED: 'approved',
+  ACTIVE: 'active',
+  INACTIVE: 'inactive',
   REJECTED: 'rejected',
+  SUSPENDED: 'suspended',
 } as const;
 export type VendorStatus = typeof VENDOR_STATUSES[keyof typeof VENDOR_STATUSES];
 
@@ -127,6 +130,7 @@ export const HTTP_STATUS = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
+  TOO_MANY_REQUESTS: 429,
   INTERNAL_SERVER_ERROR: 500,
 } as const;
 export type HttpStatus = typeof HTTP_STATUS[keyof typeof HTTP_STATUS];

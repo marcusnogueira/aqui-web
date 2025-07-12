@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient, signOut } from '@/lib/supabase'
+import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import type { Database } from '@/types/database'
 import { USER_ROLES } from '@/lib/constants'
@@ -28,9 +28,9 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const userProfile = await clientAuth.getUserProfile(user.id)
-      if (userProfile) {
-        setCurrentUser(userProfile)
+      const userProfileResult = await clientAuth.getUserProfile(user.id)
+      if (userProfileResult.success && userProfileResult.data) {
+        setCurrentUser(userProfileResult.data)
         
         // Check if user has vendor profile
         const hasVendor = await clientAuth.hasVendorProfile(user.id)

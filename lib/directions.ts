@@ -1,5 +1,7 @@
 'use client'
 
+import { errorHandler, createGeolocationError, ErrorSeverity, ErrorType, Result, createResult } from '@/lib/error-handler'
+
 // Direction providers
 export type DirectionProvider = 'openstreetmap' | 'google'
 
@@ -57,10 +59,14 @@ export function generateDirectionUrl(
 }
 
 // Get user's current location with timeout and error handling
-export function getCurrentLocation(options?: PositionOptions): Promise<{ lat: number; lng: number }> {
-  return new Promise((resolve, reject) => {
+export function getCurrentLocation(options?: PositionOptions): Promise<Result<{ lat: number; lng: number }>> {
+  return new Promise((resolve) => {
     if (!('geolocation' in navigator)) {
-      reject(new Error('Geolocation is not supported by this browser'))
+      const error = createGeolocationError(
+        'Geolocation is not supported by this browser',
+        'GEOLOCATION_NOT_SUPPORTED'
+      )
+      resolve(createResult.error(error))
       return
     }
 
@@ -73,27 +79,41 @@ export function getCurrentLocation(options?: PositionOptions): Promise<{ lat: nu
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        resolve({
+        resolve(createResult.success({
           lat: position.coords.latitude,
           lng: position.coords.longitude
-        })
+        }))
       },
       (error) => {
         let errorMessage = 'Failed to get location'
+        let errorCode = 'GEOLOCATION_FAILED'
+        let severity = ErrorSeverity.MEDIUM
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = 'Location access denied by user'
+            errorCode = 'GEOLOCATION_PERMISSION_DENIED'
+            severity = ErrorSeverity.LOW
             break
           case error.POSITION_UNAVAILABLE:
             errorMessage = 'Location information unavailable'
+            errorCode = 'GEOLOCATION_UNAVAILABLE'
             break
           case error.TIMEOUT:
             errorMessage = 'Location request timed out'
+            errorCode = 'GEOLOCATION_TIMEOUT'
             break
         }
         
-        reject(new Error(errorMessage))
+        const standardError = errorHandler.create(
+          ErrorType.GEOLOCATION,
+          errorMessage,
+          severity,
+          errorCode,
+          { originalError: error, options: defaultOptions },
+          'getCurrentLocation'
+        )
+        resolve(createResult.error(standardError))
       },
       defaultOptions
     )
@@ -110,44 +130,53 @@ export async function getDirections(
     onLocationError?: (error: Error) => void
     onLocationSuccess?: (location: { lat: number; lng: number }) => void
   }
-): Promise<void> {
-  const {
-    provider,
-    useCurrentLocation = true,
-    openInNewTab = true,
-    onLocationError,
-    onLocationSuccess
-  } = options || {}
+): Promise<Result<void>> {
+  try {
+    const {
+      provider,
+      useCurrentLocation = true,
+      openInNewTab = true,
+      onLocationError,
+      onLocationSuccess
+    } = options || {}
 
-  let origin: { lat: number; lng: number } | undefined
+    let origin: { lat: number; lng: number } | undefined
 
-  // Try to get current location if requested
-  if (useCurrentLocation) {
-    try {
-      origin = await getCurrentLocation()
-      onLocationSuccess?.(origin)
-    } catch (error) {
-      console.warn('Could not get current location:', error)
-      onLocationError?.(error as Error)
-      // Continue without origin - direction service will prompt user
-    }
-  }
-
-  // Generate direction URL
-  const directionUrl = generateDirectionUrl(destination, origin, provider)
-
-  // Open directions
-  if (openInNewTab) {
-    // For automated tests, we can mock window.open
-    if (typeof window !== 'undefined') {
-      const opened = window.open(directionUrl, '_blank', 'noopener,noreferrer')
-      if (!opened) {
-        // Fallback if popup blocked
-        window.location.href = directionUrl
+    // Try to get current location if requested
+    if (useCurrentLocation) {
+      const locationResult = await getCurrentLocation()
+      if (locationResult.success) {
+        origin = locationResult.data
+        onLocationSuccess?.(origin)
+      } else {
+        // Log the error but continue without origin
+        errorHandler.handle(locationResult.error, 'getDirections.getCurrentLocation')
+        onLocationError?.(locationResult.error)
+        // Continue without origin - direction service will prompt user
       }
     }
-  } else {
-    window.location.href = directionUrl
+
+    // Generate direction URL
+    const directionUrl = generateDirectionUrl(destination, origin, provider)
+
+    // Open directions
+    if (openInNewTab) {
+      // For automated tests, we can mock window.open
+      if (typeof window !== 'undefined') {
+        const opened = window.open(directionUrl, '_blank', 'noopener,noreferrer')
+        if (!opened) {
+          // Fallback if popup blocked
+          window.location.href = directionUrl
+        }
+      }
+    } else {
+      window.location.href = directionUrl
+    }
+    
+    return createResult.success(undefined)
+  } catch (error) {
+    const standardError = errorHandler.handle(error as Error, 'getDirections')
+    return createResult.error(standardError)
   }
 }
 

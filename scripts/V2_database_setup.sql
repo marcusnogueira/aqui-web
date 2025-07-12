@@ -325,6 +325,8 @@ CREATE INDEX IF NOT EXISTS idx_review_reports_vendor_id ON review_reports(vendor
 CREATE INDEX IF NOT EXISTS idx_search_logs_user_id ON search_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_search_logs_searched_at ON search_logs(searched_at);
 
+
+
 -- =============================================================================
 -- SPATIAL INDEXES FOR GEOSPATIAL QUERIES (T1)
 -- =============================================================================
