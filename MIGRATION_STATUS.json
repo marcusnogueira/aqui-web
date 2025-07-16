@@ -1,0 +1,27 @@
+{
+  "created": "2025-07-16T04:52:05.057Z",
+  "branch": "feature/nextauth-migration",
+  "phases": {
+    "phase1_validation": {
+      "status": "in_progress",
+      "started": "2025-07-16T04:52:05.057Z"
+    },
+    "phase2_database": {
+      "status": "pending"
+    },
+    "phase3_api_routes": {
+      "status": "pending"
+    },
+    "phase4_frontend": {
+      "status": "pending"
+    },
+    "phase5_cleanup": {
+      "status": "pending"
+    }
+  },
+  "backups": {
+    "admin_users": null,
+    "database_policies": null
+  },
+  "rollback_available": true
+}
