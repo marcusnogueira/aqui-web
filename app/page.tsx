@@ -15,6 +15,7 @@ import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
 import toast from 'react-hot-toast'
 import { useLiveVendors } from '@/lib/hooks/useLiveVendors'
+import { useSession } from 'next-auth/react'
 
 import { VendorWithLiveSession } from '@/types/vendor'
 import { getVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils'
@@ -25,6 +26,7 @@ export default function HomePage() {
   const router = useRouter()
   const { t } = useTranslation()
   const { theme, toggleTheme, themeIcon } = useTheme()
+  const { data: session } = useSession()
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -183,13 +185,12 @@ export default function HomePage() {
   // Check authentication and handle role-based routing
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [session])
 
   const checkAuth = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+      if (session?.user) {
+        const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
         if (userProfileResult.success && userProfileResult.data) {
           setUser(userProfileResult.data)
         }

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
 import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+import { auth } from '@/app/api/auth/[...nextauth]/auth'
 
 // Force dynamic rendering for cookie usage
 export const dynamic = 'force-dynamic'
@@ -21,9 +22,10 @@ export async function POST(request: NextRequest) {
     const supabase = createSupabaseServerClient(cookies())
     
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const session = await auth()
+    const user = session?.user
     
-    if (authError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }

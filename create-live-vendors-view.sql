@@ -40,14 +40,28 @@ SELECT
     vls.auto_end_time,
     vls.ended_by,
     
-    -- Business type and subcategory names (with proper type casting)
-    bt.name as business_type_name,
-    bs.name as subcategory_name
+    -- Business type and subcategory names (with safe type casting)
+    CASE 
+        WHEN v.business_type ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+        THEN bt.name 
+        ELSE v.business_type 
+    END as business_type_name,
+    CASE 
+        WHEN v.subcategory ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+        THEN bs.name 
+        ELSE v.subcategory 
+    END as subcategory_name
     
 FROM vendors v
 INNER JOIN vendor_live_sessions vls ON v.id = vls.vendor_id
-LEFT JOIN business_types bt ON v.business_type::uuid = bt.id
-LEFT JOIN business_subcategories bs ON v.subcategory::uuid = bs.id
+LEFT JOIN business_types bt ON (
+    v.business_type ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+    AND v.business_type::uuid = bt.id
+)
+LEFT JOIN business_subcategories bs ON (
+    v.subcategory ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' 
+    AND v.subcategory::uuid = bs.id
+)
 WHERE 
     v.status = 'approved'
     AND vls.is_active = true

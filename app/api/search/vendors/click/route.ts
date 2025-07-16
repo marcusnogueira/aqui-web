@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
+import { auth } from '@/app/api/auth/[...nextauth]/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,9 +19,10 @@ export async function POST(request: NextRequest) {
     const supabase = createSupabaseServerClient(cookieStore)
 
     // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const session = await auth()
+    const user = session?.user
     
-    if (userError || !user) {
+    if (!user) {
       // Log anonymous click
       const { error: clickError } = await supabase
         .from('vendor_clicks' as any)

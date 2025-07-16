@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
@@ -12,6 +13,7 @@ type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
 
 export default function VendorOverviewPage() {
+  const { data: session } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -28,18 +30,17 @@ export default function VendorOverviewPage() {
 
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [session])
 
   const checkAuth = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) {
+      if (!session?.user) {
         router.push('/')
         return
       }
 
       // Get user profile
-      const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+      const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
       if (!userProfileResult.success || !userProfileResult.data) {
         router.push('/')
         return
@@ -52,7 +53,7 @@ export default function VendorOverviewPage() {
       }
 
       setUser(userProfile)
-      fetchVendorData(authUser.id)
+      fetchVendorData(session.user.id)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')

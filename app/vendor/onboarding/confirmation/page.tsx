@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
@@ -14,7 +15,8 @@ interface Vendor {
   subcategory: string
 }
 
-export default function OnboardingConfirmation() {
+function OnboardingConfirmationContent() {
+  const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [vendor, setVendor] = useState<Vendor | null>(null)
@@ -23,18 +25,17 @@ export default function OnboardingConfirmation() {
 
   useEffect(() => {
     checkAuthAndFetchVendor()
-  }, [])
+  }, [session])
 
   const checkAuthAndFetchVendor = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      if (!session?.user) {
         router.push('/')
         return
       }
 
       // Get user profile
-      const userProfileResult = await clientAuth.getUserProfile(user.id)
+      const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
       if (!userProfileResult.success || !userProfileResult.data || userProfileResult.data.active_role !== USER_ROLES.VENDOR) {
         router.push('/')
         return
@@ -44,7 +45,7 @@ export default function OnboardingConfirmation() {
       const { data: vendorData, error } = await supabase
         .from('vendors')
         .select('id, business_name, status, business_type, subcategory')
-        .eq('user_id', user.id)
+        .eq('user_id', session.user.id)
         .single()
 
       if (error || !vendorData) {
@@ -211,5 +212,17 @@ export default function OnboardingConfirmation() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function OnboardingConfirmation() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-mission-teal"></div>
+      </div>
+    }>
+      <OnboardingConfirmationContent />
+    </Suspense>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
@@ -16,6 +17,7 @@ type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['
 type VendorStaticLocation = Database['public']['Tables']['vendor_static_locations']['Row']
 
 export default function VendorDashboardPage() {
+  const { data: session } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -51,7 +53,7 @@ export default function VendorDashboardPage() {
   useEffect(() => {
     checkAuth()
     loadBusinessTypes()
-  }, [])
+  }, [session])
 
   const loadBusinessTypes = async () => {
     try {
@@ -89,14 +91,13 @@ export default function VendorDashboardPage() {
 
   const checkAuth = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) {
+      if (!session?.user) {
         router.push('/')
         return
       }
 
       // Get user profile
-      const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+      const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
       if (!userProfileResult.success || !userProfileResult.data) {
         router.push('/')
         return
@@ -109,7 +110,7 @@ export default function VendorDashboardPage() {
       }
 
       setUser(userProfile)
-      fetchVendorData(authUser.id)
+      fetchVendorData(session.user.id)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -128,8 +129,7 @@ export default function VendorDashboardPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      router.push('/')
+      await nextAuthSignOut({ callbackUrl: '/' })
     } catch (error) {
       console.error('Error signing out:', error)
       alert('Failed to sign out. Please try again.')

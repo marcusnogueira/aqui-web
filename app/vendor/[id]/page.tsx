@@ -9,6 +9,7 @@ import { Star, MapPin, Clock, Phone, Mail, Heart, MessageSquare, Flag, X, Naviga
 import { useHeartBeat } from '@/lib/animations';
 import { GetDirectionsButton } from '@/components/GetDirectionsButton';
 import { getDetailedVendorStatus, extractCoordinatesFromVendor, VendorWithLiveSession } from '@/lib/vendor-utils';
+import { useSession } from 'next-auth/react';
 
 type VendorLocation = Database['public']['Tables']['vendor_static_locations']['Row'];
 type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['Row'];
@@ -32,6 +33,7 @@ export default function VendorProfilePage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createClient();
+  const { data: session } = useSession();
   
   const [vendor, setVendor] = useState<VendorProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,12 +58,12 @@ export default function VendorProfilePage() {
     }
     fetchVendorData();
     fetchUser();
-  }, [vendorId]);
+  }, [vendorId, session]);
 
   const fetchUser = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
+      if (session?.user) {
+        const authUser = session.user;
         const { data: userData } = await supabase
           .from('users')
           .select('*')

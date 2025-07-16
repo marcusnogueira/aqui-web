@@ -52,28 +52,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = cookies()
-  
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          // Can't set cookies in layout, handled by middleware
-        },
-        remove(name: string, options: any) {
-          // Can't remove cookies in layout, handled by middleware
-        },
-      },
-    }
-  )
-  
-  const { data: { session } } = await supabase.auth.getSession()
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -85,7 +63,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-background text-foreground`}>
-        <Providers session={session}>
+        <Providers>
           {children}
           <Toaster
             position="top-center"

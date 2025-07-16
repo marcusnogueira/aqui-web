@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithGoogle, signInWithApple } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 interface AuthModalProps {
   isOpen: boolean
@@ -27,31 +27,33 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
-      setLoading(true)
-      clearMessage()
-      await signInWithGoogle()
-      onClose()
+      setLoading(true);
+      clearMessage();
+      // Use NextAuth's signIn function for Google
+      await signIn('google', { callbackUrl: '/' });
+      onClose();
     } catch (error) {
-      console.error('Error signing in:', error)
-      setMessageWithType('Error signing in with Google.', 'error')
+      console.error('Error signing in:', error);
+      setMessageWithType('Error signing in with Google.', 'error');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [onClose, clearMessage, setMessageWithType])
+  }, [onClose, clearMessage, setMessageWithType]);
 
   const handleAppleSignIn = useCallback(async () => {
     try {
-      setLoading(true)
-      clearMessage()
-      await signInWithApple()
-      onClose()
+      setLoading(true);
+      clearMessage();
+      // Use NextAuth's signIn function for Apple
+      await signIn('apple', { callbackUrl: '/' });
+      onClose();
     } catch (error) {
-      console.error('Error signing in:', error)
-      setMessageWithType('Error signing in with Apple.', 'error')
+      console.error('Error signing in:', error);
+      setMessageWithType('Error signing in with Apple.', 'error');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [onClose, clearMessage, setMessageWithType])
+  }, [onClose, clearMessage, setMessageWithType]);
 
 
 

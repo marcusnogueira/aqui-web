@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { signOut, createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
 
 export function Navigation() {
+  const { data: session } = useSession()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -15,13 +17,12 @@ export function Navigation() {
 
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [session])
 
   const checkAuth = async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const userProfileResult = await clientAuth.getUserProfile(authUser.id)
+      if (session?.user) {
+        const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
         if (userProfileResult.success && userProfileResult.data) {
           setUser(userProfileResult.data)
         }
@@ -33,11 +34,10 @@ export function Navigation() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      await nextAuthSignOut({ callbackUrl: '/' })
       setIsOpen(false)
-      // Clear user state and redirect to home page
+      // Clear user state
       setUser(null)
-      router.push('/')
     } catch (error) {
       console.error('Error signing out:', error)
     }

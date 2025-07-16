@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import type { Database } from '@/types/database'
@@ -14,6 +15,7 @@ interface RoleSwitcherProps {
 }
 
 export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
+  const { data: session } = useSession()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [hasVendorProfile, setHasVendorProfile] = useState(false)
@@ -21,19 +23,18 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
 
   useEffect(() => {
     loadUserData()
-  }, [])
+  }, [session])
 
   const loadUserData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!session?.user) return
 
-      const userProfileResult = await clientAuth.getUserProfile(user.id)
+      const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
       if (userProfileResult.success && userProfileResult.data) {
         setCurrentUser(userProfileResult.data)
         
         // Check if user has vendor profile
-        const hasVendor = await clientAuth.hasVendorProfile(user.id)
+        const hasVendor = await clientAuth.hasVendorProfile(session.user.id!)
         setHasVendorProfile(hasVendor)
       }
     } catch (error) {
@@ -76,10 +77,9 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      // Clear user state and redirect to home page
+      await nextAuthSignOut({ callbackUrl: '/' })
+      // Clear user state
       setCurrentUser(null)
-      window.location.href = '/'
     } catch (error) {
       console.error('Error signing out:', error)
     }

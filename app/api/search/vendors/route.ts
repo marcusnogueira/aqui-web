@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
+import { auth } from '@/app/api/auth/[...nextauth]/auth'
 
 interface SearchParams {
   q?: string // search query
@@ -111,7 +112,8 @@ export async function GET(request: NextRequest) {
 
     // Log search query if user is authenticated and query is provided
     if (query.trim()) {
-      const { data: { user } } = await supabase.auth.getUser()
+      const session = await auth()
+      const user = session?.user
       if (user && lat && lng) {
         await supabase
           .from('search_logs')
@@ -154,7 +156,8 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createSupabaseServerClient(cookies())
-    const { data: { user } } = await supabase.auth.getUser()
+    const session = await auth()
+    const user = session?.user
     
     if (!user) {
       return NextResponse.json(

@@ -1,35 +1,30 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { I18nextProvider } from 'react-i18next'
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
+import { SessionProvider } from 'next-auth/react'
 import i18n from '@/lib/i18n'
 import type { Database } from '@/types/database'
-import type { Session, SupabaseClient, User } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-type SupabaseContextType = {
+// 1. Simplified Supabase Context for data operations only
+type SupabaseDataContextType = {
   supabase: SupabaseClient<Database>
-  session: Session | null
-  user: User | null
-  loading: boolean
 }
 
-const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined)
+const SupabaseDataContext = createContext<SupabaseDataContextType | undefined>(undefined)
 
-export const useSupabase = () => {
-  const context = useContext(SupabaseContext)
+export const useSupabaseData = () => {
+  const context = useContext(SupabaseDataContext)
   if (context === undefined) {
-    throw new Error('useSupabase must be used within a SupabaseProvider')
+    throw new Error('useSupabaseData must be used within a Providers component')
   }
   return context
 }
 
-export const useUser = () => {
-  const { user, loading } = useSupabase()
-  return { user, loading }
-}
-
+// 2. ThemeProvider remains the same
 function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider 
@@ -44,42 +39,24 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function Providers({
-  children,
-  session: initialSession,
-}: {
-  children: React.ReactNode
-  session: Session | null
-}) {
+// 3. Main Providers component updated for NextAuth
+export function Providers({ children }: { children: React.ReactNode }) {
+  // Keep the Supabase client for data fetching, not for auth
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
   )
-  const [session, setSession] = useState<Session | null>(initialSession)
-  const [user, setUser] = useState<User | null>(initialSession?.user ?? null)
-  const [loading, setLoading] = useState(initialSession === null)
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        setSession(newSession)
-        setUser(newSession?.user ?? null)
-        setLoading(false)
-      }
-    )
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [supabase])
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <SupabaseContext.Provider value={{ supabase, session, user, loading }}>
-        <ThemeProvider>{children}</ThemeProvider>
-      </SupabaseContext.Provider>
-    </I18nextProvider>
+    // SessionProvider from NextAuth now wraps everything
+    <SessionProvider>
+      <I18nextProvider i18n={i18n}>
+        <SupabaseDataContext.Provider value={{ supabase }}>
+          <ThemeProvider>{children}</ThemeProvider>
+        </SupabaseDataContext.Provider>
+      </I18nextProvider>
+    </SessionProvider>
   )
 }

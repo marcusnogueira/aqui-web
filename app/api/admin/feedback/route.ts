@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+
 const HTTP_STATUS = {
   OK: 200,
   BAD_REQUEST: 400,

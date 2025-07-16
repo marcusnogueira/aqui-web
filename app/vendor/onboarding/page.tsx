@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
 
 export default function VendorOnboardingPage() {
+  const { data: session } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -34,17 +36,16 @@ export default function VendorOnboardingPage() {
 
   useEffect(() => {
     checkAuth()
-  }, [])
+  }, [session])
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    if (!session?.user) {
       router.push('/')
       return
     }
     
-    setUser(user)
-    setFormData(prev => ({ ...prev, contact_email: user.email || '' }))
+    setUser(session.user)
+    setFormData(prev => ({ ...prev, contact_email: session.user.email || '' }))
     
     // Note: Server-side validation in the API will handle existing vendor check
     // No need for redundant client-side check here
@@ -92,8 +93,7 @@ export default function VendorOnboardingPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      router.push('/')
+      await nextAuthSignOut({ callbackUrl: '/' })
     } catch (error) {
       console.error('Error signing out:', error)
     }

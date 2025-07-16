@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+
 const HTTP_STATUS = {
   OK: 200,
   BAD_REQUEST: 400,
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
       const { count: activeVendors, error: activeVendorsError } = await supabase
         .from('vendors')
         .select('*', { count: 'exact', head: true })
-        .eq('is_approved', true)
+        .eq('status', 'approved')
 
       // Get vendor live sessions data
       const { data: liveSessionsData, error: liveSessionsError } = await supabase

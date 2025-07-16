@@ -15,7 +15,7 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    domains: ['ndveatnmdajpohumojqb.supabase.co'],
+    domains: [process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') || 'localhost'],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,
