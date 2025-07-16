@@ -5,6 +5,7 @@ import Google from "next-auth/providers/google"
 import Apple from "next-auth/providers/apple"
 import { createClient } from '@supabase/supabase-js'
 import { USER_ROLES } from '@/lib/constants'
+import bcrypt from 'bcryptjs'
 
 // Initialize Supabase client for server-side operations
 const supabase = createClient(
@@ -18,11 +19,10 @@ export const authConfig: NextAuthConfig = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
-    // Apple provider temporarily disabled - uncomment when Apple credentials are configured
-    // Apple({
-    //   clientId: process.env.APPLE_CLIENT_ID!,
-    //   clientSecret: process.env.APPLE_CLIENT_SECRET!,
-    // }),
+    Apple({
+      clientId: process.env.APPLE_CLIENT_ID!,
+      clientSecret: process.env.APPLE_CLIENT_SECRET!,
+    }),
     Credentials({
       name: "Credentials",
       credentials: {
@@ -34,35 +34,42 @@ export const authConfig: NextAuthConfig = {
           return null;
         }
 
-        // Use Supabase Auth to sign in the user
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: credentials.email as string,
-          password: credentials.password as string,
-        });
+        try {
+          // Query users table directly instead of using Supabase Auth
+          const { data: user, error } = await supabase
+            .from('users')
+            .select('id, email, password, active_role')
+            .eq('email', credentials.email)
+            .single();
 
-        if (error || !data.user) {
-          console.error("Supabase sign-in error:", error?.message);
+          if (error || !user) {
+            console.error("User not found:", error?.message);
+            return null;
+          }
+
+          // Check if user has a password (some users might be OAuth-only)
+          if (!user.password) {
+            console.error("User has no password - OAuth user trying credentials login");
+            return null;
+          }
+
+          // Verify password with bcrypt
+          const isValidPassword = await bcrypt.compare(credentials.password as string, user.password);
+
+          if (!isValidPassword) {
+            console.error("Invalid password for user:", credentials.email);
+            return null;
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            active_role: user.active_role,
+          };
+        } catch (error) {
+          console.error("Credentials authorization error:", error);
           return null;
         }
-        
-        // Fetch user active_role from your 'users' table
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('active_role')
-          .eq('id', data.user.id)
-          .single();
-
-        if (userError || !userData) {
-          console.error("Error fetching user active_role:", userError?.message);
-          // Decide how to handle users without a role. For now, we'll deny access.
-          return null;
-        }
-
-        return {
-          id: data.user.id,
-          email: data.user.email,
-          active_role: userData.active_role,
-        };
       }
     })
   ],

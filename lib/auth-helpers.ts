@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import { User } from '@supabase/supabase-js'
+import { useSession } from 'next-auth/react'
 import { USER_ROLES } from '@/lib/constants'
 import type { Database } from '@/types/database'
 import { errorHandler, createAuthError, createNetworkError, ErrorSeverity, Result, createResult } from '@/lib/error-handler'
@@ -9,21 +9,24 @@ type DatabaseUser = Database['public']['Tables']['users']['Row']
 
 /**
  * Client-side authentication helpers
+ * Updated to use NextAuth.js instead of Supabase Auth
  */
 export const clientAuth = {
   /**
-   * Get current authenticated user from client
+   * Get current authenticated user from NextAuth session
+   * Note: This should be used in React components with useSession hook
    */
-  async getCurrentUser(): Promise<User | null> {
+  async getCurrentUser(): Promise<any | null> {
     return errorHandler.wrapAsync(async () => {
-      const supabase = createClient()
-      const { data: { user }, error } = await supabase.auth.getUser()
-      
-      if (error) {
-        throw createAuthError('Failed to get current user', 'AUTH_GET_USER_FAILED', error)
+      // For client-side, we recommend using useSession hook directly
+      // This method is kept for backward compatibility
+      const response = await fetch('/api/auth/session')
+      if (!response.ok) {
+        throw createAuthError('Failed to get current session', 'AUTH_SESSION_FAILED')
       }
       
-      return user
+      const session = await response.json()
+      return session?.user || null
     }, 'clientAuth.getCurrentUser', null)
   },
   
