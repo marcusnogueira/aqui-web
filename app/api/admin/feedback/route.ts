@@ -84,8 +84,7 @@ export async function GET(request: NextRequest) {
         *,
         vendors!inner(
           id,
-          business_name,
-          email
+          business_name
         )
       `)
       .order('created_at', { ascending: false })
@@ -96,11 +95,11 @@ export async function GET(request: NextRequest) {
     }
     
     if (feedbackType && feedbackType !== 'all') {
-      query = query.eq('feedback_type', feedbackType)
+      query = query.eq('feedback_type', feedbackType as any)
     }
     
     if (priority && priority !== 'all') {
-      query = query.eq('priority', priority)
+      query = query.eq('priority', priority as any)
     }
     
     if (search) {

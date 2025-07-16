@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match the expected VendorWithLiveSession format
-    const transformedVendors = vendors?.map(vendor => ({
+    const transformedVendors = vendors?.map((vendor: any) => ({
       id: vendor.id,
       user_id: vendor.user_id,
       business_name: vendor.business_name,
@@ -82,18 +82,18 @@ export async function GET(request: NextRequest) {
       phone: vendor.phone,
       address: vendor.address,
       city: vendor.city,
-      latitude: vendor.vendor_latitude,
-      longitude: vendor.vendor_longitude,
+      latitude: vendor.live_latitude,
+      longitude: vendor.live_longitude,
       status: vendor.status,
       approved_by: vendor.approved_by,
       approved_at: vendor.approved_at,
       average_rating: vendor.average_rating,
       total_reviews: vendor.total_reviews,
       admin_notes: vendor.admin_notes,
-      created_at: vendor.vendor_created_at,
-      updated_at: vendor.vendor_updated_at,
+      created_at: vendor.created_at,
+      updated_at: vendor.updated_at,
       live_session: {
-        id: vendor.live_session_id,
+        id: vendor.session_id,
         vendor_id: vendor.id,
         start_time: vendor.start_time,
         end_time: vendor.end_time,

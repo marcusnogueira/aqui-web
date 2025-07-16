@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (status && status !== 'all') {
-      query = query.eq('status', status)
+      query = query.eq('status', status as any)
     }
 
     // Apply pagination and get both data and count in a single query

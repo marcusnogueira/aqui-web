@@ -87,7 +87,7 @@ export async function PATCH(request: NextRequest) {
 
       const { error: notificationError } = await supabase
         .from('notifications')
-        .insert(notifications)
+        .insert(notifications as any)
 
       if (notificationError) {
         console.error('Error creating notifications:', notificationError)

@@ -128,10 +128,10 @@ export async function PATCH(request: NextRequest) {
             .from('notifications')
             .insert({
               recipient_id: result.data.user_id,
-              type: notificationType,
+              type: notificationType as any,
               message: notificationMessage,
               link: value ? '/vendor/dashboard' : '/vendor/onboarding'
-            })
+            } as any)
         }
         break
 

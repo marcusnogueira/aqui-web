@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const { count: vendor_applications, error: vendorAppError } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
-      .eq('type', 'vendor_application')
+      .eq('type', 'vendor_application' as any)
 
     if (vendorAppError) {
       console.error('Error fetching vendor application notifications:', vendorAppError)
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     const { count: vendor_approved, error: vendorApprovedError } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
-      .eq('type', 'vendor_approved')
+      .eq('type', 'vendor_approved' as any)
 
     if (vendorApprovedError) {
       console.error('Error fetching vendor approved notifications:', vendorApprovedError)
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     const { count: vendor_rejected, error: vendorRejectedError } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
-      .eq('type', 'vendor_rejected')
+      .eq('type', 'vendor_rejected' as any)
 
     if (vendorRejectedError) {
       console.error('Error fetching vendor rejected notifications:', vendorRejectedError)

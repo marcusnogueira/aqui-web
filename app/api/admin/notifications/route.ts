@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       if (type === 'unread') {
         query = query.eq('is_read', false)
       } else {
-        query = query.eq('type', type)
+        query = query.eq('type', type as any)
       }
     }
 

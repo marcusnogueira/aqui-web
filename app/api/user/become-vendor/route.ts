@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     // Create vendor profile
     const { data: newVendor, error: vendorError } = await supabase
       .from('vendors')
-      .insert(vendorData)
+      .insert(vendorData as any)
       .select()
       .single()
 

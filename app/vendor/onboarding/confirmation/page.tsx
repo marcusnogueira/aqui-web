@@ -52,7 +52,7 @@ export default function OnboardingConfirmation() {
         return
       }
 
-      setVendor(vendorData)
+      setVendor(vendorData as any)
     } catch (error) {
       console.error('Error fetching vendor data:', error)
       router.push('/vendor/onboarding')

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (userError || !user) {
       // Log anonymous click
       const { error: clickError } = await supabase
-        .from('vendor_clicks')
+        .from('vendor_clicks' as any)
         .insert({
           vendor_id,
           latitude,
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Log authenticated user click
       const { error: clickError } = await supabase
-        .from('vendor_clicks')
+        .from('vendor_clicks' as any)
         .insert({
           user_id: user.id,
           vendor_id,
