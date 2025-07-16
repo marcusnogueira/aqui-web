@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,10 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createSupabaseServerClient(cookies())
+    
+    // Set service role context for RLS policies
+    await setServiceRoleContext(supabase)
+    
     const { searchParams } = new URL(request.url)
     
     // Parse date range parameter (7d, 30d, 90d)
@@ -145,6 +150,9 @@ export async function GET(request: NextRequest) {
         { error: ERROR_MESSAGES.INTERNAL_ERROR },
         { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
       )
+    } finally {
+      // Always clear user context when done
+      await clearUserContext(supabase)
     }
 
   } catch (error) {

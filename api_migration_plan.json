@@ -1,0 +1,323 @@
+{
+  "total": 23,
+  "needsMigration": 20,
+  "completed": 3,
+  "routes": [
+    {
+      "path": "admin/analytics",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/analytics/route.ts",
+      "relativePath": "app/api/admin/analytics/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/feedback",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/feedback/route.ts",
+      "relativePath": "app/api/admin/feedback/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/login",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/login/route.ts",
+      "relativePath": "app/api/admin/login/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/me",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/me/route.ts",
+      "relativePath": "app/api/admin/me/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": false,
+      "hasAuthCheck": true,
+      "needsMigration": false,
+      "issues": [],
+      "priority": "low"
+    },
+    {
+      "path": "admin/notifications/[id]/read",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/notifications/[id]/read/route.ts",
+      "relativePath": "app/api/admin/notifications/[id]/read/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/notifications",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/notifications/route.ts",
+      "relativePath": "app/api/admin/notifications/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/notifications/stats",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/notifications/stats/route.ts",
+      "relativePath": "app/api/admin/notifications/stats/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/settings",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/settings/route.ts",
+      "relativePath": "app/api/admin/settings/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/stats",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/stats/route.ts",
+      "relativePath": "app/api/admin/stats/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/test-schema",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/test-schema/route.ts",
+      "relativePath": "app/api/admin/test-schema/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendor-status",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendor-status/route.ts",
+      "relativePath": "app/api/admin/vendor-status/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendor-status/stats",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendor-status/stats/route.ts",
+      "relativePath": "app/api/admin/vendor-status/stats/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendors/[id]",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendors/[id]/route.ts",
+      "relativePath": "app/api/admin/vendors/[id]/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendors/[id]/status",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendors/[id]/status/route.ts",
+      "relativePath": "app/api/admin/vendors/[id]/status/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendors/batch",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendors/batch/route.ts",
+      "relativePath": "app/api/admin/vendors/batch/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendors",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendors/route.ts",
+      "relativePath": "app/api/admin/vendors/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "admin/vendors/stats",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/admin/vendors/stats/route.ts",
+      "relativePath": "app/api/admin/vendors/stats/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "auth/[...nextauth]",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/auth/[...nextauth]/route.ts",
+      "relativePath": "app/api/auth/[...nextauth]/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": false,
+      "hasAuthCheck": true,
+      "needsMigration": false,
+      "issues": [],
+      "priority": "low"
+    },
+    {
+      "path": "search/vendors/click",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/search/vendors/click/route.ts",
+      "relativePath": "app/api/search/vendors/click/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": true,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "search/vendors",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/search/vendors/route.ts",
+      "relativePath": "app/api/search/vendors/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": true,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "user/become-vendor",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/user/become-vendor/route.ts",
+      "relativePath": "app/api/user/become-vendor/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": true,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "user/switch-role",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/user/switch-role/route.ts",
+      "relativePath": "app/api/user/switch-role/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": true,
+      "hasCreateSupabaseClient": true,
+      "hasAuthCheck": true,
+      "needsMigration": true,
+      "issues": [
+        "Needs user context setting for RLS"
+      ],
+      "priority": "low"
+    },
+    {
+      "path": "vendors/map-data",
+      "file": "/Users/marcusnogueira/Downloads/Aqui/Trae_v2/app/api/vendors/map-data/route.ts",
+      "relativePath": "app/api/vendors/map-data/route.ts",
+      "hasSupabaseAuth": false,
+      "hasNextAuth": false,
+      "hasCreateSupabaseClient": false,
+      "hasAuthCheck": true,
+      "needsMigration": false,
+      "issues": [],
+      "priority": "low"
+    }
+  ]
+}

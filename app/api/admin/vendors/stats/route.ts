@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
@@ -11,6 +12,8 @@ export const dynamic = 'force-dynamic'
 
 
 export async function GET(request: NextRequest) {
+  const supabase = createSupabaseServerClient(cookies())
+  
   try {
     // Check admin authentication
     const adminUser = await verifyAdminTokenServer(request)
@@ -18,7 +21,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: ERROR_MESSAGES.UNAUTHORIZED }, { status: HTTP_STATUS.UNAUTHORIZED })
     }
 
-    const supabase = createSupabaseServerClient(cookies())
+    // Set service role context for RLS policies
+    await setServiceRoleContext(supabase)
 
     // Get vendor counts by status
     const { data: vendorStats, error: vendorError } = await supabase
@@ -79,9 +83,13 @@ export async function GET(request: NextRequest) {
       sessions: sessionStats,
       recent: recentStats
     })
+
   } catch (error) {
     console.error('Error in vendor stats API:', error)
     return NextResponse.json({ error: ERROR_MESSAGES.INTERNAL_ERROR }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR })
+  } finally {
+    // Always clear user context when done
+    await clearUserContext(supabase)
   }
 }
 

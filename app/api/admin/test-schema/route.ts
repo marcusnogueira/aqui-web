@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server';
@@ -22,6 +23,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const supabase = createSupabaseServerClient(cookies())
+
   try {
     // Check admin authentication
     const adminUser = await verifyAdminTokenServer(request);
@@ -32,7 +35,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServerClient(cookies());
+    // Set service role context for RLS policies
+    await setServiceRoleContext(supabase);
     const { table, operation, data } = await request.json();
 
     if (!table || !operation) {
@@ -100,6 +104,9 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    // Always clear user context when done
+    await clearUserContext(supabase)
   }
 }
 

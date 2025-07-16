@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 import { SignJWT } from 'jose'
@@ -146,6 +147,9 @@ export async function POST(request: NextRequest) {
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
+  } finally {
+    // Always clear user context when done
+    await clearUserContext(supabaseAdmin)
   }
 }
 

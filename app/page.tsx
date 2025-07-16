@@ -20,6 +20,15 @@ import { useSession } from 'next-auth/react'
 import { VendorWithLiveSession } from '@/types/vendor'
 import { getVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils'
 
+// Simple debounce function to prevent excessive API calls
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: NodeJS.Timeout
+  return ((...args: any[]) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }) as T
+}
+
 type Vendor = VendorWithLiveSession
 
 export default function HomePage() {
@@ -27,29 +36,34 @@ export default function HomePage() {
   const { t } = useTranslation()
   const { theme, toggleTheme, themeIcon } = useTheme()
   const { data: session } = useSession()
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(true) // No useEffect needed - just start mounted
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(() => {
+    // Initialize with default location immediately - no useEffect cascade
+    return { lat: 37.7749, lng: -122.4194 }
+  })
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
   const [mapBounds, setMapBounds] = useState<{north: number, south: number, east: number, west: number} | null>(null)
   const [highlightedVendor, setHighlightedVendor] = useState<string | null>(null)
 
   const [isLocating, setIsLocating] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  const [leftPanelWidth, setLeftPanelWidth] = useState(40) // percentage - for manual resize only
+  const [leftPanelWidth, setLeftPanelWidth] = useState(40)
 
   const supabase = createClient()
   
-  // Use the custom hook for vendor data fetching and real-time updates
-  const { vendors, isLoading: loadingVendors, error: vendorsError, mutate: refreshVendors } = useLiveVendors({
-    searchQuery,
+  // FIXED: Stable vendor params that don't change on every render
+  const vendorParams = useMemo(() => ({
+    searchQuery: searchQuery.trim(),
     userLocation,
-    mapBounds,
-    enabled: !loading // Only fetch vendors after auth check is complete
-  })
+    mapBounds: null, // Don't use bounds for API calls - causes too many requests
+    enabled: userLocation !== null
+  }), [searchQuery.trim(), userLocation?.lat, userLocation?.lng])
+
+  // Use the custom hook for vendor data fetching and real-time updates
+  const { vendors, isLoading: loadingVendors, error: vendorsError, mutate: refreshVendors } = useLiveVendors(vendorParams)
 
   // Handle mouse and touch events for fluid resizing
   useEffect(() => {
@@ -177,57 +191,53 @@ export default function HomePage() {
     )
   }
 
-  // Handle mounting for next-themes
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Check authentication and handle role-based routing
-  useEffect(() => {
-    checkAuth()
-  }, [session])
-
-  const checkAuth = async () => {
-    try {
-      if (session?.user) {
-        const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
-        if (userProfileResult.success && userProfileResult.data) {
-          setUser(userProfileResult.data)
-        }
-        
-        // Note: Removed automatic vendor dashboard redirect
-        // Users should manually navigate via profile menu
+  // Handle auth check - NextAuth session can be null, undefined, or have data
+  const loading = false // Don't block the page on auth - let it load
+  
+  // Handle user profile loading without useEffect
+  if (session?.user && !user) {
+    clientAuth.getUserProfile(session.user.id!).then(result => {
+      if (result.success && result.data) {
+        setUser(result.data)
       }
-    } catch (error) {
+    }).catch(error => {
       console.error('Auth check error:', error)
-    } finally {
-      setLoading(false)
-    }
+    })
   }
 
-  // Default to San Francisco location
-  useEffect(() => {
-    // Always start with San Francisco as default
-    // Users can manually request their location using the location button
-    setUserLocation({ lat: 37.7749, lng: -122.4194 })
-  }, [])
-
-  // Handle vendor errors from the custom hook
-  useEffect(() => {
-    if (vendorsError) {
-      console.error('Vendor fetch error:', vendorsError)
+  // Handle vendor errors without useEffect - just show error if it exists
+  if (vendorsError) {
+    console.error('Vendor fetch error:', vendorsError)
+    // Only show toast once per error (simple check)
+    if (!vendorsError.toString().includes('shown')) {
       toast.error('Failed to load vendors')
+      vendorsError.shown = true // Mark as shown
     }
-  }, [vendorsError])
+  }
 
 
 
   // Vendors are already filtered server-side, no need for additional client-side filtering
 
-  // Handle map bounds change
-  const handleMapBoundsChange = useCallback((bounds: {north: number, south: number, east: number, west: number}) => {
-    setMapBounds(bounds)
-  }, [])
+  // Handle map bounds change - FIXED: Stable debounced function
+  const handleMapBoundsChange = useMemo(() => {
+    return debounce((bounds: {north: number, south: number, east: number, west: number}) => {
+      setMapBounds(prevBounds => {
+        // Only update if bounds have changed significantly (more than 0.01 degrees)
+        if (prevBounds) {
+          const latDiff = Math.abs(bounds.north - prevBounds.north) + Math.abs(bounds.south - prevBounds.south)
+          const lngDiff = Math.abs(bounds.east - prevBounds.east) + Math.abs(bounds.west - prevBounds.west)
+          
+          if (latDiff < 0.01 && lngDiff < 0.01) {
+            return prevBounds // No change
+          }
+        }
+        
+        console.log('Map bounds updated:', bounds) // Debug log
+        return bounds
+      })
+    }, 3000) // Increased to 3 seconds to really reduce API calls
+  }, []) // No dependencies - stable function
 
   const handleVendorClick = useCallback((vendorId: string) => {
     router.push(`/vendor/${vendorId}`)

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setUserContext, clearUserContext, getCurrentSession } from '@/lib/nextauth-context'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
@@ -24,6 +25,12 @@ export async function GET(request: NextRequest) {
 
     const supabase = createSupabaseServerClient(cookies())
 
+    // Set user context if authenticated (optional for search)
+    const session = await getCurrentSession()
+    if (session?.user?.id) {
+      await setUserContext(supabase, session.user.id)
+    }
+
     // Start with the optimized view for live vendors
     let queryBuilder = supabase
       .from('live_vendors_with_sessions')
@@ -46,15 +53,15 @@ export async function GET(request: NextRequest) {
       `)
     }
 
-    // Apply map bounds filter if provided
+    // Apply map bounds filter if provided - FIXED: Use correct column names
     if (bounds) {
       const [north, south, east, west] = bounds.split(',').map(Number)
       if (!isNaN(north) && !isNaN(south) && !isNaN(east) && !isNaN(west)) {
         queryBuilder = queryBuilder
-          .gte('session_latitude', south)
-          .lte('session_latitude', north)
-          .gte('session_longitude', west)
-          .lte('session_longitude', east)
+          .gte('live_latitude', south)
+          .lte('live_latitude', north)
+          .gte('live_longitude', west)
+          .lte('live_longitude', east)
       }
     }
 
@@ -100,11 +107,11 @@ export async function GET(request: NextRequest) {
         end_time: vendor.end_time,
         was_scheduled_duration: vendor.was_scheduled_duration,
         estimated_customers: vendor.estimated_customers,
-        latitude: vendor.session_latitude,
-        longitude: vendor.session_longitude,
-        address: vendor.session_address,
+        latitude: vendor.live_latitude, // From live_vendors_with_sessions view
+        longitude: vendor.live_longitude, // From live_vendors_with_sessions view  
+        address: vendor.address, // Vendor's address from the view
         is_active: vendor.is_active,
-        created_at: vendor.session_created_at,
+        created_at: vendor.created_at, // Session created_at from the view
         auto_end_time: vendor.auto_end_time,
         ended_by: vendor.ended_by
       }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 
 // Force Node.js runtime to support crypto module

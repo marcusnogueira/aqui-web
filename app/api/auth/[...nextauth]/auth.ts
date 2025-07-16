@@ -18,10 +18,11 @@ export const authConfig: NextAuthConfig = {
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
-    Apple({
-      clientId: process.env.APPLE_CLIENT_ID!,
-      clientSecret: process.env.APPLE_CLIENT_SECRET!,
-    }),
+    // Apple provider temporarily disabled - uncomment when Apple credentials are configured
+    // Apple({
+    //   clientId: process.env.APPLE_CLIENT_ID!,
+    //   clientSecret: process.env.APPLE_CLIENT_SECRET!,
+    // }),
     Credentials({
       name: "Credentials",
       credentials: {

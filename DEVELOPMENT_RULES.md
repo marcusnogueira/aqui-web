@@ -105,6 +105,37 @@ if (!user) {
 }
 ```
 
+## Critical Development Principles
+
+### No Band-Aid Solutions
+**RULE**: Never implement temporary fixes, delays, or workarounds to mask underlying issues.
+
+**Examples of BANNED approaches**:
+- ❌ Adding `setTimeout()` to "fix" timing issues
+- ❌ Using hardcoded delays to prevent race conditions  
+- ❌ Adding `debounce()` without understanding why multiple calls happen
+- ❌ Disabling functionality instead of fixing the root cause
+- ❌ Using `try/catch` to suppress errors without addressing them
+
+**Required approach**:
+- ✅ Identify and fix the root cause of the problem
+- ✅ Understand WHY something is happening before fixing it
+- ✅ Trace through the complete execution flow
+- ✅ Fix architectural issues, not symptoms
+
+### No Hardcoded Values
+**RULE**: Never use magic numbers or hardcoded values without clear justification.
+
+**Examples of BANNED approaches**:
+- ❌ `setTimeout(callback, 1000)` - why 1000ms?
+- ❌ `if (items.length > 5)` - why 5?
+- ❌ `lat.toFixed(2)` - why 2 decimal places?
+
+**Required approach**:
+- ✅ Use named constants: `DEBOUNCE_DELAY_MS = 300`
+- ✅ Document the reasoning in comments
+- ✅ Make values configurable when appropriate
+
 ---
 
 **Note**: This document should be updated whenever new structural patterns or requirements are identified during development.

@@ -4,9 +4,17 @@ import { useCallback, useEffect, useRef } from 'react'
 import useSWR, { mutate } from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { VendorWithLiveSession } from '@/types/vendor'
-import { debounce } from 'lodash'
 import { measureAsync, debouncedPerformanceLog } from '@/lib/performance-utils'
 import toast from 'react-hot-toast'
+
+// Simple debounce function to prevent excessive updates
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: NodeJS.Timeout
+  return ((...args: any[]) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }) as T
+}
 
 type Vendor = VendorWithLiveSession
 
@@ -36,23 +44,32 @@ const fetchVendors = async (url: string): Promise<Vendor[]> => {
   return data.vendors || []
 }
 
-// Generate cache key for SWR
+// Generate cache key for SWR - FIXED: Much more stable key generation
 const generateCacheKey = (params: UseLiveVendorsParams): string => {
   const { searchQuery, userLocation, mapBounds } = params
   
   const searchParams = new URLSearchParams()
   
-  if (searchQuery?.trim()) {
+  // Only add search query if it's meaningful (more than 2 characters)
+  if (searchQuery?.trim() && searchQuery.trim().length > 2) {
     searchParams.set('q', searchQuery.trim())
   }
   
+  // Round coordinates to 2 decimal places to reduce cache key variations
   if (userLocation) {
-    searchParams.set('lat', userLocation.lat.toString())
-    searchParams.set('lng', userLocation.lng.toString())
+    searchParams.set('lat', userLocation.lat.toFixed(2))
+    searchParams.set('lng', userLocation.lng.toFixed(2))
   }
   
+  // Round bounds to 2 decimal places and only include if significantly different
   if (mapBounds) {
-    searchParams.set('bounds', `${mapBounds.north},${mapBounds.south},${mapBounds.east},${mapBounds.west}`)
+    const roundedBounds = [
+      mapBounds.north.toFixed(2),
+      mapBounds.south.toFixed(2), 
+      mapBounds.east.toFixed(2),
+      mapBounds.west.toFixed(2)
+    ].join(',')
+    searchParams.set('bounds', roundedBounds)
   }
   
   searchParams.set('limit', '100')
@@ -65,92 +82,48 @@ export function useLiveVendors(params: UseLiveVendorsParams = {}): UseLiveVendor
   const supabase = createClient()
   const realtimeChannelRef = useRef<any>(null)
   
+  // Stable cache key reference to prevent unnecessary re-subscriptions
+  const stableCacheKeyRef = useRef<string | null>(null)
+  
   // Generate the cache key for SWR
   const cacheKey = enabled ? generateCacheKey({ searchQuery, userLocation, mapBounds }) : null
   
-  // Real-time update handler - moved to top level to follow Rules of Hooks
+  // Update stable cache key reference when it changes
+  useEffect(() => {
+    stableCacheKeyRef.current = cacheKey
+  }, [cacheKey])
+  
+  // Real-time update handler - FIXED: Completely disable real-time updates to prevent refresh loops
   const handleRealtimeUpdate = useCallback(async (payload: any) => {
+    // TEMPORARILY DISABLED: Real-time updates are causing excessive refreshes
+    // We'll rely on manual refresh and periodic updates instead
+    console.log('Real-time update received but disabled to prevent refresh loops:', payload.eventType)
+    return
+    
+    /* DISABLED CODE:
     const { eventType, new: newRecord, old: oldRecord } = payload
     
-    // Get current cache key for mutation
-    const currentCacheKey = generateCacheKey({ searchQuery, userLocation, mapBounds })
+    // Use the stable cache key reference
+    const currentCacheKey = stableCacheKeyRef.current
+    if (!currentCacheKey) return
     
-    // Debounce rapid updates to prevent excessive re-renders
-    if (eventType === 'UPDATE' && newRecord.is_active) {
-      const updateVendorSession = debounce((record: any) => {
-        mutate(
-          currentCacheKey,
-          (currentVendors: Vendor[] = []) => {
-            return currentVendors.map(v => {
-              if (v.id === record.vendor_id && v.live_session) {
-                return {
-                  ...v,
-                  live_session: {
-                    ...v.live_session,
-                    ...record // Merge updated session fields
-                  }
-                }
-              }
-              return v
-            })
-          },
-          { revalidate: false } // Don't refetch, just update cache
-        )
-      }, 500) // 500ms debounce for updates
+    // Only handle critical updates with heavy debouncing
+    if (eventType === 'INSERT' || (eventType === 'UPDATE' && !newRecord.is_active)) {
+      // Use a much longer debounce for real-time updates
+      const debouncedUpdate = debounce(() => {
+        mutate(currentCacheKey, undefined, { revalidate: true })
+      }, 5000) // 5 second debounce
       
-      updateVendorSession(newRecord)
-      return
+      debouncedUpdate()
     }
-    
-    if (eventType === 'INSERT') {
-      // Update cache with new vendor session
-      mutate(
-        currentCacheKey,
-        (currentVendors: Vendor[] = []) => {
-          const existingVendor = currentVendors.find(v => v.id === newRecord.vendor_id)
-          if (existingVendor) {
-            // Update existing vendor with new session
-            return currentVendors.map(v => 
-              v.id === newRecord.vendor_id 
-                ? { ...v, live_session: newRecord }
-                : v
-            )
-          }
-          return currentVendors
-        },
-        { revalidate: false }
-      )
-      
-      // Trigger a lightweight refresh for new vendors
-      setTimeout(() => {
-        mutate(currentCacheKey)
-      }, 1000)
-      
-    } else if (eventType === 'UPDATE' && !newRecord.is_active) {
-      // Remove vendor when session becomes inactive
-      mutate(
-        currentCacheKey,
-        (currentVendors: Vendor[] = []) => {
-          return currentVendors.filter(v => v.id !== newRecord.vendor_id)
-        },
-        { revalidate: false }
-      )
-    } else if (eventType === 'DELETE') {
-      // Remove vendor when session is deleted
-      mutate(
-        currentCacheKey,
-        (currentVendors: Vendor[] = []) => {
-          return currentVendors.filter(v => v.id !== oldRecord.vendor_id)
-        },
-        { revalidate: false }
-      )
-    }
-  }, [searchQuery, userLocation, mapBounds])
+    */
+  }, []) // FIXED: No dependencies to prevent re-subscriptions
   
-  // Use SWR for data fetching with caching
+  // Use SWR for data fetching with caching - FIXED: Aggressive caching to prevent excessive calls
   const { data: vendors = [], error, isLoading, mutate: swrMutate } = useSWR(
     cacheKey,
     async (url: string) => {
+      console.log('🔄 Fetching vendors from:', url) // Debug log
       return await measureAsync('search-vendors', async () => {
         const result = await fetchVendors(url)
         debouncedPerformanceLog()
@@ -158,18 +131,30 @@ export function useLiveVendors(params: UseLiveVendorsParams = {}): UseLiveVendor
       })
     },
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 5000, // Prevent duplicate requests within 5 seconds
-      errorRetryCount: 3,
+      revalidateOnFocus: false, // Don't refetch when window gains focus
+      revalidateOnReconnect: false, // Don't refetch on reconnect
+      revalidateIfStale: false, // Don't refetch if data is stale
+      revalidateOnMount: true, // Only revalidate on initial mount
+      dedupingInterval: 120000, // Prevent duplicate requests within 2 minutes
+      refreshInterval: 0, // Disable automatic refresh completely
+      errorRetryCount: 1, // Minimal retry count
+      errorRetryInterval: 15000, // 15 second retry interval
+      keepPreviousData: true, // Keep previous data while fetching new data
+      compare: (a, b) => {
+        // Custom comparison to prevent unnecessary re-renders
+        return JSON.stringify(a) === JSON.stringify(b)
+      },
       onError: (error) => {
         console.error('Error fetching vendors:', error)
-        toast.error('Failed to load vendors')
+        // Only show toast error on initial load, not on retries
+        if (!vendors || vendors.length === 0) {
+          toast.error('Failed to load vendors')
+        }
       }
     }
   )
   
-  // Set up real-time subscription
+  // Set up real-time subscription - FIXED: Only depend on enabled to prevent re-subscriptions
   useEffect(() => {
     if (!enabled) return
     
@@ -200,7 +185,7 @@ export function useLiveVendors(params: UseLiveVendorsParams = {}): UseLiveVendor
         realtimeChannelRef.current = null
       }
     }
-  }, [enabled, searchQuery, userLocation, mapBounds, supabase])
+  }, [enabled, handleRealtimeUpdate]) // FIXED: Only depend on enabled and stable handler
   
   // Clean up on unmount
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
@@ -11,6 +12,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const supabase = createSupabaseServerClient(cookies())
+  
   try {
     const adminUser = await verifyAdminTokenServer(request)
     if (!adminUser) {
@@ -38,7 +41,8 @@ export async function PUT(
       )
     }
 
-    const supabase = createSupabaseServerClient(cookies())
+    // Set service role context for RLS policies
+    await setServiceRoleContext(supabase)
 
     const updateData: any = { status }
     
@@ -67,11 +71,15 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true, vendor: updatedVendor })
+
   } catch (error) {
     console.error('Update vendor status error:', error)
     return NextResponse.json(
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
+  } finally {
+    // Always clear user context when done
+    await clearUserContext(supabase)
   }
 }

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { getAdminUserServer } from '@/lib/admin-auth-server'
 
 export async function PATCH(request: NextRequest) {
+  const supabase = createSupabaseServerClient(cookies())
+  
   try {
     // Check admin authentication
     const adminUser = await getAdminUserServer(request)
@@ -14,7 +17,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const supabase = createSupabaseServerClient(cookies())
+    // Set service role context for RLS policies
+    await setServiceRoleContext(supabase)
     const { vendorIds, action } = await request.json()
 
     if (!vendorIds || !Array.isArray(vendorIds) || vendorIds.length === 0) {
@@ -108,5 +112,8 @@ export async function PATCH(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     )
+  } finally {
+    // Always clear user context when done
+    await clearUserContext(supabase)
   }
 }
