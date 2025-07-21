@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import { authConfig } from './app/api/auth/[...nextauth]/auth';
+import { authConfig } from './app/api/auth/[...nextauth]/auth-config';
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 

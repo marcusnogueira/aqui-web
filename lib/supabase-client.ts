@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { errorHandler, createAuthError, createNetworkError, Result, createResult } from '@/lib/error-handler'
 
 // Client-side Supabase client
@@ -14,93 +14,51 @@ export const googleOAuthConfig = {
   redirect_uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback`,
 }
 
-// Helper function to sign in with Google
+// Helper function to sign in with Google (using NextAuth.js)
 export const signInWithGoogle = async (): Promise<Result<any>> => {
-  const supabase = createClient()
-  
   return errorHandler.wrapAsyncResult(async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    })
+    const { signIn } = await import('next-auth/react')
+    await signIn('google', { callbackUrl: window.location.origin })
     
-    if (error) {
-      throw createAuthError(
-        `Google sign-in failed: ${error.message}`,
-        'GOOGLE_SIGNIN_FAILED',
-        error
-      )
-    }
-    
-    return data
+    // signIn with redirect doesn't return a result, it redirects the page
+    return { success: true }
   }, 'signInWithGoogle')
 }
 
 
 
 
-// Helper function to sign in with Apple
+// Helper function to sign in with Apple (using NextAuth.js)
 export const signInWithApple = async (): Promise<Result<any>> => {
-  const supabase = createClient()
-  
   return errorHandler.wrapAsyncResult(async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+    const { signIn } = await import('next-auth/react')
+    await signIn('apple', { callbackUrl: window.location.origin })
     
-    if (error) {
-      throw createAuthError(
-        `Apple sign-in failed: ${error.message}`,
-        'APPLE_SIGNIN_FAILED',
-        error
-      )
-    }
-    
-    return data
+    // signIn with redirect doesn't return a result, it redirects the page
+    return { success: true }
   }, 'signInWithApple')
 }
 
-// Helper function to sign out
+// Helper function to sign out (using NextAuth.js)
 export const signOut = async (): Promise<Result<void>> => {
-  const supabase = createClient()
-  
   return errorHandler.wrapAsyncResult(async () => {
-    const { error } = await supabase.auth.signOut()
-    
-    if (error) {
-      throw createAuthError(
-        `Sign-out failed: ${error.message}`,
-        'SIGNOUT_FAILED',
-        error
-      )
-    }
+    const { signOut: nextAuthSignOut } = await import('next-auth/react')
+    await nextAuthSignOut({ callbackUrl: window.location.origin })
   }, 'signOut')
 }
 
-// Helper function to get current user
+// Helper function to get current user (using NextAuth.js)
 export const getCurrentUser = async (): Promise<Result<any>> => {
-  const supabase = createClient()
-  
   return errorHandler.wrapAsyncResult(async () => {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    
-    if (error) {
+    const response = await fetch('/api/auth/session')
+    if (!response.ok) {
       throw createAuthError(
-        `Failed to get current user: ${error.message}`,
-        'GET_USER_FAILED',
-        error
+        'Failed to get current user session',
+        'GET_USER_FAILED'
       )
     }
     
-    return user
+    const session = await response.json()
+    return session?.user || null
   }, 'getCurrentUser')
 }

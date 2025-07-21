@@ -1,139 +1,124 @@
-import NextAuth from "next-auth"
-import { NextAuthConfig } from "next-auth"
-import Credentials from "next-auth/providers/credentials"
-import Google from "next-auth/providers/google"
-import Apple from "next-auth/providers/apple"
-import { createClient } from '@supabase/supabase-js'
-import { USER_ROLES } from '@/lib/constants'
-import bcrypt from 'bcryptjs'
+export const runtime = 'nodejs'
 
-// Initialize Supabase client for server-side operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import NextAuth, {
+  type Session,
+  type DefaultSession,
+  type NextAuthConfig,
+  type User as NextAuthUser,
+} from 'next-auth'
+
+import GoogleProvider from 'next-auth/providers/google'
+import AppleProvider from 'next-auth/providers/apple'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
+
+import { createClient } from '@/lib/supabase-server'
+import { USER_ROLES } from '@/lib/constants'
 
 export const authConfig: NextAuthConfig = {
+  secret: process.env.AUTH_SECRET,
+
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
-    Apple({
+
+    AppleProvider({
       clientId: process.env.APPLE_CLIENT_ID!,
       clientSecret: process.env.APPLE_CLIENT_SECRET!,
     }),
-    Credentials({
-      name: "Credentials",
+
+    CredentialsProvider({
+      name: 'Email & Password',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+        const email = credentials?.email
+        const password = credentials?.password
 
-        try {
-          // Query users table directly instead of using Supabase Auth
-          const { data: user, error } = await supabase
-            .from('users')
-            .select('id, email, password, active_role')
-            .eq('email', credentials.email)
-            .single();
+        if (typeof email !== 'string' || typeof password !== 'string') return null
 
-          if (error || !user) {
-            console.error("User not found:", error?.message);
-            return null;
-          }
-
-          // Check if user has a password (some users might be OAuth-only)
-          if (!user.password) {
-            console.error("User has no password - OAuth user trying credentials login");
-            return null;
-          }
-
-          // Verify password with bcrypt
-          const isValidPassword = await bcrypt.compare(credentials.password as string, user.password);
-
-          if (!isValidPassword) {
-            console.error("Invalid password for user:", credentials.email);
-            return null;
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            active_role: user.active_role,
-          };
-        } catch (error) {
-          console.error("Credentials authorization error:", error);
-          return null;
-        }
-      }
-    })
-  ],
-  callbacks: {
-    async signIn({ user, account, profile }) {
-      // For OAuth providers, check if the user exists in your database
-      if (account?.provider === 'google' || account?.provider === 'apple') {
-        const { data: existingUser, error } = await supabase
+        const supabase = createClient()
+        const { data: user } = await supabase
           .from('users')
-          .select('id')
-          .eq('email', user.email)
-          .single();
+          .select('id, email, password_hash, full_name, active_role')
+          .eq('email', email)
+          .single()
 
-        // If user doesn't exist, create a new one with auto-generated UUID
-        if (!existingUser) {
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert({
-              email: user.email,
-              external_id: user.id, // Store OAuth provider ID
-              active_role: USER_ROLES.CUSTOMER, // Default to customer role using constants
-            });
-          
-          if (insertError) {
-            console.error('Error creating new OAuth user:', insertError.message);
-            return false; // Prevent sign-in if user creation fails
-          }
+        if (!user?.password_hash || typeof user.password_hash !== 'string') return null
+
+        const valid = await bcrypt.compare(password, user.password_hash)
+        if (!valid) return null
+
+        return {
+          id: user.id,
+          email: user.email!,
+          name: user.full_name ?? undefined,
+          active_role: user.active_role ?? USER_ROLES.CUSTOMER,
         }
-      }
-      return true; // Allow sign-in
-    },
+      },
+    }),
+  ],
+
+  session: { strategy: 'jwt' },
+
+  callbacks: {
     async jwt({ token, user, account }) {
       if (account && user) {
-        token.id = user.id;
-        // For OAuth, we need to fetch the active_role from our database
-        if (account.provider === 'google' || account.provider === 'apple') {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('active_role')
-            .eq('email', user.email) // Use email since OAuth users get auto-generated IDs
-            .single();
-          token.active_role = userData?.active_role || USER_ROLES.CUSTOMER;
+        token.provider = account.provider
+        token.providerAccountId = account.providerAccountId
+        token.email = user.email
+
+        const supabase = createClient()
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id, active_role')
+          .eq('email', user.email!)
+          .single()
+
+        if (existing) {
+          token.id = existing.id
+          token.active_role = existing.active_role
         } else {
-          // For credentials, the active_role is already on the user object
-          token.active_role = user.active_role;
+          const id = crypto.randomUUID()
+          const { data: inserted } = await supabase
+            .from('users')
+            .insert({
+              id,
+              email: user.email!,
+              full_name: user.name ?? '',
+              active_role: USER_ROLES.CUSTOMER,
+            })
+            .select('id, active_role')
+            .single()
+
+          token.id = inserted?.id
+          token.active_role = inserted?.active_role
         }
       }
-      return token;
+      return token
     },
+
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.active_role = token.active_role as string;
+        session.user.id = token.id as string
+        session.user.active_role = token.active_role as string
       }
-      return session;
+      return session as Session & {
+        user: DefaultSession['user'] & { id: string; active_role: string }
+      }
     },
   },
+
   pages: {
-    signIn: '/admin/login',
+    signIn: '/', // You’re using a modal on homepage
+    error: '/',  // Fallback route
   },
-  session: {
-    strategy: "jwt",
-  },
-  secret: process.env.AUTH_SECRET,
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig)

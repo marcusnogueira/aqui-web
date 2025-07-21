@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 
 // Client-side Supabase client
 export const createClient = () => createBrowserClient<Database>(
@@ -7,11 +7,6 @@ export const createClient = () => createBrowserClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Google OAuth configuration
-export const googleOAuthConfig = {
-  client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-  redirect_uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback`,
-}
 
 // Auth functions migrated to NextAuth.js
 // Use these NextAuth.js functions instead:

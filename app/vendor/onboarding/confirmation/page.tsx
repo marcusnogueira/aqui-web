@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import { USER_ROLES } from '@/lib/constants'
+import { USER_ROLES, VENDOR_STATUSES } from '@/lib/constants'
 
 interface Vendor {
   id: string
@@ -66,12 +66,12 @@ function OnboardingConfirmationContent() {
     if (!vendor) return ''
     
     switch (vendor.status) {
-      case 'pending':
+      case VENDOR_STATUSES.PENDING:
         return 'Your application is currently under review. Our team will review your submission and notify you via email once a decision has been made.'
-      case 'approved':
-      case 'active':
+      case VENDOR_STATUSES.APPROVED:
+      case VENDOR_STATUSES.ACTIVE:
         return 'Congratulations! Your vendor application has been approved. You can now start using all vendor features.'
-      case 'rejected':
+      case VENDOR_STATUSES.REJECTED:
         return 'Your application was not approved. Please check your email for details or contact support for assistance.'
       default:
         return 'Your application has been submitted successfully.'
@@ -82,20 +82,20 @@ function OnboardingConfirmationContent() {
     if (!vendor) return []
     
     switch (vendor.status) {
-      case 'pending':
+      case VENDOR_STATUSES.PENDING:
         return [
           'Check your email regularly for updates',
           'Ensure your contact information is up to date',
           'Review our vendor guidelines while you wait'
         ]
-      case 'approved':
-      case 'active':
+      case VENDOR_STATUSES.APPROVED:
+      case VENDOR_STATUSES.ACTIVE:
         return [
           'Complete your vendor profile with photos and detailed descriptions',
           'Set up your static locations where customers can find you',
           'Start your first live session to begin serving customers'
         ]
-      case 'rejected':
+      case VENDOR_STATUSES.REJECTED:
         return [
           'Review the rejection reason in your email',
           'Contact support if you need clarification',
@@ -139,9 +139,9 @@ function OnboardingConfirmationContent() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Application Status</h2>
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              vendor.status === 'approved' || vendor.status === 'active'
+              vendor.status === VENDOR_STATUSES.APPROVED || vendor.status === VENDOR_STATUSES.ACTIVE
                 ? 'bg-green-100 text-green-800'
-                : vendor.status === 'pending'
+                : vendor.status === VENDOR_STATUSES.PENDING
                 ? 'bg-yellow-100 text-yellow-800'
                 : 'bg-red-100 text-red-800'
             }`}>

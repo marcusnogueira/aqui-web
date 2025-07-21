@@ -6,7 +6,7 @@ if (typeof window !== 'undefined') {
 
 import { createServerClient } from '@supabase/ssr'
 import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 
 // Server-side Supabase client that accepts cookies
 export const createSupabaseServerClient = (cookieStore: ReadonlyRequestCookies) => {

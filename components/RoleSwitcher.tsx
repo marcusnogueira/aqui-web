@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { USER_ROLES } from '@/lib/constants'
 
 type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES]

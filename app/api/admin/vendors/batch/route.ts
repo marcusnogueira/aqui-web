@@ -6,7 +6,7 @@ import { getAdminUserServer } from '@/lib/admin-auth-server'
 
 export async function PATCH(request: NextRequest) {
   const supabase = createSupabaseServerClient(cookies())
-  
+
   try {
     // Check admin authentication
     const adminUser = await getAdminUserServer(request)

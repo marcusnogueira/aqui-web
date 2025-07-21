@@ -1,4 +1,4 @@
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 import { errorHandler, ErrorType, ErrorSeverity } from '@/lib/error-handler'
 
 // Base types from Supabase schema

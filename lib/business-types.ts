@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { errorHandler, createDatabaseError, ErrorSeverity, Result, createResult } from '@/lib/error-handler'
 
 type BusinessType = Database['public']['Tables']['business_types']['Row']

@@ -12,6 +12,8 @@ import { auth } from '@/app/api/auth/[...nextauth]/auth';
 /**
  * Sets the current user context for RLS policies
  * This replaces the automatic context setting that Supabase Auth provided
+ * 
+ * NOTE: Run scripts/nextauth_rls_functions.sql in your Supabase dashboard first!
  */
 export async function setUserContext(
   supabase: ReturnType<typeof createSupabaseServerClient>,
@@ -19,9 +21,11 @@ export async function setUserContext(
   role: 'authenticated' | 'service_role' = 'authenticated'
 ) {
   try {
-    // TEMPORARY: RLS functions not implemented yet - this is a no-op for now
-    // TODO: Implement proper RLS context functions in database
-    console.log('Setting user context (no-op):', { userId, role });
+    // Call the RLS function to set user context
+    // @ts-ignore - RLS functions need to be created in database first
+    await supabase.rpc('set_auth_user_id', { user_id: userId });
+    // @ts-ignore - RLS functions need to be created in database first
+    await supabase.rpc('set_auth_role', { role });
   } catch (error) {
     console.error('Failed to set user context:', error);
     // Don't throw - let the request continue but log the error
@@ -31,14 +35,16 @@ export async function setUserContext(
 /**
  * Clears the current user context
  * Should be called at the end of API requests
+ * 
+ * NOTE: Run scripts/nextauth_rls_functions.sql in your Supabase dashboard first!
  */
 export async function clearUserContext(
   supabase: ReturnType<typeof createSupabaseServerClient>
 ) {
   try {
-    // TEMPORARY: RLS functions not implemented yet - this is a no-op for now
-    // TODO: Implement proper RLS context functions in database
-    console.log('Clearing user context (no-op)');
+    // Call the RLS function to clear context
+    // @ts-ignore - RLS functions need to be created in database first
+    await supabase.rpc('clear_auth_context');
   } catch (error) {
     console.error('Failed to clear user context:', error);
     // Don't throw - this is cleanup
@@ -47,14 +53,16 @@ export async function clearUserContext(
 
 /**
  * Sets service role context for admin operations
+ * 
+ * NOTE: Run scripts/nextauth_rls_functions.sql in your Supabase dashboard first!
  */
 export async function setServiceRoleContext(
   supabase: ReturnType<typeof createSupabaseServerClient>
 ) {
   try {
-    // TEMPORARY: RLS functions not implemented yet - this is a no-op for now
-    // TODO: Implement proper RLS context functions in database
-    console.log('Setting service role context (no-op)');
+    // Set service role context for admin operations
+    // @ts-ignore - RLS functions need to be created in database first
+    await supabase.rpc('set_auth_role', { role: 'service_role' });
   } catch (error) {
     console.error('Failed to set service role context:', error);
   }

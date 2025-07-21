@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { useSession } from 'next-auth/react'
 import { USER_ROLES } from '@/lib/constants'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { errorHandler, createAuthError, createNetworkError, ErrorSeverity, Result, createResult } from '@/lib/error-handler'
 
 type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES]

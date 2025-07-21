@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { errorHandler, ErrorType, ErrorSeverity } from '@/lib/error-handler'
 
 // Client-side Supabase client
@@ -14,57 +14,33 @@ export const googleOAuthConfig = {
   redirect_uri: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback`,
 }
 
-// Helper function to sign in with Google
+// Helper function to sign in with Google (using NextAuth.js)
 export const signInWithGoogle = async () => {
-  const supabase = createClient()
-  
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-      },
-    },
-  })
-  
-  if (error) {
-    console.error('Error signing in with Google:', error)
-    throw error
-  }
-  
-  return data
+  const { signIn } = await import('next-auth/react')
+  return await signIn('google', { callbackUrl: window.location.origin })
 }
 
-// Helper function to sign out
+// Helper function to sign out (using NextAuth.js)
 export const signOut = async () => {
-  const supabase = createClient()
-  const { error } = await supabase.auth.signOut()
-  
-  if (error) {
-    console.error('Error signing out:', error)
-    throw error
-  }
+  const { signOut: nextAuthSignOut } = await import('next-auth/react')
+  return await nextAuthSignOut({ callbackUrl: window.location.origin })
 }
 
-// Helper function to get current user
+// Helper function to get current user (using NextAuth.js)
 export const getCurrentUser = async () => {
   return errorHandler.wrapAsync(async () => {
-    const supabase = createClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-    
-    if (error) {
+    const response = await fetch('/api/auth/session')
+    if (!response.ok) {
       throw errorHandler.create(
         ErrorType.AUTHENTICATION,
-        `Failed to get current user: ${error.message}`,
+        'Failed to get current user session',
         ErrorSeverity.MEDIUM,
-        'GET_USER_FAILED',
-        error
+        'GET_USER_FAILED'
       )
     }
     
-    return user
+    const session = await response.json()
+    return session?.user || null
   }, 'getCurrentUser')
 }
 

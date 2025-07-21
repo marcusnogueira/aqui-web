@@ -6,10 +6,10 @@ import { I18nextProvider } from 'react-i18next'
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
 import { SessionProvider } from 'next-auth/react'
 import i18n from '@/lib/i18n'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-// 1. Simplified Supabase Context for data operations only
+// Supabase (for data, not auth)
 type SupabaseDataContextType = {
   supabase: SupabaseClient<Database>
 }
@@ -24,7 +24,7 @@ export const useSupabaseData = () => {
   return context
 }
 
-// 2. ThemeProvider remains the same
+// Themes
 function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider 
@@ -39,9 +39,8 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-// 3. Main Providers component updated for NextAuth
+// Main wrapper
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Keep the Supabase client for data fetching, not for auth
   const [supabase] = useState(() =>
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +49,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    // SessionProvider from NextAuth now wraps everything
     <SessionProvider>
       <I18nextProvider i18n={i18n}>
         <SupabaseDataContext.Provider value={{ supabase }}>

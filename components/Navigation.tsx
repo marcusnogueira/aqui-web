@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
-import { signOut, createClient } from '@/lib/supabase/client'
+import { useSession, signIn, signOut as nextAuthSignOut } from 'next-auth/react'
+import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
 
 export function Navigation() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -16,16 +16,18 @@ export function Navigation() {
   const supabase = createClient()
 
   useEffect(() => {
-    checkAuth()
+    if (session?.user) {
+      checkAuth()
+    }
   }, [session])
 
   const checkAuth = async () => {
     try {
-      if (session?.user) {
-        const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
-        if (userProfileResult.success && userProfileResult.data) {
-          setUser(userProfileResult.data)
-        }
+      const result = await clientAuth.getUserProfile(session!.user.id!)
+      if (result.success && result.data) {
+        setUser(result.data)
+      } else {
+        console.warn('⚠️ Failed to fetch user profile from Supabase')
       }
     } catch (error) {
       console.error('Auth check error:', error)
@@ -36,7 +38,6 @@ export function Navigation() {
     try {
       await nextAuthSignOut({ callbackUrl: '/' })
       setIsOpen(false)
-      // Clear user state
       setUser(null)
     } catch (error) {
       console.error('Error signing out:', error)
@@ -45,22 +46,17 @@ export function Navigation() {
 
   const handleBecomeVendor = async () => {
     if (!user) return
-    
-    // Navigate directly to onboarding form instead of creating placeholder vendor
     setIsOpen(false)
     router.push('/vendor/onboarding')
   }
 
   const handleSwitchToVendor = async () => {
     if (!user) return
-    
     setIsUpdatingRole(true)
     try {
       await clientAuth.switchRole(USER_ROLES.VENDOR)
       setIsOpen(false)
       router.push('/vendor/dashboard')
-      
-      // Refresh user data
       await checkAuth()
     } catch (error) {
       console.error('Error switching to vendor:', error)
@@ -71,14 +67,11 @@ export function Navigation() {
 
   const handleSwitchToCustomer = async () => {
     if (!user) return
-    
     setIsUpdatingRole(true)
     try {
       await clientAuth.switchRole(USER_ROLES.CUSTOMER)
       setIsOpen(false)
       router.push('/')
-      
-      // Refresh user data
       await checkAuth()
     } catch (error) {
       console.error('Error switching to customer:', error)
@@ -87,7 +80,26 @@ export function Navigation() {
     }
   }
 
-  if (!user) return null
+  // ⛔ Not signed in at all
+  if (!session?.user) {
+    return (
+      <button
+        onClick={() => signIn()}
+        className="text-sm text-mission-teal font-medium"
+      >
+        Sign In
+      </button>
+    )
+  }
+
+  // 🔄 Signed in, but still loading full user profile
+  if (!user) {
+    return (
+      <div className="text-sm text-gray-500 animate-pulse">
+        Loading profile...
+      </div>
+    )
+  }
 
   return (
     <div className="relative">
@@ -110,8 +122,7 @@ export function Navigation() {
               Current Role: {user.active_role || USER_ROLES.CUSTOMER}
             </div>
           </div>
-          
-          {/* Role-based menu options */}
+
           {user.active_role === USER_ROLES.CUSTOMER && (
             <>
               {user.is_vendor ? (
@@ -132,7 +143,7 @@ export function Navigation() {
               )}
             </>
           )}
-          
+
           {user.active_role === USER_ROLES.VENDOR && (
             <>
               <button
@@ -153,7 +164,7 @@ export function Navigation() {
               </button>
             </>
           )}
-          
+
           <div className="border-t">
             <button
               onClick={handleSignOut}

@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
 import { getBusinessTypeKeys } from '@/lib/business-types'
-import { USER_ROLES } from '@/lib/constants'
+import { USER_ROLES, VENDOR_STATUSES } from '@/lib/constants'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -490,7 +490,7 @@ export default function VendorDashboardPage() {
   ] as const
 
   const getStatusBanner = () => {
-    if (!vendor || vendor.status === 'approved') {
+    if (!vendor || vendor.status === VENDOR_STATUSES.APPROVED) {
       return null;
     }
 
@@ -499,10 +499,10 @@ export default function VendorDashboardPage() {
     let textColor = 'text-yellow-800';
 
     switch (vendor.status) {
-      case 'pending':
+      case VENDOR_STATUSES.PENDING:
         message = 'Your application is under review. You will be notified once it has been approved.';
         break;
-      case 'rejected':
+      case VENDOR_STATUSES.REJECTED:
         message = vendor.rejection_reason 
           ? `Your application was not approved. Reason: ${vendor.rejection_reason}. Please contact support if you need assistance with reapplying.`
           : 'Your application was not approved. Please contact support for more information.';
@@ -545,7 +545,7 @@ export default function VendorDashboardPage() {
               ) : (
                 <button
                   onClick={startLiveSession}
-                  disabled={isStartingSession || vendor.status !== 'approved'}
+                  disabled={isStartingSession || vendor.status !== VENDOR_STATUSES.APPROVED}
                   className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                   style={{ backgroundColor: '#D85D28', color: '#FBF2E3' }}
                 >

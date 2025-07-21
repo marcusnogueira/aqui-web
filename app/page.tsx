@@ -49,10 +49,10 @@ export default function HomePage() {
   // Use the hook for vendor data - NO real-time updates to prevent refresh loops
   const { vendors, isLoading: loadingVendors, error: vendorsError, mutate: refreshVendors } = useLiveVendors(vendorParams)
 
-  // FIXED: Use useEffect to prevent infinite loop
+  // Update user state whenever session changes
   useEffect(() => {
-    if (session?.user && !user) {
-      const loadUserProfile = async () => {
+    const loadUserProfile = async () => {
+      if (session?.user) {
         try {
           const result = await clientAuth.getUserProfile(session.user.id!)
           if (result.success && result.data) {
@@ -61,10 +61,13 @@ export default function HomePage() {
         } catch (error) {
           console.error('Auth check error:', error)
         }
+      } else {
+        // Reset user state when session is null
+        setUser(null)
       }
-      loadUserProfile()
     }
-  }, [session?.user?.id, user]) // Proper dependencies
+    loadUserProfile()
+  }, [session?.user?.id]) // Only depend on session user ID
 
   // Handle location request - NO useEffect, just direct handler
   const requestUserLocation = useCallback(() => {

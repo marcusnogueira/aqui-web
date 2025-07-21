@@ -3,9 +3,6 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 import { Toaster } from 'react-hot-toast'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import type { Database } from '@/types/database'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,7 +15,6 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('http://localhost:3003'),
   title: 'Aqui - Find Local Gems Hidden ',
   description: 'Discover amazing local vendors in your area with real-time location tracking.',
   manifest: '/manifest.json',
@@ -47,7 +43,7 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode

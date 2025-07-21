@@ -3,7 +3,7 @@ import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 import { SignJWT } from 'jose'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { ADMIN_SESSION, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 import { adminLoginRateLimiter, getClientIP } from '@/lib/rate-limiter'
 

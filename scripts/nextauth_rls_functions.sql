@@ -1,145 +1,91 @@
--- =============================================================================
--- NextAuth RLS Functions
--- =============================================================================
--- This script creates functions to replace Supabase Auth functions in RLS policies
--- with NextAuth-compatible equivalents.
--- =============================================================================
+-- NextAuth RLS Integration Functions
+-- These functions help integrate NextAuth.js with Supabase RLS policies
 
-BEGIN;
+-- Function to set the current user ID for RLS policies
+CREATE OR REPLACE FUNCTION public.set_auth_user_id(user_id uuid)
+RETURNS void AS $$
+BEGIN
+  PERFORM set_config('request.auth.user_id', user_id::text, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- =============================================================================
--- NEXTAUTH RLS HELPER FUNCTIONS
--- =============================================================================
+-- Function to set the current user role for RLS policies
+CREATE OR REPLACE FUNCTION public.set_auth_role(role text)
+RETURNS void AS $$
+BEGIN
+  PERFORM set_config('request.auth.role', role, false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to get current user ID from NextAuth session
--- This replaces auth.uid() in RLS policies
-CREATE OR REPLACE FUNCTION public.get_current_user_id()
-RETURNS UUID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+-- Function to clear the current user context
+CREATE OR REPLACE FUNCTION public.clear_auth_context()
+RETURNS void AS $$
+BEGIN
+  PERFORM set_config('request.auth.user_id', '', false);
+  PERFORM set_config('request.auth.role', '', false);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get the current authenticated user ID
+CREATE OR REPLACE FUNCTION public.auth_user_id()
+RETURNS uuid AS $$
 DECLARE
-    user_id UUID;
+  user_id text;
 BEGIN
-    -- In NextAuth, we'll pass the user ID through the request context
-    -- For now, we'll use a session variable that will be set by our API routes
-    SELECT current_setting('app.current_user_id', true)::UUID INTO user_id;
-    
-    -- If no user ID is set, return NULL (unauthenticated)
-    IF user_id IS NULL OR user_id = '00000000-0000-0000-0000-000000000000' THEN
-        RETURN NULL;
-    END IF;
-    
-    RETURN user_id;
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN NULL;
+  user_id := current_setting('request.auth.user_id', true);
+  IF user_id IS NULL OR user_id = '' THEN
+    RETURN NULL;
+  END IF;
+  RETURN user_id::uuid;
 END;
-$$;
+$$ LANGUAGE plpgsql STABLE;
 
--- Function to check if current request is from service role
--- This replaces auth.role() = 'service_role' in RLS policies
-CREATE OR REPLACE FUNCTION public.is_service_role()
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+-- Function to get the current authenticated user role
+CREATE OR REPLACE FUNCTION public.auth_role()
+RETURNS text AS $$
 DECLARE
-    role_name TEXT;
+  role text;
 BEGIN
-    -- Check if the current role is the service role
-    SELECT current_setting('app.current_role', true) INTO role_name;
-    
-    -- Service role requests will set this variable
-    RETURN role_name = 'service_role';
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN FALSE;
+  role := current_setting('request.auth.role', true);
+  IF role IS NULL OR role = '' THEN
+    RETURN NULL;
+  END IF;
+  RETURN role;
 END;
-$$;
+$$ LANGUAGE plpgsql STABLE;
 
--- Function to check if current user is admin
--- This is a helper for admin-specific policies
-CREATE OR REPLACE FUNCTION public.is_current_user_admin()
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    user_id UUID;
-    is_admin BOOLEAN := FALSE;
+-- Function to check if the current user is authenticated
+CREATE OR REPLACE FUNCTION public.is_authenticated()
+RETURNS boolean AS $$
 BEGIN
-    user_id := public.get_current_user_id();
-    
-    IF user_id IS NULL THEN
-        RETURN FALSE;
-    END IF;
-    
-    -- Check if user has admin role in users table
-    SELECT COALESCE(is_admin, FALSE) INTO is_admin
-    FROM public.users
-    WHERE id = user_id;
-    
-    RETURN COALESCE(is_admin, FALSE);
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN FALSE;
+  RETURN auth_user_id() IS NOT NULL;
 END;
-$$;
+$$ LANGUAGE plpgsql STABLE;
 
--- Function to set current user context (called by API routes)
--- This will be used by our NextAuth API routes to set the user context
-CREATE OR REPLACE FUNCTION public.set_current_user_context(user_id UUID, role_name TEXT DEFAULT NULL)
-RETURNS VOID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+-- Function to check if the current user has a specific role
+CREATE OR REPLACE FUNCTION public.has_role(required_role text)
+RETURNS boolean AS $$
 BEGIN
-    -- Set the current user ID for RLS policies
-    PERFORM set_config('app.current_user_id', user_id::TEXT, true);
-    
-    -- Set the current role if provided
-    IF role_name IS NOT NULL THEN
-        PERFORM set_config('app.current_role', role_name, true);
-    END IF;
+  RETURN auth_role() = required_role;
 END;
-$$;
+$$ LANGUAGE plpgsql STABLE;
 
--- Function to clear current user context
-CREATE OR REPLACE FUNCTION public.clear_current_user_context()
-RETURNS VOID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+-- Function to check if the current user is an admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
 BEGIN
-    PERFORM set_config('app.current_user_id', '', true);
-    PERFORM set_config('app.current_role', '', true);
+  RETURN has_role('admin') OR has_role('service_role');
 END;
-$$;
+$$ LANGUAGE plpgsql STABLE;
 
--- =============================================================================
--- GRANT PERMISSIONS
--- =============================================================================
-
--- Grant execute permissions to authenticated users and service role
-GRANT EXECUTE ON FUNCTION public.get_current_user_id() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_service_role() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.is_current_user_admin() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.set_current_user_context(UUID, TEXT) TO service_role;
-GRANT EXECUTE ON FUNCTION public.clear_current_user_context() TO service_role;
-
--- =============================================================================
--- COMMENTS
--- =============================================================================
-
-COMMENT ON FUNCTION public.get_current_user_id() IS 'NextAuth replacement for auth.uid() - gets current user ID from session context';
-COMMENT ON FUNCTION public.is_service_role() IS 'NextAuth replacement for auth.role() = service_role - checks if request is from service role';
-COMMENT ON FUNCTION public.is_current_user_admin() IS 'Helper function to check if current user has admin privileges';
-COMMENT ON FUNCTION public.set_current_user_context(UUID, TEXT) IS 'Sets user context for RLS policies - called by API routes';
-COMMENT ON FUNCTION public.clear_current_user_context() IS 'Clears user context - called at end of API requests';
-
-COMMIT;
-
--- =============================================================================
--- NEXTAUTH RLS FUNCTIONS CREATED SUCCESSFULLY
--- =============================================================================
+-- Example RLS policy using these functions:
+-- ALTER TABLE your_table ENABLE ROW LEVEL SECURITY;
+-- 
+-- CREATE POLICY "Users can view their own data"
+-- ON your_table
+-- FOR SELECT
+-- USING (user_id = auth_user_id());
+-- 
+-- CREATE POLICY "Admins can do anything"
+-- ON your_table
+-- USING (is_admin());
