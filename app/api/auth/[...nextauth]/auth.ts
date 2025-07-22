@@ -43,7 +43,7 @@ export const authConfig: NextAuthConfig = {
 
         if (typeof email !== 'string' || typeof password !== 'string') return null
 
-        const supabase = createClient()
+        const supabase = await createClient()
         const { data: user } = await supabase
           .from('users')
           .select('id, email, password_hash, full_name, active_role')
@@ -74,7 +74,7 @@ export const authConfig: NextAuthConfig = {
         token.providerAccountId = account.providerAccountId
         token.email = user.email
 
-        const supabase = createClient()
+        const supabase = await createClient()
         const { data: existing } = await supabase
           .from('users')
           .select('id, active_role')

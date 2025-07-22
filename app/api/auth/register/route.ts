@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password, name } = validationResult.data
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // 3️⃣ Check for existing user
     const { data: existingUser } = await supabase
