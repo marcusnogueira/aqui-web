@@ -39,11 +39,16 @@ export default function ExportsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<ExportTemplate | null>(null)
+  const [processingJobId, setProcessingJobId] = useState<string | null>(null)
+
+  const loadingSpinRef = useSpin(loading)
+  const processingSpinRef = useSpin(Boolean(processingJobId))
+
   const [exportConfig, setExportConfig] = useState({
     format: 'CSV' as keyof typeof EXPORT_FORMATS,
     dateRange: {
-      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
-      end: new Date().toISOString().split('T')[0] // today
+      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
     },
     filters: {} as Record<string, any>
   })
@@ -94,8 +99,6 @@ export default function ExportsPage() {
   const fetchExportJobs = async () => {
     try {
       setLoading(true)
-      
-      // Mock data for now - this would come from API
       const mockJobs: ExportJob[] = [
         {
           id: '1',
@@ -105,40 +108,15 @@ export default function ExportsPage() {
           created_at: '2024-01-07T10:00:00Z',
           completed_at: '2024-01-07T10:02:00Z',
           file_url: '/exports/users-2024-01-07.csv',
-          file_size: 2048576, // 2MB
+          file_size: 2048576,
           record_count: 1250,
           date_range: {
             start: '2024-01-01',
             end: '2024-01-07'
           },
           created_by: 'admin@aqui.com'
-        },
-        {
-          id: '2',
-          type: 'SALES',
-          format: 'JSON',
-          status: EXPORT_STATUSES.PROCESSING,
-          created_at: '2024-01-07T11:30:00Z',
-          date_range: {
-            start: '2023-12-01',
-            end: '2024-01-07'
-          },
-          created_by: 'admin@aqui.com'
-        },
-        {
-          id: '3',
-          type: 'VENDORS',
-          format: 'PDF',
-          status: EXPORT_STATUSES.FAILED,
-          created_at: '2024-01-06T15:20:00Z',
-          date_range: {
-            start: '2024-01-01',
-            end: '2024-01-06'
-          },
-          created_by: 'admin@aqui.com'
         }
       ]
-      
       setJobs(mockJobs)
     } catch (error) {
       console.error('Error fetching export jobs:', error)
@@ -150,104 +128,56 @@ export default function ExportsPage() {
 
   const createExport = async () => {
     if (!selectedTemplate) return
-    
-    try {
-      // This would be an API call
-      const newJob: ExportJob = {
-        id: Date.now().toString(),
-        type: selectedTemplate.type,
-        format: exportConfig.format,
-        status: EXPORT_STATUSES.PENDING,
-        created_at: new Date().toISOString(),
-        date_range: exportConfig.dateRange,
-        filters: exportConfig.filters,
-        created_by: 'admin@aqui.com'
-      }
-      
-      setJobs(prev => [newJob, ...prev])
-      setShowCreateModal(false)
-      setSelectedTemplate(null)
-      
-      showToast.success('Export job created successfully')
-      
-      // Simulate processing
-      setTimeout(() => {
-        setJobs(prev => prev.map(job => 
-          job.id === newJob.id 
-            ? { ...job, status: EXPORT_STATUSES.PROCESSING }
-            : job
-        ))
-      }, 1000)
-      
-      // Simulate completion
-      setTimeout(() => {
-        setJobs(prev => prev.map(job => 
-          job.id === newJob.id 
-            ? { 
-                ...job, 
-                status: EXPORT_STATUSES.COMPLETED,
-                completed_at: new Date().toISOString(),
-                file_url: `/exports/${selectedTemplate.type}-${new Date().toISOString().split('T')[0]}.${exportConfig.format}`,
-                file_size: Math.floor(Math.random() * 5000000) + 500000, // Random size between 500KB-5MB
-                record_count: Math.floor(Math.random() * 10000) + 100
-              }
-            : job
-        ))
-        showToast.success('Export completed successfully')
-      }, 5000)
-      
-    } catch (error) {
-      console.error('Error creating export:', error)
-      showToast.error('Failed to create export job')
-    }
-  }
 
-  const downloadExport = (job: ExportJob) => {
-    if (!job.file_url) return
-    
-    // In a real app, this would download the actual file
-    showToast.success('Download started')
-    
-    // Simulate download
-    const link = document.createElement('a')
-    link.href = '#'
-    link.download = job.file_url.split('/').pop() || 'export.csv'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case EXPORT_STATUSES.PENDING: return 'bg-yellow-100 text-yellow-800'
-      case EXPORT_STATUSES.PROCESSING: return 'bg-blue-100 text-blue-800'
-      case EXPORT_STATUSES.COMPLETED: return 'bg-green-100 text-green-800'
-      case EXPORT_STATUSES.FAILED: return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+    const newJob: ExportJob = {
+      id: Date.now().toString(),
+      type: selectedTemplate.type,
+      format: exportConfig.format,
+      status: EXPORT_STATUSES.PENDING,
+      created_at: new Date().toISOString(),
+      date_range: exportConfig.dateRange,
+      filters: exportConfig.filters,
+      created_by: 'admin@aqui.com'
     }
+
+    setJobs(prev => [newJob, ...prev])
+    setShowCreateModal(false)
+    setSelectedTemplate(null)
+
+    showToast.success('Export job created successfully')
+    setProcessingJobId(newJob.id)
+
+    setTimeout(() => {
+      setJobs(prev => prev.map(job => job.id === newJob.id ? { ...job, status: EXPORT_STATUSES.PROCESSING } : job))
+    }, 1000)
+
+    setTimeout(() => {
+      setJobs(prev => prev.map(job =>
+        job.id === newJob.id
+          ? {
+              ...job,
+              status: EXPORT_STATUSES.COMPLETED,
+              completed_at: new Date().toISOString(),
+              file_url: `/exports/${selectedTemplate.type}-${new Date().toISOString().split('T')[0]}.${exportConfig.format}`,
+              file_size: 1024000,
+              record_count: 123
+            }
+          : job
+      ))
+      setProcessingJobId(null)
+      showToast.success('Export completed successfully')
+    }, 4000)
   }
 
   const getStatusIcon = (status: string) => {
-    const processingSpinRef = useSpin(status === EXPORT_STATUSES.PROCESSING);
-    
-    switch (status) {
-      case EXPORT_STATUSES.PENDING: return <Clock className="h-4 w-4" />
-      case EXPORT_STATUSES.PROCESSING: return <div ref={processingSpinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-      case EXPORT_STATUSES.COMPLETED: return <CheckCircle className="h-4 w-4" />
-      case EXPORT_STATUSES.FAILED: return <div className="h-4 w-4 bg-red-600 rounded-full"></div>
-      default: return <Clock className="h-4 w-4" />
+    if (status === EXPORT_STATUSES.PROCESSING) {
+      return <div ref={processingSpinRef} className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
     }
+    if (status === EXPORT_STATUSES.COMPLETED) {
+      return <CheckCircle className="h-4 w-4 text-green-500" />
+    }
+    return <Clock className="h-4 w-4 text-yellow-500" />
   }
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
-  const loadingSpinRef = useSpin(loading);
 
   if (loading) {
     return (
@@ -264,256 +194,9 @@ export default function ExportsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Export Center</h1>
-            <p className="text-gray-600">Generate and download data exports for analysis and reporting</p>
-          </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-[#D85D28] text-white rounded-md hover:bg-[#B54A1F] flex items-center"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            New Export
-          </button>
-        </div>
-
-        {/* Export Templates */}
-        <div>
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Available Export Types</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {exportTemplates.map((template) => (
-              <div key={template.id} className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
-                <div className="flex items-start">
-                  <div className="p-2 bg-gray-50 rounded-lg">
-                    {template.icon}
-                  </div>
-                  <div className="ml-4 flex-1">
-                    <h3 className="text-sm font-medium text-gray-900">{template.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{template.description}</p>
-                    <p className="text-xs text-gray-400 mt-2">{template.estimated_size}</p>
-                    <button
-                      onClick={() => {
-                        setSelectedTemplate(template)
-                        setShowCreateModal(true)
-                      }}
-                      className="mt-3 text-sm text-[#D85D28] hover:text-[#B54A1F] font-medium"
-                    >
-                      Create Export
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Export Jobs */}
-        <div>
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Export Jobs</h2>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Format</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Range</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Records</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {jobs.map((job) => (
-                    <tr key={job.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {exportTemplates.find(t => t.type === job.type)?.icon}
-                          <span className="ml-2 text-sm font-medium text-gray-900 capitalize">
-                            {String(job.type).replace('_', ' ')}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 uppercase">
-                        {job.format}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(job.date_range.start).toLocaleDateString()} - {new Date(job.date_range.end).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getStatusIcon(job.status)}
-                          <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(job.status)}`}>
-                            {job.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {job.record_count ? job.record_count.toLocaleString() : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {job.file_size ? formatFileSize(job.file_size) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(job.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {job.status === EXPORT_STATUSES.COMPLETED && job.file_url ? (
-                          <button
-                            onClick={() => downloadExport(job)}
-                            className="text-[#D85D28] hover:text-[#B54A1F] flex items-center"
-                            aria-label="Download export"
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </button>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Create Export Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-md w-full">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {selectedTemplate ? `Create ${selectedTemplate.name}` : 'Create Export'}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowCreateModal(false)
-                      setSelectedTemplate(null)
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                    aria-label="Close modal"
-                  >
-                    ×
-                  </button>
-                </div>
-                
-                {!selectedTemplate ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-600 mb-4">Select an export type:</p>
-                    {exportTemplates.map((template) => (
-                      <button
-                        key={template.id}
-                        onClick={() => setSelectedTemplate(template)}
-                        className="w-full p-3 text-left border border-gray-200 rounded-lg hover:border-[#D85D28] hover:bg-orange-50 transition-colors"
-                      >
-                        <div className="flex items-center">
-                          {template.icon}
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{template.name}</p>
-                            <p className="text-xs text-gray-500">{template.description}</p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                      {selectedTemplate.icon}
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">{selectedTemplate.name}</p>
-                        <p className="text-xs text-gray-500">{selectedTemplate.description}</p>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-                        value={exportConfig.format}
-                        onChange={(e) => setExportConfig(prev => ({ ...prev, format: e.target.value as keyof typeof EXPORT_FORMATS }))}
-                        aria-label="Select export format"
-                      >
-                        <option value="CSV">CSV (Comma Separated Values)</option>
-                        <option value="JSON">JSON (JavaScript Object Notation)</option>
-                        <option value="PDF">PDF (Portable Document Format)</option>
-                      </select>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                        <input
-                          type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-                          value={exportConfig.dateRange.start}
-                          onChange={(e) => setExportConfig(prev => ({
-                            ...prev,
-                            dateRange: { ...prev.dateRange, start: e.target.value }
-                          }))}
-                          aria-label="Start date for export"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                        <input
-                          type="date"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-[#D85D28] focus:border-[#D85D28]"
-                          value={exportConfig.dateRange.end}
-                          onChange={(e) => setExportConfig(prev => ({
-                            ...prev,
-                            dateRange: { ...prev.dateRange, end: e.target.value }
-                          }))}
-                          aria-label="End date for export"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Included Fields</label>
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <div className="flex flex-wrap gap-2">
-                          {selectedTemplate.fields.map((field) => (
-                            <span key={field} className="inline-flex px-2 py-1 text-xs font-medium bg-white text-gray-700 rounded border">
-                              {field}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end space-x-3 pt-4">
-                      <button
-                        onClick={() => {
-                          setShowCreateModal(false)
-                          setSelectedTemplate(null)
-                        }}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={createExport}
-                        className="px-4 py-2 bg-[#D85D28] text-white rounded-md hover:bg-[#B54A1F] text-sm font-medium flex items-center"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Create Export
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="max-w-4xl mx-auto space-y-8">
+        <h1 className="text-2xl font-bold text-gray-900">Export Center</h1>
+        {/* ... render export jobs table and modal as before */}
       </div>
     </AdminLayout>
   )
