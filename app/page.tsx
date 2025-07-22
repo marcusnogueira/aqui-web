@@ -276,12 +276,7 @@ export default function HomePage() {
                 >
                   FAQ
                 </Link>
-                <Link 
-                  href="/fund" 
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-                >
-                  Fund
-                </Link>
+
               </nav>
               
               {/* Theme Toggle and Auth Section */}

@@ -47,12 +47,7 @@ export default function AboutPage() {
                 >
                   FAQ
                 </Link>
-                <Link 
-                  href="/fund" 
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-                >
-                  Fund
-                </Link>
+
               </nav>
               
               {/* Theme Toggle and Auth Section */}
@@ -190,6 +185,12 @@ export default function AboutPage() {
               className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
             >
               Login
+            </button>
+            <button 
+              onClick={() => router.push('/fund')}
+              className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              Support Our Mission
             </button>
           </div>
         </section>

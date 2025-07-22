@@ -47,12 +47,7 @@ export default function FAQPage() {
                 >
                   FAQ
                 </Link>
-                <Link 
-                  href="/fund" 
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-                >
-                  Fund
-                </Link>
+
               </nav>
               
               {/* Theme Toggle and Auth Section */}
@@ -243,6 +238,12 @@ export default function FAQPage() {
               className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-lg font-medium transition-colors"
             >
               Login
+            </button>
+            <button 
+              onClick={() => router.push('/fund')}
+              className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-lg font-medium transition-colors"
+            >
+              Support Our Mission
             </button>
           </div>
         </section>
