@@ -1,5 +1,5 @@
 -- =============================================================================
--- AQUI Platform Database - Admin Foreign Key Correction Script
+-- Aqui Platform Database - Admin Foreign Key Correction Script
 -- =============================================================================
 -- This script corrects foreign key constraints that incorrectly reference
 -- the `users` table instead of `admin_users` table for admin-related operations.

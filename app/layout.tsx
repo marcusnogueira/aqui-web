@@ -2,7 +2,8 @@ import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Providers } from './providers'
-import { Toaster } from 'react-hot-toast'
+import ToasterProvider from '@/components/ToasterProvider'
+import I18nProvider from '@/components/I18nProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -15,6 +16,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL('http://localhost:3003'),
   title: 'Aqui - Find Local Gems Hidden ',
   description: 'Discover amazing local vendors in your area with real-time location tracking.',
   manifest: '/manifest.json',
@@ -59,22 +61,24 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-background text-foreground`}>
-        <Providers>
-          {children}
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#3A938A',
-                color: '#fff',
-                borderRadius: '8px',
-                fontFamily: 'Varela Round, sans-serif',
-              },
-              className: 'animate-bounceFadeIn',
-            }}
-          />
-        </Providers>
+        <I18nProvider>
+          <Providers>
+            {children}
+            <ToasterProvider
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#3A938A',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  fontFamily: 'Varela Round, sans-serif',
+                },
+                className: 'animate-bounceFadeIn',
+              }}
+            />
+          </Providers>
+        </I18nProvider>
       </body>
     </html>
   )

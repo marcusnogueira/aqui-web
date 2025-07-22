@@ -421,18 +421,21 @@ export type Database = {
           allow_auto_vendor_approval: boolean | null
           id: boolean
           maintenance_mode: boolean | null
+          require_vendor_approval: boolean
           updated_at: string | null
         }
         Insert: {
           allow_auto_vendor_approval?: boolean | null
           id?: boolean
           maintenance_mode?: boolean | null
+          require_vendor_approval?: boolean
           updated_at?: string | null
         }
         Update: {
           allow_auto_vendor_approval?: boolean | null
           id?: boolean
           maintenance_mode?: boolean | null
+          require_vendor_approval?: boolean
           updated_at?: string | null
         }
         Relationships: []

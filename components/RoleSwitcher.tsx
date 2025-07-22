@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@/types/database'
 import { USER_ROLES } from '@/lib/constants'
+
+// Force dynamic rendering for this component
+export const dynamic = 'force-dynamic'
 
 type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES]
 type User = Database['public']['Tables']['users']['Row']
@@ -15,15 +18,21 @@ interface RoleSwitcherProps {
 }
 
 export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [hasVendorProfile, setHasVendorProfile] = useState(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return createClient()
+    }
+    return null
+  }, [])
 
   useEffect(() => {
+    if (status === 'loading') return
     loadUserData()
-  }, [session])
+  }, [session, status])
 
   const loadUserData = async () => {
     try {
@@ -31,7 +40,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
 
       const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
       if (userProfileResult.success && userProfileResult.data) {
-        setCurrentUser(userProfileResult.data)
+        setCurrentUser(userProfileResult.data as unknown as User)
         
         // Check if user has vendor profile
         const hasVendor = await clientAuth.hasVendorProfile(session.user.id!)
@@ -43,7 +52,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
   }
 
   const handleRoleSwitch = async (newRole: UserRole) => {
-    if (!currentUser || loading) return
+    if (!currentUser || loading || status === 'loading') return
     
     // If switching to vendor but no vendor profile exists, redirect to onboarding
     if (newRole === USER_ROLES.VENDOR && !hasVendorProfile) {

@@ -1,17 +1,69 @@
 'use client';
 
 import { Navigation } from '@/components/Navigation';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { MapPin } from 'lucide-react';
+import Link from 'next/link';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 
 export default function FAQPage() {
   const router = useRouter();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-background shadow-sm border-b border-border">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
+              <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <h1 className="text-2xl font-bold text-primary">Aqui</h1>
+              </Link>
+              <LanguageSwitcher />
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              {/* Navigation Links */}
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link 
+                  href="/about" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  About
+                </Link>
+                <Link 
+                  href="/faq" 
+                  className="text-primary font-medium"
+                >
+                  FAQ
+                </Link>
+                <Link 
+                  href="/fund" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  Fund
+                </Link>
+              </nav>
+              
+              {/* Theme Toggle and Auth Section */}
+              <div className="flex items-center space-x-4">
+                <ThemeToggle />
+                <Navigation />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
       
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
@@ -25,7 +77,7 @@ export default function FAQPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Everything you need to know about AQUÍ
+            Everything you need to know about Aqui
           </p>
         </div>
 
@@ -80,7 +132,7 @@ export default function FAQPage() {
                 Q: How do I report a vendor?
               </h3>
               <p className="text-gray-700">
-                A: Tap the "Report" button on the vendor's profile. Our team reviews every report to help keep AQUÍ a safe, 
+                A: Tap the "Report" button on the vendor's profile. Our team reviews every report to help keep Aqui a safe, 
                 respectful space for everyone.
               </p>
             </div>
@@ -109,12 +161,12 @@ export default function FAQPage() {
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: What can I sell on AQUÍ?
+                Q: What can I sell on Aqui?
               </h3>
               <div className="text-gray-700 space-y-3">
                 <p>
                   A: Anything you'd normally sell in person—food, art, clothing, jewelry, handmade goods, or services. 
-                  If it's part of your hustle, there's a space for it on AQUÍ.
+                  If it's part of your hustle, there's a space for it on Aqui.
                 </p>
                 <p>
                   We don't allow the sale of illegal or harmful items—like drugs, weapons, tobacco, or anything that puts 
@@ -125,10 +177,10 @@ export default function FAQPage() {
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: Do I need a license to join AQUÍ?
+                Q: Do I need a license to join Aqui?
               </h3>
               <p className="text-gray-700">
-                A: Nope. AQUÍ doesn't require a business license to get started. That said, we encourage all vendors to 
+                A: Nope. Aqui doesn't require a business license to get started. That said, we encourage all vendors to 
                 follow local laws, health rules, and safety guidelines—especially if you're serving food or offering services.
               </p>
             </div>
@@ -156,7 +208,7 @@ export default function FAQPage() {
           
           <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
              <h3 className="text-xl font-semibold text-foreground mb-4">
-              How do I contact the AQUÍ team?
+              How do I contact the Aqui team?
             </h3>
             <div className="text-gray-700 space-y-2">
               <p>
@@ -172,7 +224,7 @@ export default function FAQPage() {
         {/* Thank You Message */}
         <div className="text-center mb-12">
           <p className="text-lg text-gray-600">
-            Thank you for being part of the AQUÍ community!
+            Thank you for being part of the Aqui community!
           </p>
         </div>
 

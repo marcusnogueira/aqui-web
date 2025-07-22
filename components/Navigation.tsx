@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession, signIn, signOut as nextAuthSignOut } from 'next-auth/react'
-import { createClient } from '@/lib/supabase/client'
+import { useSession, signOut as nextAuthSignOut, signIn } from 'next-auth/react'
+import { signOut, createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
+
+// Force dynamic rendering for this component
+export const dynamic = 'force-dynamic'
 
 export function Navigation() {
   const { data: session, status } = useSession()
@@ -13,21 +16,32 @@ export function Navigation() {
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false)
-  const supabase = createClient()
+  const supabase = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return createClient()
+    }
+    return null
+  }, [])
 
   useEffect(() => {
-    if (session?.user) {
-      checkAuth()
+    // Only run checkAuth on the client-side when the session is authenticated
+    if (status === 'authenticated' && session?.user) {
+      checkAuth(session.user.id)
+    } else if (status === 'unauthenticated') {
+      // Clear user state if session is explicitly unauthenticated
+      setUser(null)
     }
-  }, [session])
+  }, [session, status]) // Depend on status as well
 
-  const checkAuth = async () => {
+  const checkAuth = async (userId: string) => {
     try {
-      const result = await clientAuth.getUserProfile(session!.user.id!)
+      const result = await clientAuth.getUserProfile(userId)
       if (result.success && result.data) {
         setUser(result.data)
       } else {
         console.warn('⚠️ Failed to fetch user profile from Supabase')
+        // Handle case where profile might not exist even with a valid session
+        setUser(session?.user || null)
       }
     } catch (error) {
       console.error('Auth check error:', error)
@@ -38,6 +52,7 @@ export function Navigation() {
     try {
       await nextAuthSignOut({ callbackUrl: '/' })
       setIsOpen(false)
+      // Clear user state
       setUser(null)
     } catch (error) {
       console.error('Error signing out:', error)
@@ -46,18 +61,25 @@ export function Navigation() {
 
   const handleBecomeVendor = async () => {
     if (!user) return
+    
+    // Navigate directly to onboarding form instead of creating placeholder vendor
     setIsOpen(false)
     router.push('/vendor/onboarding')
   }
 
   const handleSwitchToVendor = async () => {
     if (!user) return
+    
     setIsUpdatingRole(true)
     try {
       await clientAuth.switchRole(USER_ROLES.VENDOR)
       setIsOpen(false)
       router.push('/vendor/dashboard')
-      await checkAuth()
+      
+      // Refresh user data
+      if (session?.user?.id) {
+        await checkAuth(session.user.id)
+      }
     } catch (error) {
       console.error('Error switching to vendor:', error)
     } finally {
@@ -67,12 +89,17 @@ export function Navigation() {
 
   const handleSwitchToCustomer = async () => {
     if (!user) return
+    
     setIsUpdatingRole(true)
     try {
       await clientAuth.switchRole(USER_ROLES.CUSTOMER)
       setIsOpen(false)
       router.push('/')
-      await checkAuth()
+      
+      // Refresh user data
+      if (session?.user?.id) {
+        await checkAuth(session.user.id)
+      }
     } catch (error) {
       console.error('Error switching to customer:', error)
     } finally {
@@ -81,7 +108,7 @@ export function Navigation() {
   }
 
   // ⛔ Not signed in at all
-  if (!session?.user) {
+  if (status === 'unauthenticated') {
     return (
       <button
         onClick={() => signIn()}
@@ -92,11 +119,11 @@ export function Navigation() {
     )
   }
 
-  // 🔄 Signed in, but still loading full user profile
-  if (!user) {
+  // 🔄 Still loading session information
+  if (status === 'loading' || !user) {
     return (
       <div className="text-sm text-gray-500 animate-pulse">
-        Loading profile...
+        Loading...
       </div>
     )
   }
@@ -122,7 +149,8 @@ export function Navigation() {
               Current Role: {user.active_role || USER_ROLES.CUSTOMER}
             </div>
           </div>
-
+          
+          {/* Role-based menu options */}
           {user.active_role === USER_ROLES.CUSTOMER && (
             <>
               {user.is_vendor ? (
@@ -143,7 +171,7 @@ export function Navigation() {
               )}
             </>
           )}
-
+          
           {user.active_role === USER_ROLES.VENDOR && (
             <>
               <button
@@ -164,7 +192,7 @@ export function Navigation() {
               </button>
             </>
           )}
-
+          
           <div className="border-t">
             <button
               onClick={handleSignOut}

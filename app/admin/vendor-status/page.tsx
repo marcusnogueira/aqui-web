@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
-import { Search, Power, PowerOff, Play, Square, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Search, Power, PowerOff, Play, Square, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw, MessageSquare, Settings } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 import { AdminVendorView } from '@/types/vendor'
 
 type Vendor = AdminVendorView
@@ -26,10 +26,15 @@ export default function VendorStatusControlPage() {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [platformSettings, setPlatformSettings] = useState<{
+    require_vendor_approval: boolean
+    allow_auto_vendor_approval: boolean
+  } | null>(null)
 
   useEffect(() => {
     fetchVendors()
     fetchStats()
+    fetchPlatformSettings()
   }, [searchTerm, statusFilter])
 
   const fetchVendors = async () => {
@@ -47,7 +52,7 @@ export default function VendorStatusControlPage() {
       setVendors(data.vendors)
     } catch (error) {
       console.error('Error fetching vendors:', error)
-      toast.error('Failed to load vendors')
+      showToast.error('Failed to load vendors')
     } finally {
       setLoading(false)
     }
@@ -62,6 +67,23 @@ export default function VendorStatusControlPage() {
       setStats(data)
     } catch (error) {
       console.error('Error fetching stats:', error)
+    }
+  }
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/settings')
+      if (!response.ok) throw new Error('Failed to fetch platform settings')
+      
+      const data = await response.json()
+      if (data.success && data.settings) {
+        setPlatformSettings({
+          require_vendor_approval: data.settings.require_vendor_approval || false,
+          allow_auto_vendor_approval: data.settings.allow_auto_vendor_approval || false
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching platform settings:', error)
     }
   }
 
@@ -82,13 +104,13 @@ export default function VendorStatusControlPage() {
       if (!response.ok) throw new Error('Failed to update vendor status')
       
       const result = await response.json()
-      toast.success(result.message || 'Vendor status updated successfully')
+      showToast.success(result.message || 'Vendor status updated successfully')
       
       // Refresh data
       await Promise.all([fetchVendors(), fetchStats()])
     } catch (error) {
       console.error('Error updating vendor status:', error)
-      toast.error('Failed to update vendor status')
+      showToast.error('Failed to update vendor status')
     } finally {
       setUpdatingVendors(prev => {
         const newSet = new Set(prev)
@@ -100,7 +122,7 @@ export default function VendorStatusControlPage() {
 
   const handleRejectVendor = () => {
     if (!selectedVendor || !rejectionReason.trim()) {
-      toast.error('Please provide a rejection reason')
+      showToast.error('Please provide a rejection reason')
       return
     }
     
@@ -195,16 +217,27 @@ export default function VendorStatusControlPage() {
             <h1 className="text-2xl font-bold text-gray-900">Vendor Status Control</h1>
             <p className="text-gray-600">Control vendor live sessions, approval status, and activity</p>
           </div>
-          <button
-            onClick={() => {
-              fetchVendors()
-              fetchStats()
-            }}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </button>
+          <div className="flex items-center space-x-3">
+            {platformSettings && (
+              <div className="flex items-center space-x-2 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                <Settings className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  {platformSettings.require_vendor_approval ? 'Manual Approval' : 'Auto-Approval'}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                fetchVendors()
+                fetchStats()
+                fetchPlatformSettings()
+              }}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Statistics Cards */}

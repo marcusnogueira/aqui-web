@@ -1,11 +1,14 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import { USER_ROLES, VENDOR_STATUSES } from '@/lib/constants'
+import { USER_ROLES } from '@/lib/constants'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 
 interface Vendor {
   id: string
@@ -16,7 +19,7 @@ interface Vendor {
 }
 
 function OnboardingConfirmationContent() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [vendor, setVendor] = useState<Vendor | null>(null)
@@ -24,12 +27,13 @@ function OnboardingConfirmationContent() {
   const supabase = createClient()
 
   useEffect(() => {
+    if (status === 'loading') return
     checkAuthAndFetchVendor()
-  }, [session])
+  }, [session, status])
 
   const checkAuthAndFetchVendor = async () => {
     try {
-      if (!session?.user) {
+      if (!session?.user || !supabase) {
         router.push('/')
         return
       }
@@ -42,11 +46,13 @@ function OnboardingConfirmationContent() {
       }
 
       // Fetch vendor data
-      const { data: vendorData, error } = await supabase
+      const vendorResult = await supabase
         .from('vendors')
         .select('id, business_name, status, business_type, subcategory')
-        .eq('user_id', session.user.id)
+        .eq('user_id', session.user.id!)
         .single()
+      
+      const { data: vendorData, error } = vendorResult || { data: null, error: null }
 
       if (error || !vendorData) {
         router.push('/vendor/onboarding')
@@ -66,12 +72,12 @@ function OnboardingConfirmationContent() {
     if (!vendor) return ''
     
     switch (vendor.status) {
-      case VENDOR_STATUSES.PENDING:
+      case 'pending':
         return 'Your application is currently under review. Our team will review your submission and notify you via email once a decision has been made.'
-      case VENDOR_STATUSES.APPROVED:
-      case VENDOR_STATUSES.ACTIVE:
+      case 'approved':
+      case 'active':
         return 'Congratulations! Your vendor application has been approved. You can now start using all vendor features.'
-      case VENDOR_STATUSES.REJECTED:
+      case 'rejected':
         return 'Your application was not approved. Please check your email for details or contact support for assistance.'
       default:
         return 'Your application has been submitted successfully.'
@@ -82,20 +88,20 @@ function OnboardingConfirmationContent() {
     if (!vendor) return []
     
     switch (vendor.status) {
-      case VENDOR_STATUSES.PENDING:
+      case 'pending':
         return [
           'Check your email regularly for updates',
           'Ensure your contact information is up to date',
           'Review our vendor guidelines while you wait'
         ]
-      case VENDOR_STATUSES.APPROVED:
-      case VENDOR_STATUSES.ACTIVE:
+      case 'approved':
+      case 'active':
         return [
           'Complete your vendor profile with photos and detailed descriptions',
           'Set up your static locations where customers can find you',
           'Start your first live session to begin serving customers'
         ]
-      case VENDOR_STATUSES.REJECTED:
+      case 'rejected':
         return [
           'Review the rejection reason in your email',
           'Contact support if you need clarification',
@@ -106,12 +112,17 @@ function OnboardingConfirmationContent() {
     }
   }
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-mission-teal"></div>
       </div>
     )
+  }
+
+  if (status === 'unauthenticated') {
+    router.push('/')
+    return null
   }
 
   if (!vendor) {
@@ -139,9 +150,9 @@ function OnboardingConfirmationContent() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Application Status</h2>
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              vendor.status === VENDOR_STATUSES.APPROVED || vendor.status === VENDOR_STATUSES.ACTIVE
+              vendor.status === 'approved' || vendor.status === 'active'
                 ? 'bg-green-100 text-green-800'
-                : vendor.status === VENDOR_STATUSES.PENDING
+                : vendor.status === 'pending'
                 ? 'bg-yellow-100 text-yellow-800'
                 : 'bg-red-100 text-red-800'
             }`}>
@@ -217,11 +228,7 @@ function OnboardingConfirmationContent() {
 
 export default function OnboardingConfirmation() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-mission-teal"></div>
-      </div>
-    }>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-lg">Loading...</div></div>}>
       <OnboardingConfirmationContent />
     </Suspense>
   )

@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Migration Branch Setup Script
- * 
- * This script creates a new git branch for the NextAuth migration
- * and sets up the development environment.
+ * Creates a dedicated migration branch for NextAuth implementation
+ * Sets up tracking files and provides migration guidance
  */
 
 const { execSync } = require('child_process');
@@ -12,37 +10,39 @@ const fs = require('fs');
 const path = require('path');
 
 function runCommand(command, description) {
+  console.log(`${description}...`);
   try {
-    console.log(`🔄 ${description}...`);
-    const output = execSync(command, { encoding: 'utf8', stdio: 'pipe' });
-    console.log(`✅ ${description} completed`);
-    return output.trim();
+    const result = execSync(command, { encoding: 'utf8', stdio: 'pipe' });
+    console.log(`${description} completed`);
+    return result.trim();
   } catch (error) {
-    console.error(`❌ ${description} failed:`, error.message);
+    console.error(`${description} failed:`, error.message);
     throw error;
   }
 }
 
 async function createMigrationBranch() {
-  console.log('🌿 CREATING MIGRATION BRANCH...\n');
-
   try {
-    // 1. Check git status
-    console.log('📋 Checking git status...');
-    const status = runCommand('git status --porcelain', 'Git status check');
+    console.log('CREATING MIGRATION BRANCH...\n');
     
-    if (status) {
-      console.log('⚠️  Uncommitted changes found:');
-      console.log(status);
-      console.log('\\nCommitting current changes before creating branch...');
-      
-      runCommand('git add .', 'Staging changes');
-      runCommand('git commit -m "Pre-migration: Save current state before NextAuth migration"', 'Committing changes');
+    // 1. Check git status and commit any changes
+    console.log('Checking git status...');
+    try {
+      const status = runCommand('git status --porcelain', 'Getting git status');
+      if (status) {
+        console.log('WARNING: Uncommitted changes found:');
+        console.log(status);
+        console.log('\nCommitting changes before creating migration branch...');
+        runCommand('git add .', 'Staging changes');
+        runCommand('git commit -m "Pre-migration: Save current state before NextAuth migration"', 'Committing changes');
+      }
+    } catch (error) {
+      // Ignore git errors for now
     }
 
     // 2. Create and switch to migration branch
     const branchName = 'feature/nextauth-migration';
-    console.log(`\\n🌿 Creating branch: ${branchName}`);
+    console.log(`\nCreating branch: ${branchName}`);
     
     try {
       runCommand(`git checkout -b ${branchName}`, 'Creating migration branch');
@@ -72,100 +72,91 @@ async function createMigrationBranch() {
 
     const statusFile = path.join(__dirname, '..', 'MIGRATION_STATUS.json');
     fs.writeFileSync(statusFile, JSON.stringify(migrationStatus, null, 2));
-    console.log(`✅ Migration status file created: ${statusFile}`);
+    console.log(`Migration status file created: ${statusFile}`);
 
     // 4. Create migration README
     const migrationReadme = `# NextAuth Migration Progress
 
 ## Current Status: Phase 1 - Validation & Backup
 
-### Migration Branch: \`${branchName}\`
-Created: ${new Date().toISOString()}
+### Migration Phases:
+1. **Phase 1: Validation & Backup** (Current)
+   - Validate current auth system
+   - Backup admin users and policies
+   - Document current state
 
-## Phase Progress
-- [x] Phase 1: Pre-Migration Validation & Backup (IN PROGRESS)
-- [ ] Phase 2: Database Schema Migration
-- [ ] Phase 3: API Routes Migration  
-- [ ] Phase 4: Frontend Component Migration
-- [ ] Phase 5: Cleanup & Optimization
+2. **Phase 2: Database Schema**
+   - Update user tables for NextAuth compatibility
+   - Migrate existing user data
+   - Test data integrity
 
-## Quick Commands
+3. **Phase 3: API Routes**
+   - Implement NextAuth API routes
+   - Update authentication middleware
+   - Test API endpoints
 
-### Validation & Backup
-\`\`\`bash
-# Run pre-migration validation
-node scripts/pre_migration_validation.js
+4. **Phase 4: Frontend Integration**
+   - Update login/signup components
+   - Implement session management
+   - Test user flows
 
-# Backup admin users
-node scripts/backup_admin_users.js
+5. **Phase 5: Cleanup & Testing**
+   - Remove old auth code
+   - Comprehensive testing
+   - Performance validation
 
-# Check migration status
-cat MIGRATION_STATUS.json
-\`\`\`
+### Rollback Plan:
+- All changes are tracked in git
+- Database backups are created before each phase
+- Each phase can be rolled back independently
 
-### Testing
-\`\`\`bash
-# Test current build
-npm run build
+### Current Branch: ${branchName}
 
-# Run development server
-npm run dev
-\`\`\`
+### Next Steps:
+1. Run validation: \`node scripts/pre_migration_validation.js\`
+2. Backup admin users: \`node scripts/backup_admin_users.js\`
+3. Begin Phase 2: Database Schema Migration
 
-### Rollback (if needed)
-\`\`\`bash
-# Switch back to main branch
-git checkout main
+### Important Files:
+- \`MIGRATION_STATUS.json\` - Track progress
+- \`MIGRATION_README.md\` - This file
+- \`scripts/\` - Migration scripts
 
-# Delete migration branch (if needed)
-git branch -D ${branchName}
-\`\`\`
+### Emergency Contacts:
+- Lead Developer: [Add contact info]
+- Database Admin: [Add contact info]
 
-## Migration Notes
-- Starting fresh with users (except admin users)
-- Admin users will be migrated from current system
-- All Supabase Auth dependencies will be removed
-- RLS policies will be updated for NextAuth compatibility
-
-## Files Modified During Migration
-- Database RLS policies
-- API route authentication
-- Frontend authentication components
-- Environment configuration
-
-## Backup Locations
-- Admin users: \`backups/admin_users_backup_*.json\`
-- Database policies: \`backups/rls_policies_backup_*.sql\`
-- Migration scripts: \`scripts/\`
+---
+*Migration started: ${new Date().toISOString()}*
 `;
 
     const readmeFile = path.join(__dirname, '..', 'MIGRATION_README.md');
     fs.writeFileSync(readmeFile, migrationReadme);
-    console.log(`✅ Migration README created: ${readmeFile}`);
+    console.log(`Migration README created: ${readmeFile}`);
 
     // 5. Commit migration setup
     runCommand('git add .', 'Staging migration files');
     runCommand('git commit -m "feat: Setup NextAuth migration branch and tracking"', 'Committing migration setup');
 
     // 6. Display summary
-    console.log('\\n🎉 MIGRATION BRANCH SETUP COMPLETE!');
+    console.log('\nMIGRATION BRANCH SETUP COMPLETE!');
     console.log('='.repeat(50));
     console.log(`Branch: ${branchName}`);
     console.log(`Status File: MIGRATION_STATUS.json`);
     console.log(`README: MIGRATION_README.md`);
     
-    console.log('\\n🚀 NEXT STEPS:');
+    console.log('\nNEXT STEPS:');
     console.log('1. Run validation: node scripts/pre_migration_validation.js');
     console.log('2. Backup admin users: node scripts/backup_admin_users.js');
     console.log('3. Begin Phase 2: Database Schema Migration');
     
-    console.log('\\n📋 BRANCH COMMANDS:');
+    console.log('\nBRANCH COMMANDS:');
     console.log(`Current branch: ${runCommand('git branch --show-current', 'Get current branch')}`);
     console.log('Switch to main: git checkout main');
     console.log(`Switch back: git checkout ${branchName}`);
 
   } catch (error) {
-    console.error('💥 Migration branch setup failed:', error.message);
+    console.error('Migration branch setup failed:', error.message);
     throw error;
   }
 }
@@ -173,10 +164,10 @@ git branch -D ${branchName}
 // Run setup
 createMigrationBranch()
   .then(() => {
-    console.log('\\n✅ Ready to begin NextAuth migration!');
+    console.log('\nReady to begin NextAuth migration!');
     process.exit(0);
   })
   .catch(error => {
-    console.error('💥 Setup failed:', error);
+    console.error('Setup failed:', error);
     process.exit(1);
   });

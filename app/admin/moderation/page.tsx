@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { AlertTriangle, Eye, CheckCircle, XCircle, Clock, Flag, MessageSquare, User } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 import { MODERATION_STATUS, PRIORITY_LEVELS } from '@/lib/constants'
 
 interface ModerationItem {
@@ -112,7 +112,7 @@ export default function ModerationPage() {
       setItems(mockData)
     } catch (error) {
       console.error('Error fetching moderation items:', error)
-      toast.error('Failed to load moderation queue')
+      showToast.error('Failed to load moderation queue')
     } finally {
       setLoading(false)
     }
@@ -130,20 +130,20 @@ export default function ModerationPage() {
       })
     } catch (error) {
       console.error('Error fetching stats:', error)
-      toast.error('Failed to load statistics')
+      showToast.error('Failed to load statistics')
     }
   }
 
   const updateModerationItem = async (itemId: string, status: 'approved' | 'rejected', adminNotes?: string) => {
     try {
       // This would make an API call to update the moderation item
-      toast.success(`Item ${status} successfully`)
+      showToast.success(`Item ${status} successfully`)
       fetchModerationItems()
       fetchStats()
       setShowModal(false)
     } catch (error) {
       console.error('Error updating moderation item:', error)
-      toast.error('Failed to update item')
+      showToast.error('Failed to update item')
     }
   }
 

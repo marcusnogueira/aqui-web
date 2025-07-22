@@ -18,7 +18,7 @@ const supabase = createClient(
 );
 
 async function backupAdminUsers() {
-  console.log('💾 BACKING UP ADMIN USERS...\n');
+  console.log('BACKING UP ADMIN USERS...\n');
 
   try {
     // 1. Fetch all admin users
@@ -32,11 +32,11 @@ async function backupAdminUsers() {
     }
 
     if (!adminUsers || adminUsers.length === 0) {
-      console.log('⚠️  No admin users found to backup');
+      console.log('WARNING: No admin users found to backup');
       return;
     }
 
-    console.log(`📋 Found ${adminUsers.length} admin users to backup:`);
+    console.log(`Found ${adminUsers.length} admin users to backup:`);
     adminUsers.forEach((admin, index) => {
       console.log(`   ${index + 1}. ${admin.username} (${admin.email})`);
     });
@@ -65,7 +65,7 @@ async function backupAdminUsers() {
     };
 
     fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2));
-    console.log(`\n✅ Backup saved to: ${backupFile}`);
+    console.log(`\nBackup saved to: ${backupFile}`);
 
     // 4. Create restoration script
     const restoreScript = `#!/usr/bin/env node
@@ -89,8 +89,8 @@ const supabase = createClient(
 const adminUsersToRestore = ${JSON.stringify(backupData.users, null, 2)};
 
 async function restoreAdminUsers() {
-  console.log('🔄 RESTORING ADMIN USERS...');
-  console.log(\`📋 Restoring \${adminUsersToRestore.length} admin users\`);
+  console.log('RESTORING ADMIN USERS...');
+  console.log(\`Restoring \${adminUsersToRestore.length} admin users\`);
 
   for (const admin of adminUsersToRestore) {
     try {
@@ -102,7 +102,7 @@ async function restoreAdminUsers() {
         .single();
 
       if (existing) {
-        console.log(\`⚠️  Admin \${admin.username} already exists, skipping\`);
+        console.log(\`WARNING: Admin \${admin.username} already exists, skipping\`);
         continue;
       }
 
@@ -119,16 +119,16 @@ async function restoreAdminUsers() {
         });
 
       if (error) {
-        console.error(\`❌ Failed to restore \${admin.username}: \${error.message}\`);
+        console.error(\`Failed to restore \${admin.username}: \${error.message}\`);
       } else {
-        console.log(\`✅ Restored admin: \${admin.username}\`);
+        console.log(\`Restored admin: \${admin.username}\`);
       }
     } catch (error) {
-      console.error(\`💥 Error restoring \${admin.username}: \${error.message}\`);
+      console.error(\`Error restoring \${admin.username}: \${error.message}\`);
     }
   }
 
-  console.log('\\n🎉 Admin users restoration complete!');
+  console.log('\\nAdmin users restoration complete!');
 }
 
 restoreAdminUsers().catch(console.error);
@@ -137,16 +137,16 @@ restoreAdminUsers().catch(console.error);
     const restoreFile = path.join(backupDir, `restore_admin_users_${timestamp}.js`);
     fs.writeFileSync(restoreFile, restoreScript);
     fs.chmodSync(restoreFile, '755'); // Make executable
-    console.log(`✅ Restoration script created: ${restoreFile}`);
+    console.log(`Restoration script created: ${restoreFile}`);
 
     // 5. Create summary
-    console.log('\n📊 BACKUP SUMMARY:');
+    console.log('\nBACKUP SUMMARY:');
     console.log('='.repeat(40));
     console.log(`Admin Users Backed Up: ${adminUsers.length}`);
     console.log(`Backup File: ${path.basename(backupFile)}`);
     console.log(`Restore Script: ${path.basename(restoreFile)}`);
     
-    console.log('\n🔄 NEXT STEPS:');
+    console.log('\nNEXT STEPS:');
     console.log('1. Verify backup file contains correct data');
     console.log('2. Test restoration script in development');
     console.log('3. Proceed with database schema migration');
@@ -159,7 +159,7 @@ restoreAdminUsers().catch(console.error);
     };
 
   } catch (error) {
-    console.error('💥 Backup failed:', error.message);
+    console.error('Backup failed:', error.message);
     throw error;
   }
 }
@@ -167,10 +167,10 @@ restoreAdminUsers().catch(console.error);
 // Run backup
 backupAdminUsers()
   .then(result => {
-    console.log('\\n🎉 Admin users backup complete!');
+    console.log('\\nAdmin users backup complete!');
     process.exit(0);
   })
   .catch(error => {
-    console.error('💥 Backup process failed:', error);
+    console.error('Backup process failed:', error);
     process.exit(1);
   });

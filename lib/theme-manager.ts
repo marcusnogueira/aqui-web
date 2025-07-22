@@ -77,7 +77,7 @@ class ThemeManager {
   }
 
   getThemeIcon(): string {
-    return this.currentThemeValue === 'light' ? '☀️' : '🌙';
+    return this.currentThemeValue === 'light' ? 'Light' : 'Dark';
   }
 }
 

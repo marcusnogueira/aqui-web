@@ -1,7 +1,7 @@
 # Playwright Directions Testing Documentation
 
 ## Overview
-This document outlines the Playwright testing process for the consolidated directions functionality in the AQUI application, validating that all components correctly use the database schema-defined table and column names.
+This document outlines the Playwright testing process for the consolidated directions functionality in the Aqui application, validating that all components correctly use the database schema-defined table and column names.
 
 ## Database Schema Validation
 

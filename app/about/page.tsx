@@ -1,10 +1,16 @@
 'use client';
 
 import { Navigation } from '@/components/Navigation';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { MapPin, Menu, Search, Users } from 'lucide-react';
+import Link from 'next/link';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 
 export default function AboutPage() {
   const router = useRouter();
@@ -12,7 +18,52 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      {/* Header */}
+      <header className="bg-background shadow-sm border-b border-border">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-3">
+              <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <h1 className="text-2xl font-bold text-primary">Aqui</h1>
+              </Link>
+              <LanguageSwitcher />
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              {/* Navigation Links */}
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link 
+                  href="/about" 
+                  className="text-primary font-medium"
+                >
+                  About
+                </Link>
+                <Link 
+                  href="/faq" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  FAQ
+                </Link>
+                <Link 
+                  href="/fund" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  Fund
+                </Link>
+              </nav>
+              
+              {/* Theme Toggle and Auth Section */}
+              <div className="flex items-center space-x-4">
+                <ThemeToggle />
+                <Navigation />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
       
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
@@ -26,7 +77,7 @@ export default function AboutPage() {
             Bringing Street Vendors to the Digital Map — One Stand at a Time.
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            AQUÍ is a community-first platform that helps local vendors thrive, and helps you discover them.
+            Aqui is a community-first platform that helps local vendors thrive, and helps you discover them.
           </p>
         </div>
 
@@ -53,7 +104,7 @@ export default function AboutPage() {
               Too many vendors are hidden in plain sight — no websites, no delivery apps, no visibility.
             </p>
             <p>
-              We built AQUÍ so that vendors can go live, set up shop, and share their offerings without needing 
+              We built Aqui so that vendors can go live, set up shop, and share their offerings without needing 
               marketing budgets or storefronts.
             </p>
             <p>
@@ -109,7 +160,7 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* The AQUÍ Difference */}
+        {/* The Aqui Difference */}
         <section className="mb-12">
           <div className="bg-gradient-to-r from-chili-orange to-bay-cypress rounded-lg p-8 text-center text-white">
             <div className="flex justify-center mb-4">
@@ -117,7 +168,7 @@ export default function AboutPage() {
                 <span className="text-2xl">⭐</span>
               </div>
             </div>
-            <h2 className="text-2xl font-bold mb-4">The AQUÍ Difference</h2>
+            <h2 className="text-2xl font-bold mb-4">The Aqui Difference</h2>
             <p className="text-lg">
               Just you, your hustle, and your community.
             </p>

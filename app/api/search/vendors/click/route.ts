@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setUserContext, clearUserContext, getCurrentSession } from '@/lib/nextauth-context'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 
 export async function POST(request: NextRequest) {
-  const cookieStore = cookies()
-  const supabase = createSupabaseServerClient(cookieStore)
-  
   try {
     const body = await request.json()
     const { vendor_id, latitude, longitude, search_query } = body
@@ -18,6 +14,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const cookieStore = await cookies()
+    const supabase = createSupabaseServerClient(cookieStore)
 
     // Get the current user
     const session = await auth()
@@ -76,15 +75,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-
   } catch (error) {
     console.error('Error in vendor click API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }

@@ -1,83 +1,120 @@
 'use client'
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { MapPin, Search, Star, Clock, Users, Sun, Moon } from 'lucide-react'
-import { useTheme } from '@/lib/theme-manager'
+import Link from 'next/link'
+import { MapPin, Search, Star, Clock, Users } from 'lucide-react'
 import VendorMap from '@/components/VendorMap'
 import VendorCardOptimized from '@/components/VendorCardOptimized'
 import { SearchBar } from '@/components/SearchBar'
 import { Navigation } from '@/components/Navigation'
 import AuthModal from '@/components/AuthModal'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 import { useLiveVendors } from '@/lib/hooks/useLiveVendors'
 import { useSession } from 'next-auth/react'
 
 import { VendorWithLiveSession } from '@/types/vendor'
 import { getVendorStatus, extractCoordinatesFromVendor } from '@/lib/vendor-utils'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 type Vendor = VendorWithLiveSession
 
 export default function HomePage() {
   const router = useRouter()
   const { t } = useTranslation()
-  const { theme, toggleTheme, themeIcon } = useTheme()
-  const { data: session } = useSession()
-  
-  // Simple state - no complex initialization
-  const [mounted, setMounted] = useState(true)
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>({ lat: 37.7749, lng: -122.4194 })
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
+  const [mapBounds, setMapBounds] = useState<{north: number, south: number, east: number, west: number} | null>(null)
   const [highlightedVendor, setHighlightedVendor] = useState<string | null>(null)
+
   const [isLocating, setIsLocating] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  const [leftPanelWidth, setLeftPanelWidth] = useState(40)
+  const [leftPanelWidth, setLeftPanelWidth] = useState(40) // percentage - for manual resize only
 
-  // ULTRA-STABLE vendor params - ONLY search query
-  const vendorParams = useMemo(() => ({
-    searchQuery: searchQuery.trim(),
-    enabled: true
-  }), [searchQuery.trim()])
+  const supabase = createClient()
+  
+  // Use the custom hook for vendor data fetching and real-time updates
+  const vendorData = useLiveVendors({
+    searchQuery,
+    userLocation,
+    mapBounds,
+    enabled: !loading // Only fetch vendors after auth check is complete
+  })
+  
+  const { vendors = [], isLoading: loadingVendors = false, error: vendorsError = null, mutate: refreshVendors = () => {} } = vendorData || {}
 
-  // Use the hook for vendor data - NO real-time updates to prevent refresh loops
-  const { vendors, isLoading: loadingVendors, error: vendorsError, mutate: refreshVendors } = useLiveVendors(vendorParams)
-
-  // Update user state whenever session changes
+  // Handle mouse and touch events for fluid resizing
   useEffect(() => {
-    const loadUserProfile = async () => {
-      if (session?.user) {
-        try {
-          const result = await clientAuth.getUserProfile(session.user.id!)
-          if (result.success && result.data) {
-            setUser(result.data)
-          }
-        } catch (error) {
-          console.error('Auth check error:', error)
-        }
-      } else {
-        // Reset user state when session is null
-        setUser(null)
-      }
+    const getClientX = (e: MouseEvent | TouchEvent) => {
+      return 'touches' in e ? e.touches[0]?.clientX || 0 : e.clientX
     }
-    loadUserProfile()
-  }, [session?.user?.id]) // Only depend on session user ID
 
-  // Handle location request - NO useEffect, just direct handler
-  const requestUserLocation = useCallback(() => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDragging) return
+      
+      const container = document.querySelector('main')
+      if (!container) return
+      
+      const rect = container.getBoundingClientRect()
+      const clientX = getClientX(e)
+      const newWidth = ((clientX - rect.left) / rect.width) * 100
+      
+      // Fluid constraints with smooth transitions
+      const constrainedWidth = Math.max(15, Math.min(85, newWidth))
+      setLeftPanelWidth(constrainedWidth)
+    }
+    
+    const handleEnd = () => {
+      setIsDragging(false)
+    }
+    
+    if (isDragging) {
+      // Mouse events
+      document.addEventListener('mousemove', handleMove)
+      document.addEventListener('mouseup', handleEnd)
+      // Touch events
+      document.addEventListener('touchmove', handleMove, { passive: false })
+      document.addEventListener('touchend', handleEnd)
+      
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+      document.body.style.touchAction = 'none'
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMove)
+      document.removeEventListener('mouseup', handleEnd)
+      document.removeEventListener('touchmove', handleMove)
+      document.removeEventListener('touchend', handleEnd)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.body.style.touchAction = ''
+    }
+  }, [isDragging])
+
+  // Function to request user location
+  const requestUserLocation = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by this browser')
+      showToast.error('Geolocation is not supported by this browser')
       return
     }
 
     setIsLocating(true)
     
+    // First attempt with high accuracy
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const newLocation = {
@@ -86,19 +123,56 @@ export default function HomePage() {
         }
         setUserLocation(newLocation)
         setIsLocating(false)
-        toast.success('Location updated successfully')
+        showToast.success('Location updated successfully')
       },
       (error) => {
-        setIsLocating(false)
-        let errorMessage = 'Unable to get your location'
-        if (error.code === error.PERMISSION_DENIED) {
-          errorMessage = 'Location access denied. Please enable location permissions.'
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          errorMessage = 'Location information is unavailable.'
-        } else if (error.code === error.TIMEOUT) {
-          errorMessage = 'Location request timed out.'
+        console.error('High accuracy location failed:', error)
+        
+        // If high accuracy fails due to timeout, try with lower accuracy
+        if (error.code === error.TIMEOUT) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const newLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              }
+              setUserLocation(newLocation)
+              setIsLocating(false)
+              showToast.success('Location updated successfully (approximate)')
+            },
+            (fallbackError) => {
+              console.error('Fallback location failed:', fallbackError)
+              setIsLocating(false)
+              
+              let errorMessage = 'Unable to get your location'
+              if (fallbackError.code === fallbackError.PERMISSION_DENIED) {
+                errorMessage = 'Location access denied. Please enable location permissions in your browser settings.'
+              } else if (fallbackError.code === fallbackError.POSITION_UNAVAILABLE) {
+                errorMessage = 'Location information is unavailable. Please check your GPS or network connection.'
+              } else if (fallbackError.code === fallbackError.TIMEOUT) {
+                errorMessage = 'Location request timed out. Please try again or check your GPS signal.'
+              }
+              
+              showToast.error(errorMessage)
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 600000
+            }
+          )
+        } else {
+          setIsLocating(false)
+          
+          let errorMessage = 'Unable to get your location'
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = 'Location access denied. Please enable location permissions in your browser settings.'
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = 'Location information is unavailable. Please check your GPS or network connection.'
+          }
+          
+          showToast.error(errorMessage)
         }
-        toast.error(errorMessage)
       },
       {
         enableHighAccuracy: true,
@@ -106,53 +180,63 @@ export default function HomePage() {
         maximumAge: 300000
       }
     )
+  }
+
+  // Check authentication and handle role-based routing
+  useEffect(() => {
+    if (status === 'loading') return
+    checkAuth()
+  }, [session, status])
+
+  const checkAuth = async () => {
+    try {
+      if (session?.user) {
+        const userProfileResult = await clientAuth.getUserProfile(session.user.id!)
+        if (userProfileResult.success && userProfileResult.data) {
+          setUser(userProfileResult.data)
+        }
+        
+        // Note: Removed automatic vendor dashboard redirect
+        // Users should manually navigate via profile menu
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Default to San Francisco location
+  useEffect(() => {
+    // Always start with San Francisco as default
+    // Users can manually request their location using the location button
+    setUserLocation({ lat: 37.7749, lng: -122.4194 })
   }, [])
 
-  // Handle map bounds change - COMPLETELY DISABLED to prevent refresh loops
-  const handleMapBoundsChange = useCallback((bounds: any) => {
-    // DO NOTHING - map bounds changes should NOT trigger API calls
-    console.log('Map bounds changed (ignored to prevent refresh loops):', bounds)
+  // Handle vendor errors from the custom hook
+  useEffect(() => {
+    if (vendorsError) {
+      console.error('Vendor fetch error:', vendorsError)
+      showToast.error('Failed to load vendors')
+    }
+  }, [vendorsError])
+
+
+
+  // Vendors are already filtered server-side, no need for additional client-side filtering
+
+  // Handle map bounds change
+  const handleMapBoundsChange = useCallback((bounds: {north: number, south: number, east: number, west: number}) => {
+    setMapBounds(bounds)
   }, [])
 
-  // Handle vendor click
   const handleVendorClick = useCallback((vendorId: string) => {
     router.push(`/vendor/${vendorId}`)
   }, [router])
 
-  // FIXED: Handle drag events without closure bug
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      const container = document.querySelector('main')
-      if (!container) return
-      
-      const rect = container.getBoundingClientRect()
-      const newWidth = ((e.clientX - rect.left) / rect.width) * 100
-      const constrainedWidth = Math.max(15, Math.min(85, newWidth))
-      setLeftPanelWidth(constrainedWidth)
-    }
-    
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-    
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-  }, [])
 
-  // Show error if vendors failed to load - NO useEffect
-  if (vendorsError) {
-    console.error('Vendor fetch error:', vendorsError)
-  }
 
-  // Loading state
-  if (loadingVendors) {
+  if (status === 'loading' || loading || loadingVendors) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -169,37 +253,51 @@ export default function HomePage() {
       <header className="bg-background shadow-sm border-b border-border flex-shrink-0">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => {
-                if (mounted) {
-                  toggleTheme()
-                }
-              }}
-              title="Toggle theme"
-            >
+            <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-primary-foreground" />
               </div>
               <h1 className="fluid-text-2xl font-bold text-primary">Aqui</h1>
-              {mounted && (
-                <span className="text-lg" role="img" aria-label="theme toggle">
-                  {themeIcon}
-                </span>
-              )}
+              <LanguageSwitcher />
             </div>
             
-            <div className="flex items-center space-x-4">
-              {!user ? (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            <div className="flex items-center space-x-6">
+              {/* Navigation Links */}
+              <nav className="hidden md:flex items-center space-x-6">
+                <Link 
+                  href="/about" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  {t('auth.signIn')}
-                </button>
-              ) : (
-                <Navigation />
-              )}
+                  About
+                </Link>
+                <Link 
+                  href="/faq" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  FAQ
+                </Link>
+                <Link 
+                  href="/fund" 
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  Fund
+                </Link>
+              </nav>
+              
+              {/* Theme Toggle and Auth Section */}
+              <div className="flex items-center space-x-4">
+                <ThemeToggle />
+                {!user ? (
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    {t('auth.signIn')}
+                  </button>
+                ) : (
+                  <Navigation />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -238,7 +336,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* View Toggle */}
+      {/* View Toggle - Prominent above map */}
       <div className="bg-background border-b border-border flex-shrink-0">
         <div className="fluid-container py-3">
           <div className="flex items-center justify-center">
@@ -270,7 +368,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Fluid responsive layout */}
       <main className="flex-1 flex overflow-hidden relative">
         {/* Left Panel - Vendor List */}
         <div 
@@ -289,6 +387,9 @@ export default function HomePage() {
               <h2 className="fluid-text-lg font-semibold text-foreground">
                 {(vendors || []).length} vendors found
               </h2>
+              <div className="flex items-center space-x-2">
+ 
+              </div>
             </div>
           </div>
 
@@ -309,11 +410,15 @@ export default function HomePage() {
                     onClick={handleVendorClick}
                     onMouseEnter={(vendorId) => {
                        setHighlightedVendor(vendorId)
-                       // REMOVED: Custom events that could trigger refresh loops
+                       // Highlight marker on map when hovering card
+                       const event = new CustomEvent('highlightVendor', { detail: { vendorId } })
+                       window.dispatchEvent(event)
                      }}
                      onMouseLeave={() => {
                        setHighlightedVendor(null)
-                       // REMOVED: Custom events that could trigger refresh loops
+                       // Remove highlight when leaving card
+                       const event = new CustomEvent('unhighlightVendor')
+                       window.dispatchEvent(event)
                      }}
                   />
                 ))}
@@ -322,17 +427,25 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Resizer */}
+        {/* Fluid Resizer - enhanced for touch and accessibility */}
         <div 
           className={`w-2 bg-border hover:bg-primary cursor-col-resize flex-shrink-0 relative group transition-all duration-300 ease-out ${
             viewMode === 'list' ? 'hidden' : 'hidden lg:block'
           } touch-action-none`}
-          onMouseDown={handleMouseDown}
+          onMouseDown={(e) => {
+            setIsDragging(true)
+            e.preventDefault()
+          }}
+          onTouchStart={(e) => {
+            setIsDragging(true)
+            e.preventDefault()
+          }}
           role="separator"
           aria-label="Resize panels"
           tabIndex={0}
         >
           <div className="absolute inset-y-0 -left-2 -right-2 group-hover:bg-primary group-hover:bg-opacity-20 transition-all duration-200"></div>
+          {/* Enhanced drag indicator */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60 group-hover:opacity-100 transition-all duration-200">
             <div className="flex flex-col space-y-1">
               <div className="w-1 h-2 bg-muted-foreground group-hover:bg-primary-foreground rounded-full transition-colors"></div>

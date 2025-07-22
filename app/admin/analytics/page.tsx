@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 import { TrendingUp, Users, Store, Search, Eye, Download, RefreshCw } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 import { BUSINESS_CATEGORIES } from '@/lib/constants'
 
 interface AnalyticsData {
@@ -64,7 +64,7 @@ export default function AnalyticsPage() {
       setData(result.data)
     } catch (error) {
       console.error('Error fetching analytics:', error)
-      toast.error('Failed to load analytics data')
+      showToast.error('Failed to load analytics data')
       setData(null)
     } finally {
       setLoading(false)
@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
     setRefreshing(true)
     await fetchAnalytics()
     setRefreshing(false)
-    toast.success('Data refreshed successfully')
+    showToast.success('Data refreshed successfully')
   }
 
   const exportData = () => {
@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    toast.success('Analytics data exported successfully')
+    showToast.success('Analytics data exported successfully')
   }
 
   if (loading) {

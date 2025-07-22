@@ -17,10 +17,10 @@ const supabase = createClient(
 
 async function insertSimpleMockData() {
   try {
-    console.log('🚀 Starting simple mock data insertion...');
+    console.log('Starting simple mock data insertion...');
     
     // Step 1: Create auth users first
-    console.log('\n👤 Creating auth users...');
+    console.log('\nCreating auth users...');
     const authUsers = [];
     const userEmails = [
       'john.doe@example.com',
@@ -42,23 +42,23 @@ async function insertSimpleMockData() {
         });
         
         if (authError) {
-          console.log(`❌ Failed to create auth user ${email}:`, authError.message);
+          console.log(`Failed to create auth user ${email}:`, authError.message);
         } else {
-          console.log(`✅ Created auth user: ${email}`);
+          console.log(`Created auth user: ${email}`);
           authUsers.push(authData.user);
         }
       } catch (err) {
-        console.log(`❌ Exception creating ${email}:`, err.message);
+        console.log(`Exception creating ${email}:`, err.message);
       }
     }
     
     if (authUsers.length === 0) {
-      console.log('❌ No auth users created, cannot proceed');
+      console.log('No auth users created, cannot proceed');
       return;
     }
     
     // Step 2: Insert users table records (minimal fields)
-    console.log('\n📝 Inserting users table records...');
+    console.log('\nInserting users table records...');
     const usersData = authUsers.map(authUser => ({
       id: authUser.id,
       full_name: authUser.user_metadata?.full_name || authUser.email.split('@')[0]
@@ -71,16 +71,16 @@ async function insertSimpleMockData() {
         .select();
       
       if (userError) {
-        console.log('❌ Users insert error:', userError.message);
+        console.log('Users insert error:', userError.message);
       } else {
-        console.log(`✅ Inserted ${userData.length} users`);
+        console.log(`Inserted ${userData.length} users`);
       }
     } catch (err) {
-      console.log('❌ Users insert exception:', err.message);
+      console.log('Users insert exception:', err.message);
     }
     
     // Step 3: Insert vendors (minimal fields)
-    console.log('\n🏪 Inserting vendors...');
+    console.log('\nInserting vendors...');
     const vendorsData = [
       {
         id: uuidv4(),
@@ -146,14 +146,14 @@ async function insertSimpleMockData() {
         .select();
       
       if (vendorError) {
-        console.log('❌ Vendors insert error:', vendorError.message);
+        console.log('Vendors insert error:', vendorError.message);
         return;
       } else {
-        console.log(`✅ Inserted ${vendorData.length} vendors`);
+        console.log(`Inserted ${vendorData.length} vendors`);
       }
       
       // Step 4: Insert vendor live sessions (minimal fields)
-      console.log('\n📡 Inserting vendor live sessions...');
+      console.log('\nInserting vendor live sessions...');
       const liveSessionsData = vendorData.map(vendor => ({
         id: uuidv4(),
         vendor_id: vendor.id,
@@ -168,9 +168,9 @@ async function insertSimpleMockData() {
         .select();
       
       if (sessionError) {
-        console.log('❌ Live sessions insert error:', sessionError.message);
+        console.log('Live sessions insert error:', sessionError.message);
       } else {
-        console.log(`✅ Inserted ${sessionData.length} live sessions`);
+        console.log(`Inserted ${sessionData.length} live sessions`);
       }
       
       // Step 5: Insert reviews (minimal fields)
@@ -204,13 +204,13 @@ async function insertSimpleMockData() {
         .select();
       
       if (reviewError) {
-        console.log('❌ Reviews insert error:', reviewError.message);
+        console.log('Reviews insert error:', reviewError.message);
       } else {
-        console.log(`✅ Inserted ${reviewData.length} reviews`);
+        console.log(`Inserted ${reviewData.length} reviews`);
       }
       
       // Step 6: Insert favorites (minimal fields)
-      console.log('\n❤️ Inserting favorites...');
+      console.log('\nInserting favorites...');
       const favoritesData = [];
       authUsers.forEach((user, userIndex) => {
         // Each user favorites 1 vendor
@@ -228,25 +228,25 @@ async function insertSimpleMockData() {
         .select();
       
       if (favoriteError) {
-        console.log('❌ Favorites insert error:', favoriteError.message);
+        console.log('Favorites insert error:', favoriteError.message);
       } else {
-        console.log(`✅ Inserted ${favoriteData.length} favorites`);
+        console.log(`Inserted ${favoriteData.length} favorites`);
       }
       
     } catch (err) {
       console.log('❌ Vendor insertion exception:', err.message);
     }
     
-    console.log('\n🎉 Simple mock data insertion completed!');
-    console.log('\n📊 Summary:');
-    console.log(`   👤 Auth users: ${authUsers.length}`);
-    console.log(`   🏪 Vendors: ${vendorsData.length}`);
-    console.log(`   📡 Live sessions: ${vendorsData.length}`);
-    console.log(`   ⭐ Reviews: ${vendorsData.length * 2}`);
-    console.log(`   ❤️ Favorites: ${authUsers.length}`);
+    console.log('\nSimple mock data insertion completed!');
+    console.log('\nSummary:');
+    console.log(`   Auth users: ${authUsers.length}`);
+    console.log(`   Vendors: ${vendorsData.length}`);
+    console.log(`   Live sessions: ${vendorsData.length}`);
+    console.log(`   Reviews: ${vendorsData.length * 2}`);
+    console.log(`   Favorites: ${authUsers.length}`);
     
   } catch (error) {
-    console.error('❌ Unexpected error:', error);
+    console.error('Unexpected error:', error);
   }
 }
 

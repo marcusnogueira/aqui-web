@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = createSupabaseServerClient(cookies())
+    const supabase = createSupabaseServerClient(await cookies())
     
     // Set service role context for RLS policies
     await setServiceRoleContext(supabase)

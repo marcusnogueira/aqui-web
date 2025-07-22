@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setUserContext, clearUserContext, getCurrentSession } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@/types/database'
 import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 
@@ -10,8 +9,6 @@ import { auth } from '@/app/api/auth/[...nextauth]/auth'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
-  
   try {
     const { role } = await request.json()
     
@@ -22,20 +19,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Get current session and set user context
-    const currentSession = await getCurrentSession()
-    if (!currentSession) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-    
-    await setUserContext(supabase, currentSession.user.id)
+    const supabase = createSupabaseServerClient(await cookies())
     
     // Get current user
-    const authSession = await auth()
-    const user = authSession?.user
+    const session = await auth()
+    const user = session?.user
     
     if (!user) {
       return NextResponse.json(
@@ -98,15 +86,12 @@ export async function POST(request: NextRequest) {
       user: updatedUser,
       message: `Successfully switched to ${role} role`
     })
-
+    
   } catch (error) {
     console.error('Role switch error:', error)
     return NextResponse.json(
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { adminAuth, AdminUser } from '@/lib/admin-auth'
-import { toast, Toaster } from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
+import ToasterProvider from '@/components/ToasterProvider'
 import { useSpin } from '@/lib/animations'
 import {
   LayoutDashboard,
@@ -139,7 +140,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
+      <ToasterProvider />
       
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>

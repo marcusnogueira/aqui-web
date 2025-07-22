@@ -10,9 +10,9 @@ export const runtime = 'nodejs'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
   
   try {
     const adminUser = await verifyAdminTokenServer(request)
@@ -23,7 +23,8 @@ export async function POST(
       )
     }
 
-    const notificationId = params.id
+    const resolvedParams = await params
+    const notificationId = resolvedParams.id
 
     if (!notificationId) {
       return NextResponse.json(

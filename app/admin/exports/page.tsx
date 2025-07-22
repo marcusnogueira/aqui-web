@@ -4,7 +4,7 @@ import { useSpin } from '@/lib/animations'
 import { EXPORT_FORMATS, EXPORT_TYPES, EXPORT_STATUSES } from '@/lib/constants'
 import { Users, Store, BarChart3, FileText, Clock, CheckCircle, Download } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 
 interface ExportJob {
   id: string
@@ -142,7 +142,7 @@ export default function ExportsPage() {
       setJobs(mockJobs)
     } catch (error) {
       console.error('Error fetching export jobs:', error)
-      toast.error('Failed to load export jobs')
+      showToast.error('Failed to load export jobs')
     } finally {
       setLoading(false)
     }
@@ -168,7 +168,7 @@ export default function ExportsPage() {
       setShowCreateModal(false)
       setSelectedTemplate(null)
       
-      toast.success('Export job created successfully')
+      showToast.success('Export job created successfully')
       
       // Simulate processing
       setTimeout(() => {
@@ -193,12 +193,12 @@ export default function ExportsPage() {
               }
             : job
         ))
-        toast.success('Export completed successfully')
+        showToast.success('Export completed successfully')
       }, 5000)
       
     } catch (error) {
       console.error('Error creating export:', error)
-      toast.error('Failed to create export job')
+      showToast.error('Failed to create export job')
     }
   }
 
@@ -206,7 +206,7 @@ export default function ExportsPage() {
     if (!job.file_url) return
     
     // In a real app, this would download the actual file
-    toast.success('Download started')
+    showToast.success('Download started')
     
     // Simulate download
     const link = document.createElement('a')

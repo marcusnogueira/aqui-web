@@ -1,19 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import { Database } from '@/lib/database.types'
+import { Database } from '@/types/database'
 import { Store, MapPin, Clock, Users, TrendingUp, Calendar } from 'lucide-react'
 import { USER_ROLES } from '@/lib/constants'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
 
 export default function VendorOverviewPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -29,8 +32,9 @@ export default function VendorOverviewPage() {
   })
 
   useEffect(() => {
+    if (status === 'loading') return
     checkAuth()
-  }, [session])
+  }, [session, status])
 
   const checkAuth = async () => {
     try {
@@ -53,7 +57,7 @@ export default function VendorOverviewPage() {
       }
 
       setUser(userProfile)
-      fetchVendorData(session.user.id)
+      fetchVendorData(session.user.id!)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -62,15 +66,17 @@ export default function VendorOverviewPage() {
 
   const fetchVendorData = async (userId?: string) => {
     const currentUserId = userId || user?.id
-    if (!currentUserId) return
+    if (!currentUserId || !supabase) return
 
     try {
       // Fetch vendor profile
-      const { data: vendorData, error: vendorError } = await supabase
+      const vendorResult = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', currentUserId)
         .single()
+      
+      const { data: vendorData, error: vendorError } = vendorResult || { data: null, error: null }
 
       if (vendorError) {
         console.error('Error fetching vendor:', vendorError)
@@ -83,12 +89,14 @@ export default function VendorOverviewPage() {
         setVendor(vendorData)
 
         // Fetch active live session
-        const { data: sessionData } = await supabase
+        const sessionResult = await supabase
           .from('vendor_live_sessions')
           .select('*')
           .eq('vendor_id', vendorData.id)
           .is('ended_at', null)
           .single()
+        
+        const { data: sessionData } = sessionResult || { data: null }
 
         setLiveSession(sessionData)
 
@@ -103,6 +111,8 @@ export default function VendorOverviewPage() {
   }
 
   const fetchVendorStats = async (vendorId: string) => {
+    if (!supabase) return
+    
     try {
       // Get total sessions
       const { count: totalSessions } = await supabase
@@ -111,10 +121,12 @@ export default function VendorOverviewPage() {
         .eq('vendor_id', vendorId)
 
       // Get reviews stats
-      const { data: reviewsData } = await supabase
+      const reviewsResult = await supabase
         .from('reviews')
         .select('rating')
         .eq('vendor_id', vendorId)
+      
+      const { data: reviewsData } = reviewsResult || { data: null }
 
       const totalReviews = reviewsData?.length || 0
       const avgRating = totalReviews > 0 && reviewsData
@@ -133,7 +145,7 @@ export default function VendorOverviewPage() {
   }
 
   const startLiveSession = async () => {
-    if (!vendor) return
+    if (!vendor || !supabase) return
     
     try {
       // Get current location
@@ -169,18 +181,20 @@ export default function VendorOverviewPage() {
       }
       
       // Check for existing active session to prevent duplicates
-      const { data: existingSession } = await supabase
+      const existingSessionResult = await supabase
         .from('vendor_live_sessions')
         .select('id')
         .eq('vendor_id', vendor.id)
         .eq('is_active', true)
         .single()
       
+      const { data: existingSession } = existingSessionResult || { data: null }
+      
       if (existingSession) {
         throw new Error('You already have an active live session. Please end it before starting a new one.')
       }
       
-      const { data, error } = await supabase
+      const insertResult = await supabase
         .from('vendor_live_sessions')
         .insert({
           vendor_id: vendor.id,
@@ -192,6 +206,8 @@ export default function VendorOverviewPage() {
         })
         .select()
         .single()
+      
+      const { data, error } = insertResult || { data: null, error: null }
       
       if (error) throw error
       
@@ -221,7 +237,7 @@ export default function VendorOverviewPage() {
   }
 
   const endLiveSession = async () => {
-    if (!liveSession) return
+    if (!liveSession || !supabase) return
     
     try {
       const { error } = await supabase
@@ -242,7 +258,7 @@ export default function VendorOverviewPage() {
     }
   }
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -251,6 +267,11 @@ export default function VendorOverviewPage() {
         </div>
       </div>
     )
+  }
+
+  if (status === 'unauthenticated') {
+    router.push('/')
+    return null
   }
 
   if (!vendor) {

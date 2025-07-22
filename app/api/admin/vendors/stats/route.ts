@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
   
   try {
     // Check admin authentication

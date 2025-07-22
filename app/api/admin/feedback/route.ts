@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { cookies } from 'next/headers'
 
+// Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic'
 
 const HTTP_STATUS = {
@@ -20,8 +20,6 @@ const ERROR_MESSAGES = {
 }
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
-  
   try {
     // Verify admin authentication
     const adminUser = await verifyAdminTokenServer(request)
@@ -32,8 +30,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Set service role context for RLS policies
-    await setServiceRoleContext(supabase)
+    const supabase = createSupabaseServerClient(await cookies())
     const { searchParams } = new URL(request.url)
     
     // Check if this is a stats-only request
@@ -177,15 +174,10 @@ export async function GET(request: NextRequest) {
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
-  
   try {
     // Verify admin authentication
     const adminUser = await verifyAdminTokenServer(request)
@@ -205,6 +197,8 @@ export async function PUT(request: NextRequest) {
         { status: HTTP_STATUS.BAD_REQUEST }
       )
     }
+
+    const supabase = createSupabaseServerClient(await cookies())
 
     // Update feedback status
     const { data, error } = await supabase
@@ -232,8 +226,5 @@ export async function PUT(request: NextRequest) {
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }

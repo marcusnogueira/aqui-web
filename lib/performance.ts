@@ -53,7 +53,17 @@ export const trackMemoryUsage = () => {
       )
     }
     
-    const memory = (performance as any).memory
+    const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory
+    
+    if (!memory) {
+      throw errorHandler.create(
+        ErrorType.VALIDATION,
+        'Memory API not available',
+        ErrorSeverity.LOW,
+        'MEMORY_API_UNAVAILABLE'
+      )
+    }
+    
     return {
       usedJSHeapSize: memory.usedJSHeapSize,
       totalJSHeapSize: memory.totalJSHeapSize,

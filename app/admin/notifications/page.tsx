@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { Bell, CheckCircle, Clock, User, AlertTriangle, RefreshCw, Eye, EyeOff } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 
 interface Notification {
   id: string
@@ -53,7 +53,7 @@ export default function AdminNotificationsPage() {
       setNotifications(data.notifications)
     } catch (error) {
       console.error('Error fetching notifications:', error)
-      toast.error('Failed to load notifications')
+      showToast.error('Failed to load notifications')
     } finally {
       setLoading(false)
     }
@@ -100,7 +100,7 @@ export default function AdminNotificationsPage() {
       await fetchStats()
     } catch (error) {
       console.error('Error marking notification as read:', error)
-      toast.error('Failed to mark notification as read')
+      showToast.error('Failed to mark notification as read')
     } finally {
       setUpdatingNotifications(prev => {
         const newSet = new Set(prev)
@@ -122,11 +122,11 @@ export default function AdminNotificationsPage() {
 
       if (!response.ok) throw new Error('Failed to mark all notifications as read')
       
-      toast.success('All notifications marked as read')
+      showToast.success('All notifications marked as read')
       await Promise.all([fetchNotifications(), fetchStats()])
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
-      toast.error('Failed to mark all notifications as read')
+      showToast.error('Failed to mark all notifications as read')
     }
   }
 

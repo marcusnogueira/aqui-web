@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { Users, Search, Filter, Eye, Ban, CheckCircle, XCircle, Mail, Calendar, Star } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 import { USER_ROLES, USER_ACCOUNT_STATUS } from '@/lib/constants'
 
 interface User {
@@ -112,7 +112,7 @@ export default function UsersPage() {
       setUsers(mockUsers)
     } catch (error) {
       console.error('Error fetching users:', error)
-      toast.error('Failed to load users')
+      showToast.error('Failed to load users')
     } finally {
       setLoading(false)
     }
@@ -141,27 +141,27 @@ export default function UsersPage() {
       // This would be an API call
       setUsers(prev => prev.map(user => 
         user.id === userId 
-          ? { ...user, status: newStatus as any }
+          ? { ...user, status: newStatus }
           : user
       ))
       
-      toast.success(`User status updated to ${newStatus}`)
+      showToast.success(`User status updated to ${newStatus}`)
       setShowModal(false)
       setSelectedUser(null)
       fetchStats() // Refresh stats
     } catch (error) {
       console.error('Error updating user status:', error)
-      toast.error('Failed to update user status')
+      showToast.error('Failed to update user status')
     }
   }
 
   const sendEmailToUser = async (userId: string, email: string) => {
     try {
       // This would be an API call to send email
-      toast.success(`Email sent to ${email}`)
+      showToast.success(`Email sent to ${email}`)
     } catch (error) {
       console.error('Error sending email:', error)
-      toast.error('Failed to send email')
+      showToast.error('Failed to send email')
     }
   }
 

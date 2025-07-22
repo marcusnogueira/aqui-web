@@ -2,6 +2,9 @@
 
 import { useSession, signIn, signOut } from 'next-auth/react'
 
+// Force dynamic rendering for this component
+export const dynamic = 'force-dynamic'
+
 export function AuthStatus() {
   const { data: session, status } = useSession()
 

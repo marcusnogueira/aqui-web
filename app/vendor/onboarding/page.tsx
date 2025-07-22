@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
@@ -8,8 +8,11 @@ import { clientAuth } from '@/lib/auth-helpers'
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 export default function VendorOnboardingPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -35,8 +38,9 @@ export default function VendorOnboardingPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (status === 'loading') return
     checkAuth()
-  }, [session])
+  }, [session, status])
 
   const checkAuth = async () => {
     if (!session?.user) {
@@ -126,12 +130,17 @@ export default function VendorOnboardingPage() {
     }
   }
 
-  if (!user) {
+  if (status === 'loading' || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-mission-teal"></div>
       </div>
     )
+  }
+
+  if (status === 'unauthenticated') {
+    router.push('/')
+    return null
   }
 
   return (

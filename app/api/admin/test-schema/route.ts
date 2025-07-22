@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
 
   try {
     // Check admin authentication

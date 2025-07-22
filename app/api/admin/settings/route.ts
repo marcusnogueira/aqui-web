@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
 
 // GET endpoint to fetch current platform settings
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
   
   try {
     const adminUser = await verifyAdminTokenServer(request)
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 // PUT endpoint to update platform settings
 export async function PUT(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
   
   try {
     const adminUser = await verifyAdminTokenServer(request)
@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { allow_auto_vendor_approval, maintenance_mode } = body
+    const { allow_auto_vendor_approval, maintenance_mode, require_vendor_approval } = body
 
     // Validate input
     const updates: any = {}
@@ -88,6 +88,16 @@ export async function PUT(request: NextRequest) {
         )
       }
       updates.maintenance_mode = maintenance_mode
+    }
+
+    if (require_vendor_approval !== undefined) {
+      if (typeof require_vendor_approval !== 'boolean') {
+        return NextResponse.json(
+          { error: 'Invalid value for require_vendor_approval' },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        )
+      }
+      updates.require_vendor_approval = require_vendor_approval
     }
 
     if (Object.keys(updates).length === 0) {

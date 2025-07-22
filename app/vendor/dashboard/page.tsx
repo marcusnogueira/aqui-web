@@ -1,14 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { createClient, signOut } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import { Database } from '@/lib/database.types'
+import { Database } from '@/types/database'
 import { SubcategoryInput } from '@/components/SubcategoryInput'
 import { getBusinessTypeKeys } from '@/lib/business-types'
-import { USER_ROLES, VENDOR_STATUSES } from '@/lib/constants'
+import { USER_ROLES } from '@/lib/constants'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -17,7 +20,7 @@ type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['
 type VendorStaticLocation = Database['public']['Tables']['vendor_static_locations']['Row']
 
 export default function VendorDashboardPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -51,9 +54,10 @@ export default function VendorDashboardPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   useEffect(() => {
+    if (status === 'loading') return
     checkAuth()
     loadBusinessTypes()
-  }, [session])
+  }, [session, status])
 
   const loadBusinessTypes = async () => {
     try {
@@ -110,7 +114,7 @@ export default function VendorDashboardPage() {
       }
 
       setUser(userProfile)
-      fetchVendorData(session.user.id)
+      fetchVendorData(session.user.id!)
     } catch (error) {
       console.error('Auth check error:', error)
       router.push('/')
@@ -138,15 +142,17 @@ export default function VendorDashboardPage() {
 
   const fetchVendorData = async (userId?: string) => {
     const currentUserId = userId || user?.id
-    if (!currentUserId) return
+    if (!currentUserId || !supabase) return
 
     try {
       // Fetch vendor profile
-      const { data: vendorData, error: vendorError } = await supabase
+      const vendorResult = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', currentUserId)
         .single()
+      
+      const { data: vendorData, error: vendorError } = vendorResult || { data: null, error: null }
 
       if (vendorError) {
         console.error('Error fetching vendor:', vendorError)
@@ -200,7 +206,7 @@ export default function VendorDashboardPage() {
   }
 
   const startLiveSession = async () => {
-    if (!vendor) return
+    if (!vendor || !supabase) return
     
     setIsStartingSession(true)
     try {
@@ -237,11 +243,13 @@ export default function VendorDashboardPage() {
       }
       
       // Verify vendor exists before inserting
-      const { data: vendorCheck, error: vendorError } = await supabase
+      const vendorCheckResult = await supabase
         .from('vendors')
         .select('id')
         .eq('user_id', user.id)
         .single()
+      
+      const { data: vendorCheck, error: vendorError } = vendorCheckResult || { data: null, error: null }
       
       if (vendorError || !vendorCheck) {
         console.error('[Live Session] Vendor not found:', vendorError)
@@ -249,12 +257,14 @@ export default function VendorDashboardPage() {
       }
       
       // Check for existing active session (end_time is NULL) to prevent duplicates
-      const { data: existingSession } = await supabase
+      const existingSessionResult = await supabase
         .from('vendor_live_sessions')
         .select('id')
         .eq('vendor_id', vendor.id)
         .is('end_time', null)
         .single()
+      
+      const { data: existingSession } = existingSessionResult || { data: null }
 
       if (existingSession) {
         throw new Error('You already have an active live session. Please end it before starting a new one.')
@@ -263,7 +273,7 @@ export default function VendorDashboardPage() {
       const autoEndTime = sessionDuration ? 
         new Date(Date.now() + sessionDuration * 60 * 1000).toISOString() : null
 
-      const { data, error } = await supabase
+      const insertResult = await supabase
         .from('vendor_live_sessions')
         .insert({
           vendor_id: vendor.id,
@@ -276,6 +286,8 @@ export default function VendorDashboardPage() {
         })
         .select()
         .single()
+      
+      const { data, error } = insertResult || { data: null, error: null }
       
       if (error) {
         console.log('[Live Session Insert Error]', error?.message, error?.details, error)
@@ -313,8 +325,8 @@ export default function VendorDashboardPage() {
     try {
       setLoading(true)
       
-      if (!vendor) {
-        throw new Error('Vendor not found')
+      if (!vendor || !supabase) {
+        throw new Error('Vendor not found or Supabase client not available')
       }
       
       const { error } = await supabase
@@ -337,7 +349,7 @@ export default function VendorDashboardPage() {
   }
 
   const addAnnouncement = async () => {
-    if (!vendor || !newAnnouncement.message) return
+    if (!vendor || !newAnnouncement.message || !supabase) return
 
     try {
       const { error } = await supabase
@@ -359,7 +371,7 @@ export default function VendorDashboardPage() {
 
 
   const addLocation = async () => {
-    if (!vendor || !newLocation.address) return
+    if (!vendor || !newLocation.address || !supabase) return
 
     try {
       const { error } = await supabase
@@ -381,7 +393,7 @@ export default function VendorDashboardPage() {
   }
 
   const saveProfile = async () => {
-    if (!vendor) return
+    if (!vendor || !supabase) return
 
     setIsSavingProfile(true)
     try {
@@ -453,7 +465,7 @@ export default function VendorDashboardPage() {
     }
   }
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -462,6 +474,11 @@ export default function VendorDashboardPage() {
         </div>
       </div>
     )
+  }
+
+  if (status === 'unauthenticated') {
+    router.push('/')
+    return null
   }
 
   if (!vendor) {
@@ -490,7 +507,7 @@ export default function VendorDashboardPage() {
   ] as const
 
   const getStatusBanner = () => {
-    if (!vendor || vendor.status === VENDOR_STATUSES.APPROVED) {
+    if (!vendor || vendor.status === 'approved') {
       return null;
     }
 
@@ -499,10 +516,10 @@ export default function VendorDashboardPage() {
     let textColor = 'text-yellow-800';
 
     switch (vendor.status) {
-      case VENDOR_STATUSES.PENDING:
+      case 'pending':
         message = 'Your application is under review. You will be notified once it has been approved.';
         break;
-      case VENDOR_STATUSES.REJECTED:
+      case 'rejected':
         message = vendor.rejection_reason 
           ? `Your application was not approved. Reason: ${vendor.rejection_reason}. Please contact support if you need assistance with reapplying.`
           : 'Your application was not approved. Please contact support for more information.';
@@ -545,7 +562,7 @@ export default function VendorDashboardPage() {
               ) : (
                 <button
                   onClick={startLiveSession}
-                  disabled={isStartingSession || vendor.status !== VENDOR_STATUSES.APPROVED}
+                  disabled={isStartingSession || vendor.status !== 'approved'}
                   className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                   style={{ backgroundColor: '#D85D28', color: '#FBF2E3' }}
                 >

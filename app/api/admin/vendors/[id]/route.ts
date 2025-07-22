@@ -10,9 +10,9 @@ export const runtime = 'nodejs'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
   
   try {
     const adminUser = await verifyAdminTokenServer(request)
@@ -23,7 +23,8 @@ export async function PATCH(
       )
     }
 
-    const vendorId = params.id
+    const resolvedParams = await params
+    const vendorId = resolvedParams.id
     const { admin_notes } = await request.json()
 
     if (!vendorId) {

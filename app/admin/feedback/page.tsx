@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { MessageSquare, Star, Clock, CheckCircle, XCircle, Eye, Filter, Search, Download } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { showToast } from '@/lib/toast'
 import { FEEDBACK_TYPES, PRIORITY_LEVELS } from '@/lib/constants'
 
 interface VendorFeedback {
@@ -86,7 +86,7 @@ export default function FeedbackPage() {
       setTotalPages(data.totalPages || 1)
     } catch (error) {
       console.error('Error fetching feedback:', error)
-      toast.error('Failed to load feedback data')
+      showToast.error('Failed to load feedback data')
     } finally {
       setLoading(false)
     }
@@ -103,7 +103,7 @@ export default function FeedbackPage() {
       setStats(data.stats)
     } catch (error) {
       console.error('Error fetching stats:', error)
-      toast.error('Failed to load feedback statistics')
+      showToast.error('Failed to load feedback statistics')
     }
   }
 
@@ -131,13 +131,13 @@ export default function FeedbackPage() {
         item.id === id ? data.feedback : item
       ))
       
-      toast.success('Feedback status updated successfully')
+      showToast.success('Feedback status updated successfully')
       setShowModal(false)
       setSelectedFeedback(null)
       fetchStats() // Refresh stats
     } catch (error) {
       console.error('Error updating feedback:', error)
-      toast.error('Failed to update feedback status')
+      showToast.error('Failed to update feedback status')
     }
   }
 
@@ -199,7 +199,7 @@ export default function FeedbackPage() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    toast.success('Feedback data exported successfully')
+    showToast.success('Feedback data exported successfully')
   }
 
   // Feedback is already filtered and paginated by the API

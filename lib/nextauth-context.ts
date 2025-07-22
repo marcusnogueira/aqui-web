@@ -85,7 +85,7 @@ export function withUserContext<T extends any[], R>(
       // If we have a session and this looks like it uses Supabase
       if (session?.user?.id && typeof request === 'object' && 'cookies' in request) {
         const { cookies } = await import('next/headers');
-        supabase = createSupabaseServerClient(cookies());
+        supabase = createSupabaseServerClient(await cookies());
         
         // Set user context for RLS
         await setUserContext(supabase, session.user.id);

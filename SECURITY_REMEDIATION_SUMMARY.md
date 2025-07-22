@@ -1,7 +1,7 @@
 # Security Remediation Summary
 
 ## Overview
-This document summarizes the critical security vulnerabilities that were identified and remediated in the AQUI platform's database Row Level Security (RLS) policies and database setup scripts.
+This document summarizes the critical security vulnerabilities that were identified and remediated in the Aqui platform's database Row Level Security (RLS) policies and database setup scripts.
 
 ## Issues Identified
 
@@ -119,4 +119,4 @@ CREATE POLICY "Vendors can manage their own specials" ON vendor_specials
 - `scripts/setup-admin-auth.js`
 - `scripts/backup-and-recover.js`
 
-The database is now secured with proper RLS policies that enforce resource ownership while maintaining the necessary functionality for the AQUI platform.
+The database is now secured with proper RLS policies that enforce resource ownership while maintaining the necessary functionality for the Aqui platform.

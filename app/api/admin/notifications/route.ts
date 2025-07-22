@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
@@ -9,8 +8,6 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
-  
   try {
     const adminUser = await verifyAdminTokenServer(request)
     if (!adminUser) {
@@ -20,8 +17,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Set service role context for RLS policies
-    await setServiceRoleContext(supabase)
+    const supabase = createSupabaseServerClient(await cookies())
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -66,22 +62,16 @@ export async function GET(request: NextRequest) {
         total: notifications?.length || 0
       }
     })
-
   } catch (error) {
     console.error('Fetch notifications error:', error)
     return NextResponse.json(
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }
 
 export async function PATCH(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
-  
   try {
     const adminUser = await verifyAdminTokenServer(request)
     if (!adminUser) {
@@ -90,6 +80,8 @@ export async function PATCH(request: NextRequest) {
         { status: HTTP_STATUS.UNAUTHORIZED }
       )
     }
+
+    const supabase = createSupabaseServerClient(await cookies())
     const body = await request.json()
     const { notificationId, action } = body
 
@@ -157,15 +149,11 @@ export async function PATCH(request: NextRequest) {
       message,
       data: result?.data
     })
-
   } catch (error) {
     console.error('Error in admin notifications PATCH:', error)
     return NextResponse.json(
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }

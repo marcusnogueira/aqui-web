@@ -2,14 +2,14 @@ import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 import * as dotenv from 'dotenv'
 
-// ✅ Load .env.local values
+// Load .env.local values
 dotenv.config({ path: '.env.local' })
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error('❌ Missing required environment variables:')
+  console.error('Missing required environment variables:')
   console.error('NEXT_PUBLIC_SUPABASE_URL:', !!supabaseUrl)
   console.error('SUPABASE_SERVICE_ROLE_KEY:', !!serviceRoleKey)
   process.exit(1)
@@ -32,8 +32,8 @@ const mockUsers = [
 ]
 
 async function createUsersAndVendors() {
-  console.log('🚀 Starting mock users and vendors creation...')
-  console.log(`📊 Creating ${mockUsers.length} users and vendors`)
+  console.log('Starting mock users and vendors creation...')
+  console.log(`Creating ${mockUsers.length} users and vendors`)
   
   let successCount = 0
   let errorCount = 0
@@ -50,14 +50,14 @@ async function createUsersAndVendors() {
       })
 
       if (userError || !authUser?.user?.id) {
-        console.error(`❌ Failed to create user ${user.email}:`, userError?.message)
+        console.error(`Failed to create user ${user.email}:`, userError?.message)
         errorCount++
         continue
       }
 
-      console.log(`✅ Created user ${user.email}`)
+      console.log(`Created user ${user.email}`)
 
-      // 🏪 Insert Vendor and get its ID
+      // Insert Vendor and get its ID
       const { data: newVendor, error: vendorError } = await supabase.from('vendors').insert({
         user_id: authUser.user.id,
         business_name: user.name,
@@ -72,14 +72,14 @@ async function createUsersAndVendors() {
       }).select('id').single()
 
       if (vendorError || !newVendor) {
-        console.error(`❌ Failed to create vendor for ${user.email}:`, vendorError?.message)
+        console.error(`Failed to create vendor for ${user.email}:`, vendorError?.message)
         errorCount++
         continue // Skip to next user if vendor creation fails
       }
 
-      console.log(`✅ Vendor added for ${user.name}`)
+      console.log(`Vendor added for ${user.name}`)
 
-      // 🔴 Insert Live Session
+      // Insert Live Session
       const { error: sessionError } = await supabase.from('vendor_live_sessions').insert({
         vendor_id: newVendor.id,
         is_active: true,
@@ -89,31 +89,31 @@ async function createUsersAndVendors() {
       })
 
       if (sessionError) {
-        console.error(`❌ Failed to create live session for ${user.name}:`, sessionError.message)
+        console.error(`Failed to create live session for ${user.name}:`, sessionError.message)
         errorCount++
       } else {
-        console.log(`✅ Live session started for ${user.name}`)
+        console.log(`Live session started for ${user.name}`)
         successCount++
       }
     } catch (error) {
-      console.error(`❌ Unexpected error for ${user.email}:`, error)
+      console.error(`Unexpected error for ${user.email}:`, error)
       errorCount++
     }
   }
   
-  console.log('\n📈 Summary:')
-  console.log(`✅ Successfully created: ${successCount} users/vendors`)
-  console.log(`❌ Errors: ${errorCount}`)
-  console.log('🎉 Mock data creation completed!')
+  console.log('\nSummary:')
+  console.log(`Successfully created: ${successCount} users/vendors`)
+  console.log(`Errors: ${errorCount}`)
+  console.log('Mock data creation completed!')
 }
 
 // Run the script
 createUsersAndVendors()
   .then(() => {
-    console.log('✅ Script completed successfully')
+    console.log('Script completed successfully')
     process.exit(0)
   })
   .catch((error) => {
-    console.error('❌ Script failed:', error)
+    console.error('Script failed:', error)
     process.exit(1)
   })

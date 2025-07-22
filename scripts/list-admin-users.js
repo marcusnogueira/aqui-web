@@ -16,7 +16,7 @@ const supabase = createClient(
 
 async function listAdminUsers() {
   try {
-    console.log('🔍 Listing all admin users...');
+    console.log('Listing all admin users...');
     
     // Get all admin users from users table
     const { data: adminUsers, error: adminError } = await supabase
@@ -25,46 +25,46 @@ async function listAdminUsers() {
       .eq('is_admin', true);
     
     if (adminError) {
-      console.error('❌ Error fetching admin users:', adminError);
+      console.error('Error fetching admin users:', adminError);
       return;
     }
     
     if (adminUsers.length === 0) {
-      console.log('❌ No admin users found');
+      console.log('No admin users found');
       return;
     }
     
-    console.log(`✅ Found ${adminUsers.length} admin user(s):`);
+    console.log(`Found ${adminUsers.length} admin user(s):`);
     console.log('');
     
     adminUsers.forEach((user, index) => {
-      console.log(`👤 Admin User ${index + 1}:`);
+      console.log(`Admin User ${index + 1}:`);
       console.log(`   🆔 ID: ${user.id}`);
-      console.log(`   📝 Name: ${user.full_name}`);
-      console.log(`   🏪 Is Vendor: ${user.is_vendor}`);
-      console.log(`   🎭 Active Role: ${user.active_role}`);
-      console.log(`   📅 Created: ${new Date(user.created_at).toLocaleString()}`);
+      console.log(`   Name: ${user.full_name}`);
+      console.log(`   Is Vendor: ${user.is_vendor}`);
+      console.log(`   Active Role: ${user.active_role}`);
+      console.log(`   Created: ${new Date(user.created_at).toLocaleString()}`);
       console.log('');
     });
     
     // Also get auth user emails for these admin users
-    console.log('📧 Getting email addresses from auth...');
+    console.log('Getting email addresses from auth...');
     const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
     
     if (authError) {
-      console.error('❌ Error fetching auth users:', authError);
+      console.error('Error fetching auth users:', authError);
       return;
     }
     
     adminUsers.forEach((user, index) => {
       const authUser = authUsers.users.find(au => au.id === user.id);
       if (authUser) {
-        console.log(`👤 Admin User ${index + 1} Email: ${authUser.email}`);
+        console.log(`Admin User ${index + 1} Email: ${authUser.email}`);
       }
     });
     
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('Error:', error);
   }
 }
 

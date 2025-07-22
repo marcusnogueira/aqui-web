@@ -46,9 +46,9 @@ async function run() {
     })
 
     if (error) {
-      console.error(`❌ Failed to insert ${vendor.name}:`, error.message)
+      console.error(`Failed to insert ${vendor.name}:`, error.message)
     } else {
-      console.log(`✅ Inserted: ${vendor.name}`)
+      console.log(`Inserted: ${vendor.name}`)
     }
   }
 }

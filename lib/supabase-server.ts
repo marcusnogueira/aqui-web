@@ -4,17 +4,20 @@ import type { Database } from '@/lib/database.types'
 import { errorHandler, createAuthError, Result } from '@/lib/error-handler'
 
 // Server-side Supabase client
-export const createClient = () => createServerClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    cookies: {
-      get(name: string) {
-        return cookies().get(name)?.value
+export const createClient = async () => {
+  const cookieStore = await cookies()
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
       },
-    },
-  }
-)
+    }
+  )
+}
 
 // Helper function to get current user on server (using NextAuth.js)
 export const getCurrentUserServer = async (): Promise<Result<any>> => {

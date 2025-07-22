@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
@@ -9,8 +8,6 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
-  
   try {
     const adminUser = await verifyAdminTokenServer(request)
     if (!adminUser) {
@@ -20,8 +17,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Set service role context for RLS policies
-    await setServiceRoleContext(supabase)
+    const supabase = createSupabaseServerClient(await cookies())
 
     // Get total notifications count
     const { count: total, error: totalError } = await supabase
@@ -99,15 +95,11 @@ export async function GET(request: NextRequest) {
       vendor_approved: vendor_approved || 0,
       vendor_rejected: vendor_rejected || 0
     })
-
   } catch (error) {
     console.error('Error fetching notification stats:', error)
     return NextResponse.json(
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }

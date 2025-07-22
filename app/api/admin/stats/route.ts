@@ -8,7 +8,7 @@ import { USER_ROLES, MODERATION_STATUSES, ERROR_MESSAGES, HTTP_STATUS, getTimeAg
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(cookies())
+  const supabase = createSupabaseServerClient(await cookies())
   
   try {
     // Verify admin authentication

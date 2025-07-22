@@ -17,7 +17,7 @@ module.exports = {
     },
     extend: {
       colors: {
-        // AQUI Brand Colors
+        // Aqui Brand Colors
         'chili-orange': '#D85D28',
         'golden-plantain': '#F6B145',
         'mission-teal': '#3A938A',

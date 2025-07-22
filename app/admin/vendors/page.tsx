@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/AdminLayout'
-import { Search, Filter, CheckCircle, XCircle, Clock, Eye, Edit2, MoreHorizontal, Trash2, UserCheck, UserX, Square, CheckSquare } from 'lucide-react'
-import toast from 'react-hot-toast'
+import { Search, Filter, CheckCircle, XCircle, Clock, Eye, Edit2, MoreHorizontal, Trash2, UserCheck, UserX, Square, CheckSquare, Settings } from 'lucide-react'
+import { showToast } from '@/lib/toast'
 import { AdminVendorView } from '@/types/vendor'
 import { VENDOR_STATUSES, BUSINESS_CATEGORIES, PAGINATION } from '@/lib/constants'
 
@@ -45,6 +45,10 @@ export default function VendorManagementPage() {
     total: 0,
     totalPages: 0
   })
+  const [platformSettings, setPlatformSettings] = useState<{
+    require_vendor_approval: boolean
+    allow_auto_vendor_approval: boolean
+  } | null>(null)
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('')
@@ -61,6 +65,7 @@ export default function VendorManagementPage() {
   useEffect(() => {
     fetchVendors()
     fetchStats()
+    fetchPlatformSettings()
   }, [pagination.page, searchTerm, statusFilter])
 
   const fetchVendors = async () => {
@@ -81,7 +86,7 @@ export default function VendorManagementPage() {
       setPagination(data.pagination)
     } catch (error) {
       console.error('Error fetching vendors:', error)
-      toast.error('Failed to load vendors')
+      showToast.error('Failed to load vendors')
     } finally {
       setLoading(false)
     }
@@ -96,7 +101,24 @@ export default function VendorManagementPage() {
       setStats(data)
     } catch (error) {
       console.error('Error fetching stats:', error)
-      toast.error('Failed to load statistics')
+      showToast.error('Failed to load statistics')
+    }
+  }
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/settings')
+      if (!response.ok) throw new Error('Failed to fetch platform settings')
+      
+      const data = await response.json()
+      if (data.success && data.settings) {
+        setPlatformSettings({
+          require_vendor_approval: data.settings.require_vendor_approval || false,
+          allow_auto_vendor_approval: data.settings.allow_auto_vendor_approval || false
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching platform settings:', error)
     }
   }
 
@@ -110,12 +132,12 @@ export default function VendorManagementPage() {
 
       if (!response.ok) throw new Error(`Failed to update vendor status to ${status}`);
       
-      toast.success(`Vendor status updated to ${status}`);
+      showToast.success(`Vendor status updated to ${status}`);
       fetchVendors();
       fetchStats();
     } catch (error) {
       console.error('Error updating vendor status:', error);
-      toast.error('Failed to update vendor status');
+      showToast.error('Failed to update vendor status');
     }
   };
 
@@ -137,10 +159,10 @@ export default function VendorManagementPage() {
 
         if (!response.ok) throw new Error('Failed to update vendor details');
         
-        toast.success('Vendor details updated successfully');
+        showToast.success('Vendor details updated successfully');
       } catch (error) {
         console.error('Error updating vendor details:', error);
-        toast.error('Failed to update vendor details');
+        showToast.error('Failed to update vendor details');
       }
     }
 
@@ -191,7 +213,7 @@ export default function VendorManagementPage() {
       if (!response.ok) throw new Error('Failed to execute batch action')
       
       const result = await response.json()
-      toast.success(`Successfully ${batchAction}d ${result.updated} vendors`)
+      showToast.success(`Successfully ${batchAction}d ${result.updated} vendors`)
       
       // Reset selection and refresh data
       setSelectedVendors(new Set())
@@ -199,7 +221,7 @@ export default function VendorManagementPage() {
       fetchStats()
     } catch (error) {
       console.error('Error executing batch action:', error)
-      toast.error(`Failed to ${batchAction} vendors`)
+      showToast.error(`Failed to ${batchAction} vendors`)
     } finally {
       setBatchLoading(false)
       setShowBatchConfirm(false)
@@ -261,6 +283,36 @@ export default function VendorManagementPage() {
             <p className="text-gray-600">Manage vendor approvals, status, and visibility</p>
           </div>
         </div>
+
+        {/* Platform Settings Info */}
+        {platformSettings && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Settings className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-900">Vendor Approval Policy</h3>
+                  <p className="text-xs text-blue-700">
+                    {platformSettings.require_vendor_approval 
+                      ? 'New vendors require manual approval before they can access vendor features'
+                      : 'New vendors are automatically approved upon registration'
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${
+                  platformSettings.require_vendor_approval ? 'bg-yellow-500' : 'bg-green-500'
+                }`}></div>
+                <span className="text-sm font-medium text-blue-800">
+                  {platformSettings.require_vendor_approval ? 'Manual Approval' : 'Auto-Approval'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Statistics Cards */}
         {stats && (

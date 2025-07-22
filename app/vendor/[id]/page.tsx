@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/lib/database.types';
+import { Database } from '@/types/database';
 import { VendorWithDetails } from '@/types/vendor';
 import { Star, MapPin, Clock, Phone, Mail, Heart, MessageSquare, Flag, X, Navigation } from 'lucide-react';
 import { useHeartBeat } from '@/lib/animations';
@@ -32,8 +35,13 @@ interface VendorProfileData extends Omit<VendorWithDetails, 'status'> {
 export default function VendorProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
-  const { data: session } = useSession();
+  const supabase = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return createClient()
+    }
+    return null
+  }, []);
+  const { data: session, status } = useSession();
   
   const [vendor, setVendor] = useState<VendorProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +59,8 @@ export default function VendorProfilePage() {
   const vendorId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
+    if (status === 'loading') return;
+    
     if (!vendorId) {
       setError("Vendor ID is missing.");
       setLoading(false);
@@ -58,27 +68,31 @@ export default function VendorProfilePage() {
     }
     fetchVendorData();
     fetchUser();
-  }, [vendorId, session]);
+  }, [vendorId, session, status]);
 
   const fetchUser = async () => {
     try {
-      if (session?.user) {
+      if (session?.user && supabase) {
         const authUser = session.user;
-        const { data: userData } = await supabase
+        const userResult = await supabase
           .from('users')
           .select('*')
           .eq('id', authUser.id)
           .single();
+        
+        const { data: userData } = userResult || { data: null };
         setUser(userData);
         
         // Check if vendor is favorited
         if (userData) {
-          const { data: favorite } = await supabase
+          const favoriteResult = await supabase
             .from('favorites')
             .select('id')
             .eq('customer_id', userData.id)
             .eq('vendor_id', vendorId)
-            .single();
+            .single()
+          
+          const { data: favorite } = favoriteResult || { data: null }
           setIsFavorite(!!favorite);
         }
       }
@@ -89,45 +103,59 @@ export default function VendorProfilePage() {
 
   const fetchVendorData = async () => {
     try {
+      if (!supabase) {
+        setError('Database connection not available');
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       
       // Fetch vendor basic info
-      const { data: vendorData, error: vendorError } = await supabase
+      const vendorResult = await supabase
         .from('vendors')
         .select('*')
         .eq('id', vendorId)
         .single();
+      
+      const { data: vendorData, error: vendorError } = vendorResult || { data: null, error: null };
 
       if (vendorError) throw vendorError;
       if (!vendorData) throw new Error('Vendor not found');
 
       // Fetch vendor location
-      const { data: locationData } = await supabase
+      const locationResult = await supabase
         .from('vendor_static_locations')
         .select('*')
         .eq('vendor_id', vendorId)
         .eq('is_primary', true)
         .single();
+      
+      const { data: locationData } = locationResult || { data: null };
 
       // Fetch announcements
-      const { data: announcementsData } = await supabase
+      const announcementsResult = await supabase
         .from('vendor_announcements')
         .select('*')
         .eq('vendor_id', vendorId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
+      
+      const { data: announcementsData } = announcementsResult || { data: null };
 
       // Fetch specials
-      const { data: specialsData } = await supabase
+      const specialsResult = await supabase
         .from('vendor_specials')
         .select('*')
         .eq('vendor_id', vendorId)
         .eq('is_active', true)
         .gte('ends_at', new Date().toISOString())
         .order('created_at', { ascending: false });
+      
+      const { data: specialsData } = specialsResult || { data: null };
 
       // Fetch reviews with user info
-      const { data: reviewsData } = await supabase
+      const reviewsResult = await supabase
         .from('reviews')
         .select(`
           *,
@@ -135,15 +163,19 @@ export default function VendorProfilePage() {
         `)
         .eq('vendor_id', vendorId)
         .order('created_at', { ascending: false });
+      
+      const { data: reviewsData } = reviewsResult || { data: null };
 
       // Fetch live session to determine status
-      const { data: liveSession } = await supabase
+      const liveSessionResult = await supabase
         .from('vendor_live_sessions')
         .select('*')
         .eq('vendor_id', vendorId)
         .eq('is_active', true)
         .is('end_time', null)
         .single();
+      
+      const { data: liveSession } = liveSessionResult || { data: null };
 
       // Determine vendor status using shared utility
       const statusInfo = getDetailedVendorStatus({
@@ -174,7 +206,7 @@ export default function VendorProfilePage() {
   };
 
   const toggleFavorite = async () => {
-    if (!user) return;
+    if (!user || !supabase) return;
     
     try {
       setFavoriteClicked(true);
@@ -202,7 +234,7 @@ export default function VendorProfilePage() {
   const coordinates = vendor ? extractCoordinatesFromVendor(vendor as unknown as VendorWithLiveSession) : null;
 
   const submitReview = async () => {
-    if (!user || !newReview.comment.trim()) return;
+    if (!user || !newReview.comment.trim() || !supabase) return;
     
     try {
       setSubmittingReview(true);
@@ -220,10 +252,12 @@ export default function VendorProfilePage() {
       if (reviewError) throw reviewError;
       
       // Update vendor's average rating and total reviews
-      const { data: allReviews } = await supabase
+      const allReviewsResult = await supabase
         .from('reviews')
         .select('rating')
         .eq('vendor_id', vendorId);
+      
+      const { data: allReviews } = allReviewsResult || { data: null };
       
       if (allReviews) {
         const totalReviews = allReviews.length;
@@ -249,7 +283,7 @@ export default function VendorProfilePage() {
   };
 
   const submitReport = async () => {
-    if (!user || !reportData.reason.trim()) return;
+    if (!user || !reportData.reason.trim() || !supabase) return;
     
     try {
       setSubmittingReport(true);
@@ -289,7 +323,7 @@ export default function VendorProfilePage() {
     }
   };
 
-  if (loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
