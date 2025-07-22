@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
+import { createClient } from '@/lib/supabase-server'
+import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+import jwt from 'jsonwebtoken'
 
 // Force dynamic rendering for cookie usage
 export const dynamic = 'force-dynamic'
@@ -31,24 +31,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createSupabaseServerClient(await cookies())
-
-    // Get current user
+    // ✅ Get authenticated NextAuth user
     const session = await auth()
-    const user = session?.user
-
-    if (!user) {
+    
+    if (!session?.user?.id) {
+      console.error('NextAuth session missing or invalid')
       return NextResponse.json(
         { error: ERROR_MESSAGES.UNAUTHORIZED },
         { status: HTTP_STATUS.UNAUTHORIZED }
       )
     }
 
+    // Create a custom JWT for Supabase authentication
+    const supabaseJwt = jwt.sign(
+      {
+        sub: session.user.id,
+        role: 'authenticated',
+        aud: 'authenticated',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour expiration
+      },
+      process.env.SUPABASE_SERVICE_JWT_SECRET!
+    )
+
+    const supabase = createClient({ jwt: supabaseJwt })
+
     // Check if user already has a vendor profile
     const { data: existingVendor } = await supabase
       .from('vendors')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .single()
 
     if (existingVendor) {
@@ -59,24 +71,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch platform settings to check for auto-approval
-    const { data: settings } = await supabase
+    const { data: settings, error: settingsError } = await supabase
       .from('platform_settings')
       .select('allow_auto_vendor_approval')
-      .eq('id', true)
+      .limit(1)
       .single()
 
-    const isAutoApproved = settings?.allow_auto_vendor_approval ?? false;
-    const initialStatus = isAutoApproved ? 'approved' : 'pending';
+    if (settingsError || !settings) {
+      console.error('Platform settings fetch error:', settingsError)
+      return NextResponse.json(
+        { error: 'Failed to fetch platform settings' },
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+      )
+    }
+
+    const isAutoApproved = settings.allow_auto_vendor_approval ?? false
+    const initialStatus = isAutoApproved ? 'approved' : 'pending'
 
     // Prepare vendor data for insertion
     const vendorData = {
-      user_id: user.id,
+      user_id: session.user.id,
       business_name,
       business_type,
       subcategory: subcategory || null,
       description: description || null,
       phone: phone || null,
-      contact_email: contact_email || user.email,
+      contact_email: contact_email || session.user.email,
       address: address || null,
       latitude: latitude || null,
       longitude: longitude || null,
@@ -84,7 +104,7 @@ export async function POST(request: NextRequest) {
       profile_image_url: profile_image_url || null,
       banner_image_url: banner_image_url || [],
       status: initialStatus,
-    };
+    }
 
     // Create vendor profile
     const { data: newVendor, error: vendorError } = await supabase
@@ -107,7 +127,7 @@ export async function POST(request: NextRequest) {
         type: 'new_vendor_signup',
         message: `New vendor "${business_name}" requires approval.`,
         link: `/admin/vendors?filter=pending`,
-      });
+      })
     }
 
     // Create static location if address and coordinates are provided
@@ -129,7 +149,7 @@ export async function POST(request: NextRequest) {
         is_vendor: true,
         active_role: USER_ROLES.VENDOR,
       })
-      .eq('id', user.id)
+      .eq('id', session.user.id)
       .select()
       .single()
 
@@ -146,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     const message = isAutoApproved
       ? 'Vendor profile created and approved successfully.'
-      : 'Vendor profile created successfully. It is now pending approval.';
+      : 'Vendor profile created successfully. It is now pending approval.'
 
     return NextResponse.json({
       success: true,

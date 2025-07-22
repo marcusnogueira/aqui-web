@@ -20,7 +20,9 @@ export const clientAuth = {
     return errorHandler.wrapAsync(async () => {
       // For client-side, we recommend using useSession hook directly
       // This method is kept for backward compatibility
-      const response = await fetch('/api/auth/session')
+      const response = await fetch('/api/auth/session', {
+        credentials: 'include', // Required for session cookies
+      })
       if (!response.ok) {
         throw createAuthError('Failed to get current session', 'AUTH_SESSION_FAILED')
       }
@@ -81,6 +83,7 @@ export const clientAuth = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ role }),
+        credentials: 'include', // Required for Supabase to get auth cookies
       })
       
       const data = await response.json()
@@ -122,6 +125,7 @@ export const clientAuth = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(vendorData),
+        credentials: 'include', // Required for Supabase to get auth cookies
       })
       
       const data = await response.json()

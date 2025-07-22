@@ -287,11 +287,15 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
+    lng: 'en', // Set default language for SSR
     debug: process.env.NODE_ENV === 'development',
     interpolation: { escapeValue: false },
+    react: {
+      useSuspense: false, // Disable suspense to prevent hydration issues
+    },
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
+      order: typeof window !== 'undefined' ? ['localStorage', 'navigator', 'htmlTag'] : [],
+      caches: typeof window !== 'undefined' ? ['localStorage'] : [],
     },
   })
 

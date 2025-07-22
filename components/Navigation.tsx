@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut, signIn } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 import { signOut, createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export function Navigation() {
   const { data: session, status } = useSession()
+  const { t } = useTranslation()
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -123,7 +125,7 @@ export function Navigation() {
   if (status === 'loading' || !user) {
     return (
       <div className="text-sm text-gray-500 animate-pulse">
-        Loading...
+        {t('common.loading')}
       </div>
     )
   }

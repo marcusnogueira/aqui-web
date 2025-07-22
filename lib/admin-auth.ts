@@ -23,6 +23,7 @@ export const adminAuth = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username, password }),
+        credentials: 'include', // Required for session cookies
       })
       
       const data = await response.json()
@@ -46,6 +47,7 @@ export const adminAuth = {
     return errorHandler.wrapAsyncResult(async () => {
       const response = await fetch('/api/admin/login', {
         method: 'DELETE',
+        credentials: 'include', // Required for session cookies
       })
       
       if (!response.ok) {
@@ -65,7 +67,9 @@ export const adminAuth = {
    */
   async checkAuth(): Promise<Result<AdminUser | null>> {
     return errorHandler.wrapAsyncResult(async () => {
-      const response = await fetch('/api/admin/me')
+      const response = await fetch('/api/admin/me', {
+        credentials: 'include', // Required for session cookies
+      })
       
       if (response.ok) {
         const data = await response.json()

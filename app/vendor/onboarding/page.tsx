@@ -118,10 +118,24 @@ export default function VendorOnboardingPage() {
         longitude: placeData.longitude,
       }
       
-      await clientAuth.becomeVendor(vendorData)
-
-      // Navigate to confirmation page
-      router.push('/vendor/onboarding/confirmation')
+      const result = await clientAuth.becomeVendor(vendorData)
+      
+      if (result.success && result.data) {
+        // Update session with new vendor data immediately
+        // The API returns both vendor and updated user data
+        const { vendor, user: updatedUser } = result.data
+        
+        // Force session refresh to include new vendor role
+        if (typeof window !== 'undefined') {
+          // Trigger a session update by reloading the page data
+          window.location.href = '/vendor/dashboard'
+        } else {
+          // Fallback for SSR
+          router.push('/vendor/dashboard')
+        }
+      } else {
+        throw new Error('Failed to create vendor profile')
+      }
     } catch (error: any) {
       console.error('Error creating vendor:', error)
       setError(error.message || 'Failed to create vendor profile')

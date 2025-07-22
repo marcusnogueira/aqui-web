@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
@@ -226,9 +227,18 @@ function OnboardingConfirmationContent() {
   )
 }
 
+function LoadingFallback() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-lg">{t('common.loading')}</div>
+    </div>
+  )
+}
+
 export default function OnboardingConfirmation() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-lg">Loading...</div></div>}>
+    <Suspense fallback={<LoadingFallback />}>
       <OnboardingConfirmationContent />
     </Suspense>
   )

@@ -1,18 +1,52 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/lib/database.types'
 import { errorHandler, createAuthError, Result } from '@/lib/error-handler'
 
+type SupabaseClientOptions = {
+  jwt?: string
+}
+
 // Server-side Supabase client
-export const createClient = async () => {
-  const cookieStore = await cookies()
+export const createClient = (options?: SupabaseClientOptions) => {
+  const cookieStore = cookies()
+
+  const supabaseOptions = options?.jwt
+    ? {
+        global: {
+          headers: {
+            Authorization: `Bearer ${options.jwt}`,
+          },
+        },
+      }
+    : {}
+
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      ...supabaseOptions,
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
       },
     }

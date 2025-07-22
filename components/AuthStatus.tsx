@@ -1,15 +1,17 @@
 'use client'
 
 import { useSession, signIn, signOut } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 
 // Force dynamic rendering for this component
 export const dynamic = 'force-dynamic'
 
 export function AuthStatus() {
   const { data: session, status } = useSession()
+  const { t } = useTranslation()
 
   if (status === 'loading') {
-    return <span className="text-sm text-gray-400">Loading...</span>
+    return <span className="text-sm text-gray-400">{t('common.loading')}</span>
   }
 
   if (session?.user) {
