@@ -1,14 +1,20 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
-import { createClient, signOut } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
-import { SubcategoryInput } from '@/components/SubcategoryInput'
 import { getBusinessTypeKeys } from '@/lib/business-types'
 import { USER_ROLES } from '@/lib/constants'
+import { DashboardLayout } from '@/components/VendorDashboard/DashboardLayout'
+import { OverviewSection } from '@/components/VendorDashboard/sections/OverviewSection'
+import { ProfileSection } from '@/components/VendorDashboard/sections/ProfileSection'
+import { GallerySection } from '@/components/VendorDashboard/sections/GallerySection'
+import { LocationsSection } from '@/components/VendorDashboard/sections/LocationsSection'
+import { AnnouncementsSection } from '@/components/VendorDashboard/sections/AnnouncementsSection'
+import { LiveSessionSection } from '@/components/VendorDashboard/sections/LiveSessionSection'
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic'
@@ -32,25 +38,10 @@ export default function VendorDashboardPage() {
   const [staticLocations, setStaticLocations] = useState<VendorStaticLocation[]>([])
   const [businessTypeKeys, setBusinessTypeKeys] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'locations' | 'announcements' | 'live'>('overview')
+  const [activeSection, setActiveSection] = useState<'overview' | 'profile' | 'gallery' | 'locations' | 'announcements' | 'live'>('overview')
 
   // Form states
-  const [newAnnouncement, setNewAnnouncement] = useState({ message: '' })
-  const [newLocation, setNewLocation] = useState({ address: '', latitude: 0, longitude: 0 })
   const [isStartingSession, setIsStartingSession] = useState(false)
-  const [isEditingProfile, setIsEditingProfile] = useState(false)
-  const [sessionDuration, setSessionDuration] = useState<number | null>(null) // Duration in minutes
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(null) // Time remaining in seconds
-  const [profileForm, setProfileForm] = useState({
-    business_name: '',
-    description: '',
-    business_type: '',
-    subcategory: '',
-    contact_email: '',
-    phone: ''
-  })
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
-  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   useEffect(() => {
@@ -58,6 +49,36 @@ export default function VendorDashboardPage() {
     checkAuth()
     loadBusinessTypes()
   }, [session, status])
+
+  // Listen for section changes from sidebar navigation
+  useEffect(() => {
+    const handleSectionChange = (event: CustomEvent) => {
+      try {
+        setActiveSection(event.detail as typeof activeSection)
+      } catch (error) {
+        console.warn('Error handling section change:', error)
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('dashboard-tab-change', handleSectionChange as EventListener)
+      return () => window.removeEventListener('dashboard-tab-change', handleSectionChange as EventListener)
+    }
+  }, [])
+
+  // Set initial section from URL hash
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const hash = window.location.hash.replace('#', '')
+        if (hash && ['overview', 'profile', 'gallery', 'locations', 'announcements', 'live'].includes(hash)) {
+          setActiveSection(hash as typeof activeSection)
+        }
+      } catch (error) {
+        console.warn('Error reading URL hash:', error)
+      }
+    }
+  }, [])
 
   const loadBusinessTypes = async () => {
     try {
@@ -68,30 +89,7 @@ export default function VendorDashboardPage() {
     }
   }
 
-  // Timer countdown effect
-  useEffect(() => {
-    if (liveSession?.auto_end_time && liveSession.is_active) {
-      const updateTimer = () => {
-        const now = new Date().getTime()
-        const endTime = new Date(liveSession.auto_end_time!).getTime()
-        const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
-        
-        setTimeRemaining(remaining)
-        
-        if (remaining === 0) {
-          // Session should have ended, refresh data
-          fetchVendorData()
-        }
-      }
-      
-      updateTimer()
-      const interval = setInterval(updateTimer, 1000)
-      
-      return () => clearInterval(interval)
-    } else {
-      setTimeRemaining(null)
-    }
-  }, [liveSession?.auto_end_time, liveSession?.is_active])
+
 
   const checkAuth = async () => {
     try {
@@ -163,16 +161,6 @@ export default function VendorDashboardPage() {
         }
       } else {
         setVendor(vendorData)
-        
-        // Initialize profile form with vendor data
-         setProfileForm({
-           business_name: vendorData.business_name || '',
-           description: vendorData.description || '',
-           business_type: vendorData.business_type || '',
-           subcategory: vendorData.subcategory || '',
-           contact_email: vendorData.contact_email || '',
-           phone: vendorData.phone || ''
-         })
 
         // Fetch all vendor-related data in parallel for better performance
         const [sessionResult, announcementsResult, locationsResult] = await Promise.all([
@@ -205,7 +193,7 @@ export default function VendorDashboardPage() {
     }
   }
 
-  const startLiveSession = async () => {
+  const startLiveSession = async (duration?: number | null) => {
     if (!vendor || !supabase) return
     
     setIsStartingSession(true)
@@ -270,8 +258,8 @@ export default function VendorDashboardPage() {
         throw new Error('You already have an active live session. Please end it before starting a new one.')
       }
       
-      const autoEndTime = sessionDuration ? 
-        new Date(Date.now() + sessionDuration * 60 * 1000).toISOString() : null
+      const autoEndTime = duration ? 
+        new Date(Date.now() + duration * 60 * 1000).toISOString() : null
 
       const insertResult = await supabase
         .from('vendor_live_sessions')
@@ -348,20 +336,19 @@ export default function VendorDashboardPage() {
     }
   }
 
-  const addAnnouncement = async () => {
-    if (!vendor || !newAnnouncement.message || !supabase) return
+  const addAnnouncement = async (announcement: { message: string }) => {
+    if (!vendor || !announcement.message || !supabase) return
 
     try {
       const { error } = await supabase
         .from('vendor_announcements')
         .insert({
           vendor_id: vendor.id,
-          message: newAnnouncement.message
+          message: announcement.message
         })
 
       if (error) throw error
 
-      setNewAnnouncement({ message: '' })
       await fetchVendorData()
     } catch (error) {
       console.error('Error adding announcement:', error)
@@ -370,29 +357,28 @@ export default function VendorDashboardPage() {
 
 
 
-  const addLocation = async () => {
-    if (!vendor || !newLocation.address || !supabase) return
+  const addLocation = async (location: { address: string; latitude: number; longitude: number }) => {
+    if (!vendor || !location.address || !supabase) return
 
     try {
       const { error } = await supabase
         .from('vendor_static_locations')
         .insert({
           vendor_id: vendor.id,
-          address: newLocation.address,
-          latitude: newLocation.latitude || null,
-          longitude: newLocation.longitude || null
+          address: location.address,
+          latitude: location.latitude || null,
+          longitude: location.longitude || null
         })
 
       if (error) throw error
 
-      setNewLocation({ address: '', latitude: 0, longitude: 0 })
       await fetchVendorData()
     } catch (error) {
       console.error('Error adding location:', error)
     }
   }
 
-  const saveProfile = async () => {
+  const saveProfile = async (profileData: any, profileImageFile: File | null, bannerImageFile: File | null) => {
     if (!vendor || !supabase) return
 
     setIsSavingProfile(true)
@@ -440,12 +426,12 @@ export default function VendorDashboardPage() {
        const { error } = await supabase
          .from('vendors')
          .update({
-           business_name: profileForm.business_name,
-           description: profileForm.description,
-           business_type: profileForm.business_type,
-           subcategory: profileForm.subcategory,
-           contact_email: profileForm.contact_email,
-           phone: profileForm.phone,
+           business_name: profileData.business_name,
+           description: profileData.description,
+           business_type: profileData.business_type,
+           subcategory: profileData.subcategory,
+           contact_email: profileData.contact_email,
+           phone: profileData.phone,
            profile_image_url: profileImageUrl,
            banner_image_url: bannerImageUrl ? [bannerImageUrl] : (vendor.banner_image_url || [])
          })
@@ -453,9 +439,6 @@ export default function VendorDashboardPage() {
 
       if (error) throw error
 
-      setIsEditingProfile(false)
-      setProfileImageFile(null)
-      setBannerImageFile(null)
       await fetchVendorData()
     } catch (error) {
       console.error('Error saving profile:', error)
@@ -498,562 +481,74 @@ export default function VendorDashboardPage() {
     )
   }
 
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'profile', label: 'Profile' },
-    { id: 'locations', label: 'Locations' },
-    { id: 'announcements', label: 'Announcements' },
-    { id: 'live', label: 'Live Session' }
-  ] as const
-
-  const getStatusBanner = () => {
-    if (!vendor || vendor.status === 'approved') {
-      return null;
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case 'overview':
+        return (
+          <OverviewSection
+            vendor={vendor}
+            liveSession={liveSession}
+            staticLocations={staticLocations}
+          />
+        )
+      case 'profile':
+        return (
+          <ProfileSection
+            vendor={vendor}
+            businessTypeKeys={businessTypeKeys}
+            onSaveProfile={saveProfile}
+            onSwitchToCustomerMode={switchToCustomerMode}
+            isSavingProfile={isSavingProfile}
+          />
+        )
+      case 'gallery':
+        return <GallerySection vendor={vendor} onVendorUpdate={setVendor} />
+      case 'locations':
+        return (
+          <LocationsSection
+            staticLocations={staticLocations}
+            onAddLocation={addLocation}
+          />
+        )
+      case 'announcements':
+        return (
+          <AnnouncementsSection
+            announcements={announcements}
+            onAddAnnouncement={addAnnouncement}
+          />
+        )
+      case 'live':
+        return (
+          <LiveSessionSection
+            liveSession={liveSession}
+            onStartLiveSession={startLiveSession}
+            onEndLiveSession={endLiveSession}
+            isStartingSession={isStartingSession}
+          />
+        )
+      default:
+        return (
+          <OverviewSection
+            vendor={vendor}
+            liveSession={liveSession}
+            staticLocations={staticLocations}
+          />
+        )
     }
-
-    let message = '';
-    let bgColor = 'bg-yellow-100';
-    let textColor = 'text-yellow-800';
-
-    switch (vendor.status) {
-      case 'pending':
-        message = 'Your application is under review. You will be notified once it has been approved.';
-        break;
-      case 'rejected':
-        message = vendor.rejection_reason 
-          ? `Your application was not approved. Reason: ${vendor.rejection_reason}. Please contact support if you need assistance with reapplying.`
-          : 'Your application was not approved. Please contact support for more information.';
-        bgColor = 'bg-red-100';
-        textColor = 'text-red-800';
-        break;
-    }
-
-    return (
-      <div className={`p-4 text-center ${bgColor} ${textColor}`}>
-        <p>{message}</p>
-      </div>
-    );
-  };
+  }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FBF2E3' }}>
-      {getStatusBanner()}
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="fluid-container">
-          <div className="flex justify-between items-center fluid-spacing-sm">
-            <div>
-              <h1 className="fluid-text-2xl font-semibold" style={{ color: '#222222' }}>{vendor.business_name}</h1>
-              <p className="fluid-text-base" style={{ color: '#777777' }}>{vendor.subcategory}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              {liveSession ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-700 font-medium">Live Now</span>
-                  <button
-                    onClick={endLiveSession}
-                    className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: '#DC2626', color: '#FBF2E3' }}
-                  >
-                    End Session
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={startLiveSession}
-                  disabled={isStartingSession || vendor.status !== 'approved'}
-                  className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-                  style={{ backgroundColor: '#D85D28', color: '#FBF2E3' }}
-                >
-                  {isStartingSession ? 'Starting...' : 'Go Live'}
-                </button>
-              )}
-              <button
-                onClick={handleSignOut}
-                className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity border border-gray-300"
-                style={{ backgroundColor: '#ffffff', color: '#DC2626' }}
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b">
-        <div className="fluid-container">
-          <nav className="flex fluid-gap">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
-                style={{
-                  color: activeTab === tab.id ? '#D85D28' : '#444444',
-                  borderBottomColor: activeTab === tab.id ? '#D85D28' : 'transparent'
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="fluid-container fluid-spacing-md">
-        {activeTab === 'overview' && (
-          <div className="fluid-grid">
-            {/* Stats Cards */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Rating</h3>
-              <div className="fluid-text-2xl font-bold" style={{ color: '#3A938A' }}>
-                0.0
-              </div>
-              <p className="fluid-text-sm" style={{ color: '#777777' }}>No reviews yet</p>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Status</h3>
-              <div className={`fluid-text-2xl font-bold`}
-                   style={{ color: liveSession ? '#3A938A' : '#777777' }}>
-                {liveSession ? 'Live' : 'Offline'}
-              </div>
-              <p className="fluid-text-sm" style={{ color: '#777777' }}>
-                {liveSession ? 'Currently serving customers' : 'Not currently active'}
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Locations</h3>
-              <div className="fluid-text-2xl font-bold" style={{ color: '#3A938A' }}>
-                {staticLocations.length}
-              </div>
-              <p className="fluid-text-sm" style={{ color: '#777777' }}>Saved locations</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'profile' && (
-          <div className="space-y-6">
-            {/* Business Profile */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Business Profile</h2>
-                {!isEditingProfile ? (
-                  <button
-                    onClick={() => setIsEditingProfile(true)}
-                    className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: '#3A938A', color: '#FBF2E3' }}
-                  >
-                    Edit Profile
-                  </button>
-                ) : (
-                  <div className="space-x-2">
-                    <button
-                      onClick={saveProfile}
-                      disabled={isSavingProfile}
-                      className="px-4 py-2 rounded-xl font-semibold bg-[#3A938A] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {isSavingProfile ? 'Saving...' : 'Save'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditingProfile(false)
-                        setProfileForm({
-                           business_name: vendor?.business_name || '',
-                           description: vendor?.description || '',
-                           business_type: vendor?.business_type || '',
-                           subcategory: vendor?.subcategory || '',
-                           contact_email: vendor?.contact_email || '',
-                           phone: vendor?.phone || ''
-                         })
-                        setProfileImageFile(null)
-                        setBannerImageFile(null)
-                      }}
-                      className="px-4 py-2 rounded-xl font-semibold bg-gray-100 text-gray-600 hover:opacity-80 transition-opacity"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              {isEditingProfile ? (
-                <div className="space-y-4">
-                  {/* Profile Image Upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-2">Profile Image</label>
-                    <div className="flex items-center space-x-4">
-                      {vendor?.profile_image_url && (
-                        <img
-                          src={vendor.profile_image_url}
-                          alt="Current profile"
-                          className="w-16 h-16 rounded-full object-cover"
-                        />
-                      )}
-                      <input
-                         type="file"
-                         accept="image/*"
-                         onChange={(e) => setProfileImageFile(e.target.files?.[0] || null)}
-                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-mission-teal file:text-white hover:file:bg-mission-teal/90"
-                         aria-label="Upload profile image"
-                       />
-                    </div>
-                  </div>
-                  
-                  {/* Banner Image Upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-2">Banner Image</label>
-                    <div className="space-y-2">
-                      {vendor?.banner_image_url && vendor.banner_image_url.length > 0 && (
-                       <img
-                         src={vendor.banner_image_url[0]}
-                         alt="Current banner"
-                         className="w-full h-32 rounded-lg object-cover"
-                       />
-                     )}
-                      <input
-                         type="file"
-                         accept="image/*"
-                         onChange={(e) => setBannerImageFile(e.target.files?.[0] || null)}
-                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-mission-teal file:text-white hover:file:bg-mission-teal/90"
-                         aria-label="Upload banner image"
-                       />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                       <label htmlFor="business-name" className="block text-sm font-medium text-gray-500 mb-2">Business Name</label>
-                       <input
-                         id="business-name"
-                         type="text"
-                         value={profileForm.business_name}
-                         onChange={(e) => setProfileForm(prev => ({ ...prev, business_name: e.target.value }))}
-                         className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                         placeholder="Enter your business name"
-                       />
-                     </div>
-                     <div>
-                       <label htmlFor="business-type" className="block text-sm font-medium text-gray-500 mb-2">Business Type</label>
-                       <select
-                         id="business-type"
-                         value={profileForm.business_type}
-                         onChange={(e) => setProfileForm(prev => ({ ...prev, business_type: e.target.value, subcategory: '' }))}
-                         className="w-full px-4 py-2 text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                       >
-                         <option value="">Select business type</option>
-                         {businessTypeKeys.map(type => (
-                           <option key={type} value={type}>{type}</option>
-                         ))}
-                       </select>
-                     </div>
-                   </div>
-                   
-                   <div className="mt-4">
-                     <label htmlFor="subcategory" className="block text-sm font-medium text-gray-500 mb-2">Subcategory</label>
-                     <SubcategoryInput
-                       businessType={profileForm.business_type}
-                       value={profileForm.subcategory}
-                       onChange={(value) => setProfileForm(prev => ({ ...prev, subcategory: value }))}
-                       className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                       placeholder="e.g., Street Tacos, Vintage, Zines"
-                     />
-                   </div>
-                   
-                   <div className="mt-4">
-                     <label htmlFor="description" className="block text-sm font-medium text-gray-500 mb-2">Description</label>
-                     <textarea
-                       id="description"
-                       rows={3}
-                       value={profileForm.description}
-                       onChange={(e) => setProfileForm(prev => ({ ...prev, description: e.target.value }))}
-                       className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                       placeholder="Tell customers about your business..."
-                     />
-                   </div>
-                   
-                   <div className="grid grid-cols-2 gap-4 mt-4">
-                     <div>
-                       <label htmlFor="contact-email" className="block text-sm font-medium text-gray-500 mb-2">Contact Email</label>
-                       <input
-                         id="contact-email"
-                         type="email"
-                         value={profileForm.contact_email}
-                         onChange={(e) => setProfileForm(prev => ({ ...prev, contact_email: e.target.value }))}
-                         className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                         placeholder="your@email.com"
-                       />
-                     </div>
-                     <div>
-                       <label htmlFor="phone" className="block text-sm font-medium text-gray-500 mb-2">Phone</label>
-                       <input
-                         id="phone"
-                         type="tel"
-                         value={profileForm.phone}
-                         onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                         className="w-full px-4 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                         placeholder="(555) 123-4567"
-                       />
-                     </div>
-                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Display Images */}
-                  <div className="flex space-x-6">
-                    {vendor?.profile_image_url && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
-                        <img
-                          src={vendor.profile_image_url}
-                          alt="Profile"
-                          className="w-20 h-20 rounded-full object-cover"
-                        />
-                      </div>
-                    )}
-                    {vendor?.banner_image_url && vendor.banner_image_url.length > 0 && (
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Banner Image</label>
-                        <img
-                          src={vendor.banner_image_url[0]}
-                          alt="Banner"
-                          className="w-full h-32 rounded-lg object-cover"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Business Name</label>
-                      <p style={{ color: '#222222' }}>{vendor?.business_name || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Business Type</label>
-                      <p style={{ color: '#222222' }}>{vendor?.business_type || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Subcategory</label>
-                      <p style={{ color: '#222222' }}>{vendor?.subcategory || 'Not provided'}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Description</label>
-                      <p style={{ color: '#222222' }}>{vendor?.description || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Contact Email</label>
-                      <p style={{ color: '#222222' }}>{vendor?.contact_email || 'Not provided'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Phone</label>
-                      <p style={{ color: '#222222' }}>{vendor?.phone || 'Not provided'}</p>
-                    </div>
-                  </div>
-                </div>
-              )}            </div>
-            
-            {/* Role Management */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Role Management</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: '#444444' }}>Current Role</label>
-                  <p style={{ color: '#222222' }}>Vendor</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Switch to customer mode to browse and discover other vendors in your area.
-                  </p>
-                  <button
-                     onClick={switchToCustomerMode}
-                     className="px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                     style={{ backgroundColor: '#3A938A', color: '#FBF2E3' }}
-                   >
-                     Switch to Customer Mode
-                   </button>
-                </div>
-              </div>
-            </div>          </div>        )}
-
-        {activeTab === 'locations' && (
-          <div className="space-y-6">
-            {/* Add Location Form */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Location</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Address"
-                  value={newLocation.address}
-                  onChange={(e) => setNewLocation(prev => ({ ...prev, address: e.target.value }))}
-                  className="px-3 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal"
-                />
-
-              </div>
-              <button
-                onClick={addLocation}
-                className="mt-4 bg-mission-teal text-white px-4 py-2 rounded-md hover:bg-mission-teal/90"
-              >
-                Add Location
-              </button>
-            </div>
-
-            {/* Locations List */}
-            <div className="bg-white rounded-lg shadow-sm border">
-              <div className="p-6 border-b">
-                <h2 className="text-xl font-bold text-gray-900">Your Locations</h2>
-              </div>
-              <div className="divide-y">
-                {staticLocations.map((location) => (
-                  <div key={location.id} className="p-6">
-                    <p className="text-gray-600">{location.address || 'No address provided'}</p>
-                    <p className="text-sm text-gray-500 mt-1">Static location</p>
-                  </div>
-                ))}
-                {staticLocations.length === 0 && (
-                  <div className="p-6 text-center text-gray-500">
-                    No locations added yet. Add your first location above.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'announcements' && (
-          <div className="space-y-6">
-            {/* Add Announcement Form */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Create Announcement</h2>
-              <div className="space-y-4">
-                <textarea
-                  placeholder="Announcement content"
-                  rows={3}
-                  value={newAnnouncement.message}
-                  onChange={(e) => setNewAnnouncement(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full px-3 py-2 text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal"
-                />
-                <button
-                  onClick={addAnnouncement}
-                  className="bg-mission-teal text-white px-4 py-2 rounded-md hover:bg-mission-teal/90"
-                >
-                  Post Announcement
-                </button>
-              </div>
-            </div>
-
-            {/* Announcements List */}
-            <div className="bg-white rounded-lg shadow-sm border">
-              <div className="p-6 border-b">
-                <h2 className="text-xl font-bold text-gray-900">Your Announcements</h2>
-              </div>
-              <div className="divide-y">
-                {announcements.map((announcement) => (
-                  <div key={announcement.id} className="p-6">
-                    <p className="text-gray-600 mt-1">{announcement.message || 'No Message'}</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                          {announcement.created_at && new Date(announcement.created_at).toLocaleDateString()}
-                        </p>
-                  </div>
-                ))}
-                {announcements.length === 0 && (
-                  <div className="p-6 text-center text-gray-500">
-                    No announcements yet. Create your first announcement above.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-
-
-        {activeTab === 'live' && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-            <h2 className="text-xl font-semibold mb-6" style={{ color: '#3A938A' }}>Live Session Management</h2>
-            
-            {liveSession ? (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-700 font-medium text-lg">You are currently live!</span>
-                  {timeRemaining !== null && (
-                    <span className="text-orange-600 font-medium">
-                      ⏳ Ending in {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Session Details</h3>
-                    <p className="text-gray-600">Started: {new Date(liveSession.start_time).toLocaleString()}</p>
-                    <p className="text-gray-600">Location: {liveSession.address || 'Location not specified'}</p>
-                    <p className="text-gray-600">Coordinates: {liveSession.latitude?.toFixed(4)}, {liveSession.longitude?.toFixed(4)}</p>
-                    {liveSession.auto_end_time && (
-                      <p className="text-gray-600">Auto-end: {new Date(liveSession.auto_end_time).toLocaleString()}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Actions</h3>
-                    <button
-                      onClick={endLiveSession}
-                      className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-                    >
-                      End Live Session
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Start a Live Session</h3>
-                <p className="text-gray-600 mb-6">
-                  Go live to let customers know you're open and ready to serve!
-                </p>
-                
-                <div className="mb-6">
-                   <label htmlFor="session-duration" className="block text-sm font-medium text-gray-700 mb-2">
-                     Session Duration (Optional)
-                   </label>
-                   <select
-                     id="session-duration"
-                     value={sessionDuration || ''}
-                     onChange={(e) => setSessionDuration(e.target.value ? parseInt(e.target.value) : null)}
-                     className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-mission-teal"
-                   >
-                    <option value="">No time limit</option>
-                    <option value="30">30 minutes</option>
-                    <option value="60">1 hour</option>
-                    <option value="120">2 hours</option>
-                    <option value="180">3 hours</option>
-                    <option value="240">4 hours</option>
-                  </select>
-                  {sessionDuration && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Session will automatically end in {sessionDuration} minutes
-                    </p>
-                  )}
-                </div>
-                
-                <button
-                  onClick={startLiveSession}
-                  disabled={isStartingSession}
-                  className="px-6 py-3 rounded-xl font-semibold text-sm uppercase hover:opacity-90 transition-opacity disabled:opacity-50"
-                  style={{ backgroundColor: '#D85D28', color: '#FBF2E3' }}
-                >
-                  {isStartingSession ? 'Starting Live Session...' : 'Go Live Now'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+    <DashboardLayout
+      vendor={vendor}
+      user={user}
+      liveSession={liveSession}
+      onSignOut={handleSignOut}
+      onSwitchToCustomerMode={switchToCustomerMode}
+      onStartLiveSession={startLiveSession}
+      onEndLiveSession={endLiveSession}
+      isStartingSession={isStartingSession}
+    >
+      {renderActiveSection()}
+    </DashboardLayout>
   )
 }

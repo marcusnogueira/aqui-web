@@ -418,6 +418,30 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          allow_auto_vendor_approval: boolean
+          id: string
+          maintenance_mode: boolean
+          require_vendor_approval: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          allow_auto_vendor_approval?: boolean
+          id?: string
+          maintenance_mode?: boolean
+          require_vendor_approval?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          allow_auto_vendor_approval?: boolean
+          id?: string
+          maintenance_mode?: boolean
+          require_vendor_approval?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      platform_settings_broken: {
+        Row: {
           allow_auto_vendor_approval: boolean | null
           id: boolean
           maintenance_mode: boolean | null
@@ -1059,6 +1083,8 @@ export type Database = {
           contact_email: string | null
           created_at: string | null
           description: string | null
+          gallery_images: string[] | null
+          gallery_titles: string[] | null
           id: string
           latitude: number | null
           longitude: number | null
@@ -1072,8 +1098,6 @@ export type Database = {
           total_reviews: number | null
           updated_at: string | null
           user_id: string
-          gallery_images: string[] | null
-          gallery_titles: string[] | null
         }
         Insert: {
           address?: string | null
@@ -1088,6 +1112,8 @@ export type Database = {
           contact_email?: string | null
           created_at?: string | null
           description?: string | null
+          gallery_images?: string[] | null
+          gallery_titles?: string[] | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -1101,8 +1127,6 @@ export type Database = {
           total_reviews?: number | null
           updated_at?: string | null
           user_id: string
-          gallery_images?: string[] | null
-          gallery_titles?: string[] | null
         }
         Update: {
           address?: string | null
@@ -1117,6 +1141,8 @@ export type Database = {
           contact_email?: string | null
           created_at?: string | null
           description?: string | null
+          gallery_images?: string[] | null
+          gallery_titles?: string[] | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -1130,8 +1156,6 @@ export type Database = {
           total_reviews?: number | null
           updated_at?: string | null
           user_id?: string
-          gallery_images?: string[] | null
-          gallery_titles?: string[] | null
         }
         Relationships: [
           {
