@@ -1,0 +1,11 @@
+{
+  "about": "Tungkol sa Amin",
+  "faq": "Mga Madalas Itanong",
+  "explore": "Galugarin ang mga Vendor",
+  "login": "Pag-login ng Vendor",
+  "supportOurMission": "Suportahan ang Aming Misyon",
+  "loading": "Naglo-load...",
+  "auth": {
+    "signIn": "Mag-sign In"
+  }
+}

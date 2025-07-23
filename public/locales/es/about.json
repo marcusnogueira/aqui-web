@@ -1,0 +1,41 @@
+{
+  "title": "Sobre Aqui",
+  "subtitle": "Nos dedicamos a conectar comunidades con vendedores ambulantes locales y vibrantes a través de tecnología de mapas en tiempo real.",
+  "mission": {
+    "title": "Nuestra Misión",
+    "paragraph1": "Nuestra misión es empoderar a los emprendedores locales proporcionando una plataforma que facilita su descubrimiento. Creemos en el poder de las economías locales y las experiencias culturales únicas que los vendedores ambulantes aportan a nuestras ciudades.",
+    "paragraph2": "Nuestro objetivo es cerrar la brecha entre vendedores y clientes, haciendo que sea simple, divertido y eficiente encontrar y apoyar a los negocios de tu vecindario."
+  },
+  "whyWeBuilt": {
+    "title": "Por Qué Creamos Esto",
+    "paragraph1": "La idea de Aqui nació de un problema simple: la mejor comida local a menudo está oculta a simple vista. Estábamos cansados de perdernos vendedores increíbles simplemente porque no sabíamos dónde o cuándo estarían allí.",
+    "paragraph2": "Las aplicaciones tradicionales de búsqueda y reseñas no funcionan bien para los negocios móviles que cambian de ubicación a diario. Vimos la oportunidad de crear un mapa dinámico y en vivo que refleje el pulso en tiempo real de las calles.",
+    "paragraph3": "Aqui es para los aventureros de la comida, los que apoyan a las pequeñas empresas y todos los que creen que los mejores descubrimientos a menudo están a la vuelta de la esquina."
+  },
+  "howItWorks": {
+    "title": "Cómo Funciona",
+    "step1": {
+      "title": "Descubre en Vivo",
+      "description": "Los vendedores actualizan su ubicación en tiempo real en nuestro mapa en vivo."
+    },
+    "step2": {
+      "title": "Explora Menús",
+      "description": "Consulta las ofertas, fotos y horarios de los vendedores cercanos."
+    },
+    "step3": {
+      "title": "Obtén Direcciones",
+      "description": "Encuentra tu próxima comida favorita con un solo toque para obtener direcciones."
+    },
+    "step4": {
+      "title": "Apoya lo Local",
+      "description": "Disfruta de comida única y apoya a las pequeñas empresas de tu comunidad."
+    }
+  },
+  "difference": {
+    "title": "La Diferencia de Aqui",
+    "description": "A diferencia de los directorios estáticos, Aqui es una plataforma viva. Nos enfocamos exclusivamente en vendedores móviles y emergentes, dándoles la visibilidad que merecen y a ti la información en tiempo real que necesitas."
+  },
+  "joinMovement": {
+    "title": "Únete al Movimiento"
+  }
+}

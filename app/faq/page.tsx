@@ -1,8 +1,9 @@
-'use client';
+'use client'
 
-import { Navigation } from '@/components/Navigation';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Navigation } from '@/components/Navigation'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { useTranslation } from 'react-i18next';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic';
 export default function FAQPage() {
   const router = useRouter();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { t } = useTranslation('faq');
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,13 +41,13 @@ export default function FAQPage() {
                   href="/about" 
                   className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  About
+                  {t('common:about')}
                 </Link>
                 <Link 
                   href="/faq" 
                   className="text-primary font-medium"
                 >
-                  FAQ
+                  {t('common:faq')}
                 </Link>
 
               </nav>
@@ -69,10 +71,10 @@ export default function FAQPage() {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-4">
-            Frequently Asked Questions
+            {t('title')}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Everything you need to know about Aqui
+            {t('subtitle')}
           </p>
         </div>
 
@@ -82,53 +84,48 @@ export default function FAQPage() {
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <span className="text-orange-500 font-bold">👤</span>
             </div>
-            <h2 className="text-3xl font-bold text-foreground">For Customers</h2>
+            <h2 className="text-3xl font-bold text-foreground">{t('forCustomers.title')}</h2>
           </div>
           
           <div className="space-y-8">
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
           <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: How do I find vendors near me?
+                {t('forCustomers.findVendors.question')}
               </h3>
               <div className="text-gray-700 space-y-3">
                 <p>
-                  A: Open the app and use the interactive map or explore list to see vendors close to your current location. 
-                  You'll be able to view their profiles, menus, photos, and "Live" status in real time.
+                  {t('forCustomers.findVendors.answer1')}
                 </p>
                 <p>
-                  To show you nearby vendors, we use your device's location—but we don't store any personally identifiable 
-                  location data. Your privacy stays intact while you discover what's around you.
+                  {t('forCustomers.findVendors.answer2')}
                 </p>
               </div>
             </div>
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
           <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: How do I keep up with my favorite vendors?
+                {t('forCustomers.followVendors.question')}
               </h3>
               <p className="text-gray-700">
-                A: Never miss a drop by tapping the heart icon on any vendor profile to follow them and get real-time 
-                updates when they go "Live," change locations, or post new content.
+                {t('forCustomers.followVendors.answer')}
               </p>
             </div>
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: Can I leave reviews for vendors?
+                {t('forCustomers.leaveReviews.question')}
               </h3>
               <p className="text-gray-700">
-                A: Definitely. Your reviews help others discover great local spots and give vendors valuable feedback to 
-                improve and grow. It's a small way to support the community—and it goes a long way.
+                {t('forCustomers.leaveReviews.answer')}
               </p>
             </div>
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: How do I report a vendor?
+                {t('forCustomers.reportVendor.question')}
               </h3>
               <p className="text-gray-700">
-                A: Tap the "Report" button on the vendor's profile. Our team reviews every report to help keep Aqui a safe, 
-                respectful space for everyone.
+                {t('forCustomers.reportVendor.answer')}
               </p>
             </div>
           </div>
@@ -140,53 +137,48 @@ export default function FAQPage() {
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <span className="text-orange-500 font-bold">🧑‍🍳</span>
             </div>
-            <h2 className="text-3xl font-bold text-foreground">For Vendors</h2>
+            <h2 className="text-3xl font-bold text-foreground">{t('forVendors.title')}</h2>
           </div>
           
           <div className="space-y-8">
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: How do I join as a vendor?
+                {t('forVendors.joinAsVendor.question')}
               </h3>
               <p className="text-gray-700">
-                A: Just tap "Join as a Vendor" in the app to set up your profile. From there, you can go live, share your 
-                location, post hours, upload menus, and add photos all in real time. No red tape, no waiting.
+                {t('forVendors.joinAsVendor.answer')}
               </p>
             </div>
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: What can I sell on Aqui?
+                {t('forVendors.whatCanISell.question')}
               </h3>
               <div className="text-gray-700 space-y-3">
                 <p>
-                  A: Anything you'd normally sell in person—food, art, clothing, jewelry, handmade goods, or services. 
-                  If it's part of your hustle, there's a space for it on Aqui.
+                  {t('forVendors.whatCanISell.answer1')}
                 </p>
                 <p>
-                  We don't allow the sale of illegal or harmful items—like drugs, weapons, tobacco, or anything that puts 
-                  the community at risk.
+                  {t('forVendors.whatCanISell.answer2')}
                 </p>
               </div>
             </div>
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: Do I need a license to join Aqui?
+                {t('forVendors.needLicense.question')}
               </h3>
               <p className="text-gray-700">
-                A: Nope. Aqui doesn't require a business license to get started. That said, we encourage all vendors to 
-                follow local laws, health rules, and safety guidelines—especially if you're serving food or offering services.
+                {t('forVendors.needLicense.answer')}
               </p>
             </div>
 
             <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
                <h3 className="text-xl font-semibold text-foreground mb-3">
-                Q: How do I update my location or availability?
+                {t('forVendors.updateLocation.question')}
               </h3>
               <p className="text-gray-700">
-                A: Just log into the app, tap "Update Status," and set your current location, hours, or a custom message 
-                for the day. Your followers will get notified right away—so they always know when you're live.
+                {t('forVendors.updateLocation.answer')}
               </p>
             </div>
           </div>
@@ -198,19 +190,19 @@ export default function FAQPage() {
             <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
               <span className="text-orange-500 font-bold">📧</span>
             </div>
-            <h2 className="text-3xl font-bold text-foreground">Contact Us</h2>
+            <h2 className="text-3xl font-bold text-foreground">{t('contactUs.title')}</h2>
           </div>
           
           <div className="bg-background rounded-lg p-6 shadow-sm border border-border">
              <h3 className="text-xl font-semibold text-foreground mb-4">
-              How do I contact the Aqui team?
+              {t('contactUs.question')}
             </h3>
             <div className="text-gray-700 space-y-2">
               <p>
-                You can email us at <a href="mailto:hello@get-aqui.com" className="text-orange-500 hover:text-orange-600 underline">hello@get-aqui.com</a>
+                {t('contactUs.generalEmail')} <a href="mailto:hello@get-aqui.com" className="text-orange-500 hover:text-orange-600 underline">hello@get-aqui.com</a>
               </p>
               <p>
-                Have a question or need help? Reach out to <a href="mailto:support@get-aqui.com" className="text-orange-500 hover:text-orange-600 underline">support@get-aqui.com</a>
+                {t('contactUs.supportEmail')} <a href="mailto:support@get-aqui.com" className="text-orange-500 hover:text-orange-600 underline">support@get-aqui.com</a>
               </p>
             </div>
           </div>
@@ -219,31 +211,31 @@ export default function FAQPage() {
         {/* Thank You Message */}
         <div className="text-center mb-12">
           <p className="text-lg text-gray-600">
-            Thank you for being part of the Aqui community!
+            {t('thankYou')}
           </p>
         </div>
 
         {/* Join the Movement */}
         <section className="text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-8">Join the Movement</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-8">{t('joinMovement.title')}</h2>
           <div className="space-x-4">
             <button 
               onClick={() => router.push('/')}
               className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              Explore
+              {t('common:explore')}
             </button>
             <button 
               onClick={() => setShowAuthModal(true)}
               className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              Login
+              {t('common:login')}
             </button>
             <button 
               onClick={() => router.push('/fund')}
               className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              Support Our Mission
+              {t('common:supportOurMission')}
             </button>
           </div>
         </section>

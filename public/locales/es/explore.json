@@ -1,0 +1,9 @@
+{
+  "vendorsFound": "Vendedores Encontrados",
+  "mapView": "Vista de Mapa",
+  "listView": "Vista de Lista",
+  "noResults": {
+    "title": "No se Encontraron Vendedores",
+    "description": "Intenta ajustar tu búsqueda o mover el mapa para encontrar vendedores."
+  }
+}

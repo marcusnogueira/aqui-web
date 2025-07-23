@@ -1,0 +1,11 @@
+{
+  "about": "About",
+  "faq": "FAQ",
+  "explore": "Explore Vendors",
+  "login": "Vendor Login",
+  "supportOurMission": "Support Our Mission",
+  "loading": "Loading...",
+  "auth": {
+    "signIn": "Sign In"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "about": "Sobre Nosotros",
+  "faq": "Preguntas Frecuentes",
+  "explore": "Explorar Vendedores",
+  "login": "Acceso de Vendedor",
+  "supportOurMission": "Apoya Nuestra Misión",
+  "loading": "Cargando...",
+  "auth": {
+    "signIn": "Iniciar Sesión"
+  }
+}

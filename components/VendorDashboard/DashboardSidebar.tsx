@@ -12,6 +12,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
+import { useTranslation } from 'react-i18next'
 import { Database } from '@/types/database'
 
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -41,17 +42,18 @@ export function DashboardSidebar({
   liveSession
 }: DashboardSidebarProps) {
   const router = useRouter()
+  const { t } = useTranslation('dashboard')
   const [activeItem, setActiveItem] = useState('overview')
 
   const sidebarItems: SidebarItem[] = [
-    { id: 'overview', label: 'Overview', icon: HomeIcon },
-    { id: 'profile', label: 'Profile', icon: UserIcon },
-    { id: 'gallery', label: 'Gallery', icon: PhotoIcon },
-    { id: 'locations', label: 'Locations', icon: MapPinIcon },
-    { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon },
+    { id: 'overview', label: t('sidebar.overview'), icon: HomeIcon },
+    { id: 'profile', label: t('sidebar.profile'), icon: UserIcon },
+    { id: 'gallery', label: t('sidebar.gallery'), icon: PhotoIcon },
+    { id: 'locations', label: t('sidebar.locations'), icon: MapPinIcon },
+    { id: 'announcements', label: t('sidebar.announcements'), icon: MegaphoneIcon },
     { 
       id: 'live', 
-      label: 'Live Session', 
+      label: t('sidebar.liveSession'), 
       icon: VideoCameraIcon, 
       badge: liveSession ? 'LIVE' : undefined 
     }
@@ -120,23 +122,23 @@ export function DashboardSidebar({
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-30 hidden md:block ${
+      <div className={`fixed left-0 top-0 h-full bg-background border-r border-border transition-all duration-300 z-30 hidden md:block ${
         collapsed ? 'w-16' : 'w-64'
       }`}>
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           {!collapsed && (
-            <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
+            <h2 className="text-lg font-semibold text-foreground">Dashboard</h2>
           )}
           <button
             onClick={onToggle}
-            className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {collapsed ? (
-              <ChevronRightIcon className="w-5 h-5 text-gray-600" />
+              <ChevronRightIcon className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
+              <ChevronLeftIcon className="w-5 h-5 text-muted-foreground" />
             )}
           </button>
         </div>
@@ -153,10 +155,10 @@ export function DashboardSidebar({
                 onClick={() => handleNavigation(item.id)}
                 onKeyDown={(e) => handleKeyDown(e, item.id)}
                 disabled={item.disabled}
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-mission-teal focus:ring-offset-2 ${
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                   isActive
-                    ? 'bg-mission-teal text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'text-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
                 } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={collapsed ? item.label : undefined}
                 aria-current={isActive ? 'page' : undefined}
@@ -164,14 +166,14 @@ export function DashboardSidebar({
               >
                 <Icon className={`flex-shrink-0 transition-all duration-200 ${
                   collapsed ? 'w-6 h-6' : 'w-5 h-5 mr-3'
-                } ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                } ${isActive ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
                 {!collapsed && (
                   <>
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.badge && (
                       <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full transition-colors ${
                         isActive 
-                          ? 'bg-white text-mission-teal' 
+                          ? 'bg-primary-foreground text-primary' 
                           : 'bg-green-100 text-green-800'
                       }`}>
                         {item.badge}
@@ -199,18 +201,18 @@ export function DashboardSidebar({
       )}
 
       {/* Mobile Sidebar */}
-      <div className={`mobile-sidebar fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 z-50 md:hidden ${
+      <div className={`mobile-sidebar fixed left-0 top-0 h-full w-64 bg-background border-r border-border transform transition-transform duration-300 z-50 md:hidden ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Mobile Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Dashboard</h2>
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-foreground">Dashboard</h2>
           <button
             onClick={onMobileMenuClose}
-            className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-md hover:bg-muted transition-colors"
             aria-label="Close menu"
           >
-            <ChevronLeftIcon className="w-5 h-5 text-gray-600" />
+            <ChevronLeftIcon className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -226,22 +228,22 @@ export function DashboardSidebar({
                 onClick={() => handleNavigation(item.id)}
                 onKeyDown={(e) => handleKeyDown(e, item.id)}
                 disabled={item.disabled}
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-mission-teal focus:ring-offset-2 ${
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                   isActive
-                    ? 'bg-mission-teal text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 hover:shadow-sm'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'text-foreground hover:bg-muted hover:text-foreground hover:shadow-sm'
                 } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 aria-current={isActive ? 'page' : undefined}
                 aria-label={`Navigate to ${item.label}${item.badge ? ` (${item.badge})` : ''}`}
               >
                 <Icon className={`w-5 h-5 mr-3 flex-shrink-0 transition-colors ${
-                  isActive ? 'text-white' : 'text-gray-500'
+                  isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                 }`} />
                 <span className="flex-1 text-left">{item.label}</span>
                 {item.badge && (
                   <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full transition-colors ${
                     isActive 
-                      ? 'bg-white text-mission-teal' 
+                      ? 'bg-primary-foreground text-primary' 
                       : 'bg-green-100 text-green-800'
                   }`}>
                     {item.badge}

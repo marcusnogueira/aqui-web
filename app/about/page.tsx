@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { MapPin, Menu, Search, Users } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 // Force dynamic rendering for this page
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic';
 export default function AboutPage() {
   const router = useRouter();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { t } = useTranslation('about');
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,13 +41,13 @@ export default function AboutPage() {
                   href="/about" 
                   className="text-primary font-medium"
                 >
-                  About
+                  {t('common:about')}
                 </Link>
                 <Link 
                   href="/faq" 
                   className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  FAQ
+                  {t('common:faq')}
                 </Link>
 
               </nav>
@@ -69,57 +71,53 @@ export default function AboutPage() {
             </div>
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-4">
-            Bringing Street Vendors to the Digital Map — One Stand at a Time.
+            {t('title')}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Aqui is a community-first platform that helps local vendors thrive, and helps you discover them.
+            {t('subtitle')}
           </p>
         </div>
 
         {/* Our Mission */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-6">Our Mission</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-6">{t('mission.title')}</h2>
         <div className="space-y-4 text-foreground">
             <p>
-              We're on a mission to empower local food stands, pop-up shops, and informal vendors by giving 
-              them the digital tools they deserve — without the complexity or corporate noise.
+              {t('mission.paragraph1')}
             </p>
             <p>
-              We believe small businesses are the soul of a city, and everyone should be able to discover and 
-              support them, easily and authentically.
+              {t('mission.paragraph2')}
             </p>
           </div>
         </section>
 
         {/* Why We Built This */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-6">Why We Built This</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-6">{t('whyWeBuilt.title')}</h2>
         <div className="space-y-4 text-foreground">
             <p>
-              Too many vendors are hidden in plain sight — no websites, no delivery apps, no visibility.
+              {t('whyWeBuilt.paragraph1')}
             </p>
             <p>
-              We built Aqui so that vendors can go live, set up shop, and share their offerings without needing 
-              marketing budgets or storefronts.
+              {t('whyWeBuilt.paragraph2')}
             </p>
             <p>
-              Whether it's a taco cart on the corner or a handmade crafts table at a local market — you deserve 
-              to be found.
+              {t('whyWeBuilt.paragraph3')}
             </p>
           </div>
         </section>
 
         {/* How It Works */}
         <section className="mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-8">How It Works</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-8">{t('howItWorks.title')}</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <MapPin className="w-8 h-8 text-mission-teal" />
           </div>
-          <h3 className="font-semibold text-foreground mb-2">Vendors Go Live</h3>
+          <h3 className="font-semibold text-foreground mb-2">{t('howItWorks.step1.title')}</h3>
           <p className="text-sm text-muted-foreground">
-                Share your real-time or static location
+                {t('howItWorks.step1.description')}
               </p>
             </div>
             
@@ -127,9 +125,9 @@ export default function AboutPage() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Menu className="w-8 h-8 text-mission-teal" />
           </div>
-          <h3 className="font-semibold text-foreground mb-2">Show Your Menu</h3>
+          <h3 className="font-semibold text-foreground mb-2">{t('howItWorks.step2.title')}</h3>
           <p className="text-sm text-muted-foreground">
-                Upload images, PDF menus, and daily specials
+                {t('howItWorks.step2.description')}
               </p>
             </div>
             
@@ -137,9 +135,9 @@ export default function AboutPage() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-mission-teal" />
           </div>
-          <h3 className="font-semibold text-foreground mb-2">Customers Explore</h3>
+          <h3 className="font-semibold text-foreground mb-2">{t('howItWorks.step3.title')}</h3>
           <p className="text-sm text-muted-foreground">
-                Find you via map or list view
+                {t('howItWorks.step3.description')}
               </p>
             </div>
             
@@ -147,9 +145,9 @@ export default function AboutPage() {
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="w-8 h-8 text-mission-teal" />
           </div>
-          <h3 className="font-semibold text-foreground mb-2">Community Powered</h3>
+          <h3 className="font-semibold text-foreground mb-2">{t('howItWorks.step4.title')}</h3>
           <p className="text-sm text-muted-foreground">
-                Reviews and discovery come from real people
+                {t('howItWorks.step4.description')}
               </p>
             </div>
           </div>
@@ -163,34 +161,34 @@ export default function AboutPage() {
                 <span className="text-2xl">⭐</span>
               </div>
             </div>
-            <h2 className="text-2xl font-bold mb-4">The Aqui Difference</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('difference.title')}</h2>
             <p className="text-lg">
-              Just you, your hustle, and your community.
+              {t('difference.description')}
             </p>
           </div>
         </section>
 
         {/* Join the Movement */}
         <section className="text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-8">Join the Movement</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-8">{t('joinMovement.title')}</h2>
           <div className="space-x-4">
             <button 
               onClick={() => router.push('/')}
               className="bg-chili-orange hover:bg-bay-cypress text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              Explore
+              {t('common:explore')}
             </button>
             <button 
               onClick={() => setShowAuthModal(true)}
               className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              Login
+              {t('common:login')}
             </button>
             <button 
               onClick={() => router.push('/fund')}
               className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              Support Our Mission
+              {t('common:supportOurMission')}
             </button>
           </div>
         </section>

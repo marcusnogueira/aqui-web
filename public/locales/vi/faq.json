@@ -1,0 +1,54 @@
+{
+  "title": "Các câu hỏi thường gặp",
+  "subtitle": "Có câu hỏi? Chúng tôi có câu trả lời. Dưới đây là một số điều phổ biến nhất mà mọi người hỏi.",
+  "forCustomers": {
+    "title": "Dành cho khách hàng",
+    "findVendors": {
+      "question": "Làm cách nào để tìm nhà cung cấp gần tôi?",
+      "answer1": "Chỉ cần mở ứng dụng Aqui! Màn hình chính là một bản đồ trực tiếp hiển thị tất cả các nhà cung cấp đang hoạt động trong vùng lân cận của bạn. Bạn có thể xoay và thu phóng để khám phá các khu vực khác nhau.",
+      "answer2": "Bạn cũng có thể sử dụng thanh tìm kiếm để tìm kiếm các loại thực phẩm hoặc tên nhà cung cấp cụ thể."
+    },
+    "followVendors": {
+      "question": "Tôi có thể theo dõi các nhà cung cấp yêu thích của mình không?",
+      "answer": "Có! Bạn có thể yêu thích một nhà cung cấp để nhận thông báo khi họ phát trực tiếp hoặc ở gần bạn. Tính năng này sẽ sớm ra mắt!"
+    },
+    "leaveReviews": {
+      "question": "Làm cách nào để để lại đánh giá?",
+      "answer": "Sau khi ghé thăm một nhà cung cấp, bạn sẽ có tùy chọn để lại xếp hạng và đánh giá trên trang hồ sơ của họ. Phản hồi của bạn sẽ giúp các khách hàng khác và chính các nhà cung cấp."
+    },
+    "reportVendor": {
+      "question": "Nếu tôi có vấn đề với một nhà cung cấp thì sao?",
+      "answer": "Nếu bạn có mối quan tâm, bạn có thể báo cáo một nhà cung cấp trực tiếp từ trang hồ sơ của họ. Vui lòng cung cấp càng nhiều chi tiết càng tốt để nhóm của chúng tôi có thể điều tra."
+    }
+  },
+  "forVendors": {
+    "title": "Dành cho nhà cung cấp",
+    "joinAsVendor": {
+      "question": "Làm cách nào để đăng ký làm nhà cung cấp?",
+      "answer": "Nhấp vào nút 'Đăng nhập nhà cung cấp' trên trang chủ của chúng tôi để bắt đầu quá trình đăng ký. Bạn sẽ cần cung cấp một số thông tin cơ bản về doanh nghiệp của mình và bạn có thể xuất hiện trực tiếp trên bản đồ trong vài phút."
+    },
+    "whatCanISell": {
+      "question": "Tôi có thể bán loại sản phẩm nào?",
+      "answer1": "Aqui được thiết kế cho các nhà cung cấp di động bán nhiều loại hàng hóa, từ thực phẩm và đồ uống đến hàng thủ công và hàng hóa.",
+      "answer2": "Miễn là bạn có các giấy phép cần thiết để hoạt động trong khu vực của mình, bạn được chào đón trên nền tảng của chúng tôi."
+    },
+    "needLicense": {
+      "question": "Tôi có cần giấy phép để hoạt động không?",
+      "answer": "Có. Tất cả các nhà cung cấp được yêu cầu tuân thủ luật pháp và quy định của địa phương, bao gồm việc có giấy phép kinh doanh và giấy phép y tế phù hợp. Bạn có trách nhiệm đảm bảo bạn hoàn toàn tuân thủ."
+    },
+    "updateLocation": {
+      "question": "Làm cách nào để cập nhật vị trí của t��i?",
+      "answer": "Từ bảng điều khiển nhà cung cấp của bạn, bạn có thể chuyển đến 'Trực tiếp' để đặt vị trí hiện tại của mình trên bản đồ. Bạn có thể cập nhật nó khi bạn di chuyển hoặc đặt lịch cho các điểm dừng đã lên kế hoạch của mình."
+    }
+  },
+  "contactUs": {
+    "title": "Liên hệ chúng tôi",
+    "question": "Vẫn còn câu hỏi? Hãy liên lạc với chúng tôi.",
+    "generalEmail": "Đối với các câu hỏi chung, hãy gửi email cho chúng tôi tại:",
+    "supportEmail": "Để được hỗ trợ kỹ thuật, hãy gửi email cho chúng tôi tại:"
+  },
+  "thankYou": "Cảm ơn bạn đã là một phần của cộng đồng Aqui!",
+  "joinMovement": {
+    "title": "Sẵn sàng khám phá?"
+  }
+}

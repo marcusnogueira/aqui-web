@@ -1,0 +1,11 @@
+{
+  "about": "Về Chúng Tôi",
+  "faq": "Câu Hỏi Thường Gặp",
+  "explore": "Khám Phá Nhà Cung Cấp",
+  "login": "Đăng Nhập Nhà Cung Cấp",
+  "supportOurMission": "Hỗ Trợ Sứ Mệnh Của Chúng Tôi",
+  "loading": "Đang tải...",
+  "auth": {
+    "signIn": "Đăng Nhập"
+  }
+}

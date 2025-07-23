@@ -29,7 +29,7 @@ type Vendor = VendorWithLiveSession
 
 export default function HomePage() {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t } = useTranslation(['explore', 'common', 'vendor', 'search'])
   const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -241,7 +241,7 @@ export default function HomePage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground font-medium">{t('common.loading')}</p>
+          <p className="text-foreground font-medium">{t('common:loading')}</p>
         </div>
       </div>
     )
@@ -268,13 +268,13 @@ export default function HomePage() {
                   href="/about" 
                   className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  About
+                  {t('common:about')}
                 </Link>
                 <Link 
                   href="/faq" 
                   className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
-                  FAQ
+                  {t('common:faq')}
                 </Link>
 
               </nav>
@@ -287,7 +287,7 @@ export default function HomePage() {
                     onClick={() => setShowAuthModal(true)}
                     className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors"
                   >
-                    {t('auth.signIn')}
+                    {t('common:auth.signIn')}
                   </button>
                 ) : (
                   <Navigation />
@@ -304,7 +304,7 @@ export default function HomePage() {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder={t('search.placeholder')}
+            placeholder={t('search:placeholder')}
           />
         </div>
       </div>
@@ -316,15 +316,15 @@ export default function HomePage() {
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'open').length} {t('vendor.status.open')}</span>
+                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'open').length} {t('vendor:status.open')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'closing').length} {t('vendor.status.closing')}</span>
+                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'closing').length} {t('vendor:status.closing')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4" />
-                <span>{(vendors || []).length} vendors found</span>
+                <span>{(vendors || []).length} {t('explore:vendorsFound')}</span>
               </div>
             </div>
           </div>
@@ -345,7 +345,7 @@ export default function HomePage() {
                 }`}
               >
                 <MapPin className="w-4 h-4" />
-                <span>Map View</span>
+                <span>{t('explore:mapView')}</span>
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -356,7 +356,7 @@ export default function HomePage() {
                 }`}
               >
                 <Search className="w-4 h-4" />
-                <span>List View</span>
+                <span>{t('explore:listView')}</span>
               </button>
             </div>
           </div>
@@ -380,7 +380,7 @@ export default function HomePage() {
           <div className="fluid-spacing-sm border-b border-border">
             <div className="flex items-center justify-between fluid-gap">
               <h2 className="fluid-text-lg font-semibold text-foreground">
-                {(vendors || []).length} vendors found
+                {(vendors || []).length} {t('explore:vendorsFound')}
               </h2>
               <div className="flex items-center space-x-2">
  
@@ -393,8 +393,8 @@ export default function HomePage() {
             {!vendors || vendors.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12">
                 <Search className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium text-foreground mb-2">{t('search.noResults')}</h3>
-                <p className="text-muted-foreground text-center px-6">Try adjusting your search or filters</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t('explore:noResults.title')}</h3>
+                <p className="text-muted-foreground text-center px-6">{t('explore:noResults.description')}</p>
               </div>
             ) : (
               <div className="fluid-spacing-sm space-y-4">

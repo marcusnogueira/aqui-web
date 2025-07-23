@@ -136,7 +136,7 @@ export function DashboardLayout({
   }, [mobileMenuOpen, handleSidebarToggle])
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FBF2E3' }}>
+    <div className="min-h-screen bg-background text-foreground">
       {/* Sidebar */}
       <DashboardSidebar
         collapsed={sidebarCollapsed}

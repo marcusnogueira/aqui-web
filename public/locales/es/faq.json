@@ -1,0 +1,54 @@
+{
+  "title": "Preguntas Frecuentes",
+  "subtitle": "¿Tienes preguntas? Tenemos respuestas. Aquí están algunas de las cosas más comunes que la gente pregunta.",
+  "forCustomers": {
+    "title": "Para Clientes",
+    "findVendors": {
+      "question": "¿Cómo encuentro vendedores cerca de mí?",
+      "answer1": "¡Solo abre la aplicación Aqui! La pantalla principal es un mapa en vivo que muestra todos los vendedores activos en tu vecindad. Puedes desplazarte y hacer zoom para explorar diferentes áreas.",
+      "answer2": "También puedes usar la barra de búsqueda para buscar tipos específicos de comida o nombres de vendedores."
+    },
+    "followVendors": {
+      "question": "¿Puedo seguir a mis vendedores favoritos?",
+      "answer": "¡Sí! Puedes marcar como favorito a un vendedor para recibir notificaciones cuando se conecten o estén cerca de ti. ¡Esta función llegará pronto!"
+    },
+    "leaveReviews": {
+      "question": "¿Cómo dejo una reseña?",
+      "answer": "Después de visitar a un vendedor, tendrás la opción de dejar una calificación y una reseña en su página de perfil. Tus comentarios ayudan a otros clientes y a los propios vendedores."
+    },
+    "reportVendor": {
+      "question": "¿Qué pasa si tengo un problema con un vendedor?",
+      "answer": "Si tienes alguna inquietud, puedes reportar a un vendedor directamente desde su página de perfil. Proporciona tantos detalles como sea posible para que nuestro equipo pueda investigar."
+    }
+  },
+  "forVendors": {
+    "title": "Para Vendedores",
+    "joinAsVendor": {
+      "question": "¿Cómo me registro como vendedor?",
+      "answer": "Haz clic en el botón 'Acceso de Vendedor' en nuestra página de inicio para comenzar el proceso de registro. Deberás proporcionar información básica sobre tu negocio y podrás estar en vivo en el mapa en minutos."
+    },
+    "whatCanISell": {
+      "question": "¿Qué tipo de productos puedo vender?",
+      "answer1": "Aqui está diseñado para vendedores móviles que venden una variedad de productos, desde alimentos y bebidas hasta artesanías y mercancías.",
+      "answer2": "Siempre que tengas los permisos necesarios para operar en tu área, eres bienvenido en nuestra plataforma."
+    },
+    "needLicense": {
+      "question": "¿Necesito una licencia para operar?",
+      "answer": "Sí. Todos los vendedores deben cumplir con las leyes y regulaciones locales, lo que incluye tener las licencias comerciales y los permisos de salud adecuados. Eres responsable de asegurarte de que cumples con todo."
+    },
+    "updateLocation": {
+      "question": "¿Cómo actualizo mi ubicación?",
+      "answer": "Desde tu panel de vendedor, puedes ir a 'En Vivo' para establecer tu ubicación actual en el mapa. Puedes actualizarla a medida que te mueves o establecer un horario para tus paradas planificadas."
+    }
+  },
+  "contactUs": {
+    "title": "Contáctanos",
+    "question": "¿Aún tienes preguntas? Ponte en contacto con nosotros.",
+    "generalEmail": "Para consultas generales, envíanos un correo electrónico a:",
+    "supportEmail": "Para soporte técnico, envíanos un correo electrónico a:"
+  },
+  "thankYou": "¡Gracias por ser parte de la comunidad Aqui!",
+  "joinMovement": {
+    "title": "¿Listo para Explorar?"
+  }
+}

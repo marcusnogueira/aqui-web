@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Bars3Icon } from '@heroicons/react/24/outline'
 import { Database } from '@/types/database'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -30,6 +33,7 @@ export function DashboardHeader({
   onMobileMenuToggle,
   sidebarCollapsed
 }: DashboardHeaderProps) {
+  const { t } = useTranslation('dashboard')
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
 
   // Timer countdown effect
@@ -68,12 +72,12 @@ export function DashboardHeader({
 
     switch (vendor.status) {
       case 'pending':
-        message = 'Your application is under review. You will be notified once it has been approved.'
+        message = t('header.pending')
         break
       case 'rejected':
         message = vendor.rejection_reason 
-          ? `Your application was not approved. Reason: ${vendor.rejection_reason}. Please contact support if you need assistance with reapplying.`
-          : 'Your application was not approved. Please contact support for more information.'
+          ? t('header.rejected', { reason: vendor.rejection_reason })
+          : t('header.rejected_no_reason')
         bgColor = 'bg-red-100'
         textColor = 'text-red-800'
         break
@@ -91,34 +95,37 @@ export function DashboardHeader({
       {getStatusBanner()}
       
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-background shadow-sm border-b border-border">
         <div className="fluid-container">
           <div className="flex justify-between items-center fluid-spacing-sm">
             <div className="flex items-center">
               {/* Mobile hamburger menu */}
               <button
                 onClick={onMobileMenuToggle}
-                className="p-2 rounded-md hover:bg-gray-100 transition-colors md:hidden mr-3"
+                className="p-2 rounded-md hover:bg-muted transition-colors md:hidden mr-3"
                 aria-label="Open menu"
               >
-                <Bars3Icon className="w-6 h-6 text-gray-600" />
+                <Bars3Icon className="w-6 h-6 text-muted-foreground" />
               </button>
               
               <div>
-                <h1 className="fluid-text-2xl font-semibold" style={{ color: '#222222' }}>
+                <h1 className="fluid-text-2xl font-semibold text-foreground">
                   {vendor.business_name}
                 </h1>
-                <p className="fluid-text-base" style={{ color: '#777777' }}>
+                <p className="fluid-text-base text-muted-foreground">
                   {vendor.subcategory}
                 </p>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
+              <ThemeToggle />
+              
               {liveSession ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-700 font-medium">Live Now</span>
+                  <span className="text-green-700 font-medium">{t('header.liveNow')}</span>
                   {timeRemaining !== null && (
                     <span className="text-orange-600 font-medium text-sm">
                       ⏳ {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
@@ -126,29 +133,26 @@ export function DashboardHeader({
                   )}
                   <button
                     onClick={onEndLiveSession}
-                    className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: '#DC2626', color: '#FBF2E3' }}
+                    className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity bg-red-600 text-red-50"
                   >
-                    End Session
+                    {t('header.endSession')}
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={onStartLiveSession}
                   disabled={isStartingSession || vendor.status !== 'approved'}
-                  className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-                  style={{ backgroundColor: '#D85D28', color: '#FBF2E3' }}
+                  className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 bg-primary text-primary-foreground"
                 >
-                  {isStartingSession ? 'Starting...' : 'Go Live'}
+                  {isStartingSession ? t('header.starting') : t('header.goLive')}
                 </button>
               )}
               
               <button
                 onClick={onSignOut}
-                className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity border border-gray-300"
-                style={{ backgroundColor: '#ffffff', color: '#DC2626' }}
+                className="px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition-opacity border border-destructive text-destructive-foreground bg-destructive/10"
               >
-                Sign Out
+                {t('header.signOut')}
               </button>
             </div>
           </div>

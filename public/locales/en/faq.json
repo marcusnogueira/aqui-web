@@ -1,0 +1,54 @@
+{
+  "title": "Frequently Asked Questions",
+  "subtitle": "Have questions? We've got answers. Here are some of the most common things people ask about.",
+  "forCustomers": {
+    "title": "For Customers",
+    "findVendors": {
+      "question": "How do I find vendors near me?",
+      "answer1": "Just open the Aqui app! The main screen is a live map showing all active vendors in your vicinity. You can pan and zoom to explore different areas.",
+      "answer2": "You can also use the search bar to look for specific types of food or vendor names."
+    },
+    "followVendors": {
+      "question": "Can I follow my favorite vendors?",
+      "answer": "Yes! You can favorite a vendor to receive notifications when they go live or are near you. This feature is coming soon!"
+    },
+    "leaveReviews": {
+      "question": "How do I leave a review?",
+      "answer": "After visiting a vendor, you'll have the option to leave a rating and a review on their profile page. Your feedback helps other customers and the vendors themselves."
+    },
+    "reportVendor": {
+      "question": "What if I have an issue with a vendor?",
+      "answer": "If you have a concern, you can report a vendor directly from their profile page. Please provide as much detail as possible so our team can investigate."
+    }
+  },
+  "forVendors": {
+    "title": "For Vendors",
+    "joinAsVendor": {
+      "question": "How do I sign up as a vendor?",
+      "answer": "Click the 'Vendor Login' button on our homepage to start the registration process. You'll need to provide some basic information about your business, and you can be live on the map in minutes."
+    },
+    "whatCanISell": {
+      "question": "What kind of products can I sell?",
+      "answer1": "Aqui is designed for mobile vendors selling a variety of goods, from food and drinks to crafts and merchandise.",
+      "answer2": "As long as you have the necessary permits to operate in your area, you're welcome on our platform."
+    },
+    "needLicense": {
+      "question": "Do I need a license to operate?",
+      "answer": "Yes. All vendors are required to comply with local laws and regulations, which includes having the proper business licenses and health permits. You are responsible for ensuring you are fully compliant."
+    },
+    "updateLocation": {
+      "question": "How do I update my location?",
+      "answer": "From your vendor dashboard, you can go 'Live' to set your current location on the map. You can update it as you move or set a schedule for your planned stops."
+    }
+  },
+  "contactUs": {
+    "title": "Contact Us",
+    "question": "Still have questions? Get in touch with us.",
+    "generalEmail": "For general inquiries, email us at:",
+    "supportEmail": "For technical support, email us at:"
+  },
+  "thankYou": "Thank you for being a part of the Aqui community!",
+  "joinMovement": {
+    "title": "Ready to Explore?"
+  }
+}

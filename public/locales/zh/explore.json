@@ -1,0 +1,9 @@
+{
+  "vendorsFound": "找到的供应商",
+  "mapView": "地图视图",
+  "listView": "列表视图",
+  "noResults": {
+    "title": "未找到供应商",
+    "description": "尝试调整搜索或移动地图以查找供应商。"
+  }
+}

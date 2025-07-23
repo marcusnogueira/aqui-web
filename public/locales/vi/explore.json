@@ -1,0 +1,9 @@
+{
+  "vendorsFound": "Đã tìm thấy nhà cung cấp",
+  "mapView": "Chế độ xem bản đồ",
+  "listView": "Chế độ xem danh sách",
+  "noResults": {
+    "title": "Không tìm thấy nhà cung cấp nào",
+    "description": "Hãy thử điều chỉnh tìm kiếm của bạn hoặc di chuyển bản đồ để tìm nhà cung cấp."
+  }
+}

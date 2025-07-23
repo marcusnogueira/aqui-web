@@ -1,0 +1,41 @@
+{
+  "title": "About Aqui",
+  "subtitle": "We are dedicated to connecting communities with vibrant, local street vendors through real-time, map-based technology.",
+  "mission": {
+    "title": "Our Mission",
+    "paragraph1": "Our mission is to empower local entrepreneurs by providing a platform that makes it easy for them to be discovered. We believe in the power of local economies and the unique cultural experiences that street vendors bring to our cities.",
+    "paragraph2": "We aim to bridge the gap between vendors and customers, making it simple, fun, and efficient to find and support businesses in your neighborhood."
+  },
+  "whyWeBuilt": {
+    "title": "Why We Built This",
+    "paragraph1": "The idea for Aqui was born from a simple problem: the best local food is often hidden in plain sight. We were tired of missing out on amazing vendors simply because we didn't know where or when they'd be there.",
+    "paragraph2": "Traditional search and review apps don't work well for mobile businesses that change location daily. We saw an opportunity to create a dynamic, live map that reflects the real-time pulse of the streets.",
+    "paragraph3": "Aqui is for the food adventurers, the supporters of small business, and everyone who believes that the best discoveries are often just around the corner."
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "step1": {
+      "title": "Discover Live",
+      "description": "Vendors update their location in real-time on our live map."
+    },
+    "step2": {
+      "title": "Explore Menus",
+      "description": "Browse offerings, photos, and business hours for nearby vendors."
+    },
+    "step3": {
+      "title": "Get Directions",
+      "description": "Find your next favorite meal with a single tap for directions."
+    },
+    "step4": {
+      "title": "Support Local",
+      "description": "Enjoy unique food and support the small businesses in your community."
+    }
+  },
+  "difference": {
+    "title": "The Aqui Difference",
+    "description": "Unlike static directories, Aqui is a living platform. We focus exclusively on mobile and pop-up vendors, giving them the visibility they deserve and you the real-time information you need."
+  },
+  "joinMovement": {
+    "title": "Join the Movement"
+  }
+}

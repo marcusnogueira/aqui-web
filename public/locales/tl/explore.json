@@ -1,0 +1,9 @@
+{
+  "vendorsFound": "Mga Nahanap na Vendor",
+  "mapView": "View ng Mapa",
+  "listView": "View ng Listahan",
+  "noResults": {
+    "title": "Walang Nahanap na Vendor",
+    "description": "Subukang ayusin ang iyong paghahanap o ilipat ang mapa upang makahanap ng mga vendor."
+  }
+}

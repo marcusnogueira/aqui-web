@@ -1,0 +1,54 @@
+{
+  "title": "Mga Madalas Itanong",
+  "subtitle": "May mga tanong? Mayroon kaming mga sagot. Narito ang ilan sa mga pinakakaraniwang bagay na itinatanong ng mga tao.",
+  "forCustomers": {
+    "title": "Para sa mga Customer",
+    "findVendors": {
+      "question": "Paano ako makakahanap ng mga vendor na malapit sa akin?",
+      "answer1": "Buksan lang ang Aqui app! Ang pangunahing screen ay isang live na mapa na nagpapakita ng lahat ng aktibong vendor sa iyong paligid. Maaari kang mag-pan at mag-zoom upang galugarin ang iba't ibang mga lugar.",
+      "answer2": "Maaari mo ring gamitin ang search bar upang maghanap ng mga partikular na uri ng pagkain o pangalan ng vendor."
+    },
+    "followVendors": {
+      "question": "Maaari ko bang i-follow ang aking mga paboritong vendor?",
+      "answer": "Oo! Maaari mong i-paborito ang isang vendor upang makatanggap ng mga abiso kapag sila ay nag-live o malapit sa iyo. Malapit na ang feature na ito!"
+    },
+    "leaveReviews": {
+      "question": "Paano ako mag-iiwan ng review?",
+      "answer": "Pagkatapos bumisita sa isang vendor, magkakaroon ka ng pagpipilian na mag-iwan ng rating at review sa kanilang profile page. Ang iyong feedback ay nakakatulong sa ibang mga customer at sa mga vendor mismo."
+    },
+    "reportVendor": {
+      "question": "Paano kung mayroon akong isyu sa isang vendor?",
+      "answer": "Kung mayroon kang alalahanin, maaari kang mag-ulat ng isang vendor nang direkta mula sa kanilang profile page. Mangyaring magbigay ng mas maraming detalye hangga't maaari upang maimbestigahan ng aming team."
+    }
+  },
+  "forVendors": {
+    "title": "Para sa mga Vendor",
+    "joinAsVendor": {
+      "question": "Paano ako mag-sign up bilang isang vendor?",
+      "answer": "I-click ang 'Vendor Login' na button sa aming homepage upang simulan ang proseso ng pagpaparehistro. Kakailanganin mong magbigay ng ilang pangunahing impormasyon tungkol sa iyong negosyo, at maaari kang maging live sa mapa sa loob ng ilang minuto."
+    },
+    "whatCanISell": {
+      "question": "Anong uri ng mga produkto ang maaari kong ibenta?",
+      "answer1": "Ang Aqui ay idinisenyo para sa mga mobile vendor na nagbebenta ng iba't ibang mga kalakal, mula sa pagkain at inumin hanggang sa mga crafts at merchandise.",
+      "answer2": "Hangga't mayroon kang mga kinakailangang permit upang gumana sa iyong lugar, malugod kang tinatanggap sa aming platform."
+    },
+    "needLicense": {
+      "question": "Kailangan ko ba ng lisensya para mag-operate?",
+      "answer": "Oo. Ang lahat ng mga vendor ay kinakailangang sumunod sa mga lokal na batas at regulasyon, na kinabibilangan ng pagkakaroon ng mga tamang lisensya sa negosyo at mga permit sa kalusugan. Responsibilidad mong tiyakin na ikaw ay ganap na sumusunod."
+    },
+    "updateLocation": {
+      "question": "Paano ko ia-update ang aking lokasyon?",
+      "answer": "Mula sa iyong vendor dashboard, maaari kang mag-'Live' upang itakda ang iyong kasalukuyang lokasyon sa mapa. Maaari mo itong i-update habang gumagalaw ka o magtakda ng isang iskedyul para sa iyong mga nakaplanong paghinto."
+    }
+  },
+  "contactUs": {
+    "title": "Makipag-ugnayan sa Amin",
+    "question": "May mga tanong pa rin? Makipag-ugnayan sa amin.",
+    "generalEmail": "Para sa mga pangkalahatang katanungan, mag-email sa amin sa:",
+    "supportEmail": "Para sa teknikal na suporta, mag-email sa amin sa:"
+  },
+  "thankYou": "Salamat sa pagiging bahagi ng komunidad ng Aqui!",
+  "joinMovement": {
+    "title": "Handa nang Mag-explore?"
+  }
+}

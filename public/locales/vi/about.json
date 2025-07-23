@@ -1,0 +1,41 @@
+{
+  "title": "Về Aqui",
+  "subtitle": "Chúng tôi tận tâm kết nối cộng đồng với các nhà cung cấp đường phố địa phương sôi động thông qua công nghệ bản đồ thời gian thực.",
+  "mission": {
+    "title": "Sứ mệnh của chúng tôi",
+    "paragraph1": "Sứ mệnh của chúng tôi là trao quyền cho các doanh nhân địa phương bằng cách cung cấp một nền tảng giúp họ dễ dàng được khám phá. Chúng tôi tin vào sức mạnh của các nền kinh tế địa phương và những trải nghiệm văn hóa độc đáo mà các nhà cung cấp đường phố mang lại cho các thành phố của chúng ta.",
+    "paragraph2": "Chúng tôi mong muốn thu hẹp khoảng cách giữa nhà cung cấp và khách hàng, giúp việc tìm kiếm và hỗ trợ các doanh nghiệp trong khu phố của bạn trở nên đơn giản, thú vị và hiệu quả."
+  },
+  "whyWeBuilt": {
+    "title": "Tại sao chúng tôi xây dựng cái này",
+    "paragraph1": "Ý tưởng về Aqui được sinh ra từ một vấn đề đơn giản: những món ăn địa phương ngon nhất thường bị ẩn giấu. Chúng tôi đã mệt mỏi vì bỏ lỡ các nhà cung cấp tuyệt vời chỉ vì chúng tôi không biết họ sẽ ở đâu hoặc khi nào.",
+    "paragraph2": "Các ứng dụng tìm kiếm và đánh giá truyền thống không hoạt động tốt đối với các doanh nghiệp di động thay đổi địa điểm hàng ngày. Chúng tôi đã nhìn thấy cơ hội để tạo ra một bản đồ động, trực tiếp phản ánh nhịp đập thời gian thực của các đường phố.",
+    "paragraph3": "Aqui dành cho những nhà thám hiểm ẩm thực, những người ủng hộ các doanh nghiệp nhỏ và tất cả những ai tin rằng những khám phá tốt nhất thường ở ngay gần."
+  },
+  "howItWorks": {
+    "title": "Nó hoạt động như thế nào",
+    "step1": {
+      "title": "Khám phá trực tiếp",
+      "description": "Các nhà cung cấp cập nhật vị trí của họ trong thời gian thực trên bản đồ trực tiếp của chúng tôi."
+    },
+    "step2": {
+      "title": "Khám phá thực đơn",
+      "description": "Duyệt qua các dịch vụ, hình ảnh và giờ làm việc của các nhà cung cấp lân cận."
+    },
+    "step3": {
+      "title": "Nhận chỉ đường",
+      "description": "Tìm bữa ăn yêu thích tiếp theo của bạn chỉ bằng một lần nhấn để nhận chỉ đường."
+    },
+    "step4": {
+      "title": "Hỗ trợ địa phương",
+      "description": "Thưởng thức các món ăn độc đáo và hỗ trợ các doanh nghiệp nhỏ trong cộng đồng của bạn."
+    }
+  },
+  "difference": {
+    "title": "Sự khác biệt của Aqui",
+    "description": "Không giống như các thư mục tĩnh, Aqui là một nền tảng sống. Chúng tôi tập trung hoàn toàn vào các nhà cung cấp di động và pop-up, mang lại cho họ khả năng hiển thị mà họ xứng đáng và cho bạn thông tin thời gian thực bạn cần."
+  },
+  "joinMovement": {
+    "title": "Tham gia phong trào"
+  }
+}

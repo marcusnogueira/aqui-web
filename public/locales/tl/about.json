@@ -1,0 +1,41 @@
+{
+  "title": "Tungkol sa Aqui",
+  "subtitle": "Kami ay nakatuon sa pagkonekta ng mga komunidad sa masiglang, lokal na mga street vendor sa pamamagitan ng real-time, map-based na teknolohiya.",
+  "mission": {
+    "title": "Ang Aming Misyon",
+    "paragraph1": "Ang aming misyon ay bigyang kapangyarihan ang mga lokal na negosyante sa pamamagitan ng pagbibigay ng isang platform na nagpapadali para sa kanila na matuklasan. Naniniwala kami sa kapangyarihan ng mga lokal na ekonomiya at sa mga natatanging karanasan sa kultura na hatid ng mga street vendor sa ating mga lungsod.",
+    "paragraph2": "Layunin naming tulay ang agwat sa pagitan ng mga vendor at customer, na ginagawang simple, masaya, at mahusay ang paghahanap at pagsuporta sa mga negosyo sa iyong kapitbahayan."
+  },
+  "whyWeBuilt": {
+    "title": "Bakit Namin Ito Binuo",
+    "paragraph1": "Ang ideya para sa Aqui ay isinilang mula sa isang simpleng problema: ang pinakamahusay na lokal na pagkain ay madalas na nakatago sa simpleng paningin. Pagod na kaming makaligtaan ang mga kamangha-manghang vendor dahil lamang sa hindi namin alam kung saan o kailan sila naroroon.",
+    "paragraph2": "Ang mga tradisyonal na search at review app ay hindi gumagana nang maayos para sa mga mobile na negosyo na nagbabago ng lokasyon araw-araw. Nakita namin ang isang pagkakataon na lumikha ng isang pabago-bago, live na mapa na sumasalamin sa real-time na pulso ng mga kalye.",
+    "paragraph3": "Ang Aqui ay para sa mga food adventurer, mga tagasuporta ng maliliit na negosyo, at lahat ng naniniwala na ang pinakamahusay na mga tuklas ay madalas na nasa malapit lang."
+  },
+  "howItWorks": {
+    "title": "Paano Ito Gumagana",
+    "step1": {
+      "title": "Tuklasin nang Live",
+      "description": "Ina-update ng mga vendor ang kanilang lokasyon nang real-time sa aming live na mapa."
+    },
+    "step2": {
+      "title": "Galugarin ang mga Menu",
+      "description": "Mag-browse ng mga alok, larawan, at oras ng negosyo para sa mga kalapit na vendor."
+    },
+    "step3": {
+      "title": "Kumuha ng mga Direksyon",
+      "description": "Hanapin ang iyong susunod na paboritong pagkain sa isang pag-tap para sa mga direksyon."
+    },
+    "step4": {
+      "title": "Suportahan ang Lokal",
+      "description": "Masiyahan sa natatanging pagkain at suportahan ang maliliit na negosyo sa iyong komunidad."
+    }
+  },
+  "difference": {
+    "title": "Ang Pagkakaiba ng Aqui",
+    "description": "Hindi tulad ng mga static na direktoryo, ang Aqui ay isang buhay na platform. Eksklusibo kaming nakatuon sa mga mobile at pop-up na vendor, na binibigyan sila ng visibility na nararapat sa kanila at sa iyo ng real-time na impormasyon na kailangan mo."
+  },
+  "joinMovement": {
+    "title": "Sumali sa Kilusan"
+  }
+}

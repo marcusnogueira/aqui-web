@@ -1,0 +1,9 @@
+{
+  "vendorsFound": "Vendors Found",
+  "mapView": "Map View",
+  "listView": "List View",
+  "noResults": {
+    "title": "No Vendors Found",
+    "description": "Try adjusting your search or moving the map to find vendors."
+  }
+}

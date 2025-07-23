@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
 import { Database } from '@/types/database'
@@ -26,6 +27,7 @@ type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['
 type VendorStaticLocation = Database['public']['Tables']['vendor_static_locations']['Row']
 
 export default function VendorDashboardPage() {
+  const { t } = useTranslation('dashboard')
   const { data: session, status } = useSession()
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
@@ -283,26 +285,26 @@ export default function VendorDashboardPage() {
       }
       
       setLiveSession(data)
-      alert('Live session started successfully!')
+      alert(t('alerts.startSessionSuccess'))
     } catch (error) {
       console.error('Error starting live session:', error)
       if (error instanceof GeolocationPositionError) {
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            alert('Location access denied. Please enable location permissions and try again.')
+            alert(t('alerts.locationDenied'))
             break
           case error.POSITION_UNAVAILABLE:
-            alert('Location information is unavailable. Please try again.')
+            alert(t('alerts.locationUnavailable'))
             break
           case error.TIMEOUT:
-            alert('Location request timed out. Please try again.')
+            alert(t('alerts.locationTimeout'))
             break
           default:
-            alert('An unknown location error occurred.')
+            alert(t('alerts.unknownLocationError'))
             break
         }
       } else {
-        alert('Failed to start live session. Please try again.')
+        alert(t('alerts.startSessionError'))
       }
     } finally {
       setIsStartingSession(false)
@@ -329,10 +331,10 @@ export default function VendorDashboardPage() {
       if (error) throw error
       
       setLiveSession(null)
-      alert('Live session ended successfully!')
+      alert(t('alerts.endSessionSuccess'))
     } catch (error) {
       console.error('Error ending live session:', error)
-      alert('Failed to end live session. Please try again.')
+      alert(t('alerts.endSessionError'))
     }
   }
 
@@ -442,7 +444,7 @@ export default function VendorDashboardPage() {
       await fetchVendorData()
     } catch (error) {
       console.error('Error saving profile:', error)
-      alert('Failed to save profile. Please try again.')
+      alert(t('alerts.profileSaveError'))
     } finally {
       setIsSavingProfile(false)
     }
@@ -453,7 +455,7 @@ export default function VendorDashboardPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mission-teal mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-gray-600">{t('loading')}</p>
         </div>
       </div>
     )
@@ -468,13 +470,13 @@ export default function VendorDashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Vendor Profile Not Found</h1>
-          <p className="text-gray-600 mb-4">Please complete your vendor onboarding first.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('notFound.title')}</h1>
+          <p className="text-gray-600 mb-4">{t('notFound.description')}</p>
           <button
             onClick={() => router.push('/vendor/onboarding')}
             className="bg-mission-teal text-white px-6 py-2 rounded-md hover:bg-mission-teal/90"
           >
-            Complete Onboarding
+            {t('notFound.button')}
           </button>
         </div>
       </div>

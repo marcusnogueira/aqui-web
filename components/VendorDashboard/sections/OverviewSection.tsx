@@ -1,6 +1,10 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { Database } from '@/types/database'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../Card'
+import { StatCard } from '../StatCard'
+import { StarIcon, CheckCircleIcon, MapPinIcon } from '@heroicons/react/24/outline'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
@@ -13,35 +17,39 @@ interface OverviewSectionProps {
 }
 
 export function OverviewSection({ vendor, liveSession, staticLocations }: OverviewSectionProps) {
+  const { t } = useTranslation('dashboard')
+
   return (
-    <div className="fluid-grid">
-      {/* Stats Cards */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Rating</h3>
-        <div className="fluid-text-2xl font-bold" style={{ color: '#3A938A' }}>
-          0.0
-        </div>
-        <p className="fluid-text-sm" style={{ color: '#777777' }}>No reviews yet</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard
+          title={t('overview.rating')}
+          value={vendor.average_rating?.toFixed(1) || '0.0'}
+          subtitle={t('overview.noReviews')}
+          icon={<StarIcon className="w-5 h-5 text-muted-foreground" />}
+        />
+        <StatCard
+          title={t('overview.liveStatus')}
+          value={liveSession ? t('overview.live') : t('overview.notLive')}
+          subtitle={liveSession ? `${t('overview.startedAt')} ${new Date(liveSession.start_time).toLocaleTimeString()}` : t('overview.goLivePrompt')}
+          icon={<CheckCircleIcon className={`w-5 h-5 ${liveSession ? 'text-green-500' : 'text-muted-foreground'}`} />}
+        />
+        <StatCard
+          title={t('overview.locations')}
+          value={staticLocations.length}
+          subtitle={t('overview.savedLocations')}
+          icon={<MapPinIcon className="w-5 h-5 text-muted-foreground" />}
+        />
       </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Status</h3>
-        <div className={`fluid-text-2xl font-bold`}
-             style={{ color: liveSession ? '#3A938A' : '#777777' }}>
-          {liveSession ? 'Live' : 'Offline'}
-        </div>
-        <p className="fluid-text-sm" style={{ color: '#777777' }}>
-          {liveSession ? 'Currently serving customers' : 'Not currently active'}
-        </p>
-      </div>
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 fluid-spacing-sm container-responsive" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-        <h3 className="fluid-text-lg font-medium mb-2" style={{ color: '#3A938A' }}>Locations</h3>
-        <div className="fluid-text-2xl font-bold" style={{ color: '#3A938A' }}>
-          {staticLocations.length}
-        </div>
-        <p className="fluid-text-sm" style={{ color: '#777777' }}>Saved locations</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('overview.recentAnnouncements')}</CardTitle>
+          <CardDescription>{t('overview.addAnnouncementPrompt')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Announcements content will go here */}
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,0 +1,11 @@
+{
+  "about": "关于我们",
+  "faq": "常见问题",
+  "explore": "探索供应商",
+  "login": "供应商登录",
+  "supportOurMission": "支持我们的使命",
+  "loading": "加载中...",
+  "auth": {
+    "signIn": "登录"
+  }
+}
