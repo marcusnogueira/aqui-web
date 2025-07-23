@@ -1,6 +1,6 @@
-import NextAuth, { DefaultSession } from "next-auth"
+import NextAuth, { DefaultSession } from 'next-auth'
 
-declare module "next-auth" {
+declare module 'next-auth' {
   interface User {
     active_role?: string
     is_vendor?: boolean
@@ -12,14 +12,18 @@ declare module "next-auth" {
       email: string
       active_role: string
       is_vendor: boolean
-    } & DefaultSession["user"]
+    } & DefaultSession['user']
+    supabaseAccessToken?: string
+    supabaseRefreshToken?: string
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     active_role: string
     is_vendor: boolean
+    supabaseAccessToken?: string
+    supabaseRefreshToken?: string
   }
 }

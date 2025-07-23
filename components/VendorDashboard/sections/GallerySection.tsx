@@ -4,8 +4,20 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../Card'
-import { UploadCloudIcon, XIcon, ImageIcon, HardDriveIcon, PackageIcon } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '../Card'
+import {
+  UploadCloudIcon,
+  XIcon,
+  ImageIcon,
+  HardDriveIcon,
+  PackageIcon
+} from 'lucide-react'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 
@@ -35,34 +47,50 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
 
     setUploading(true)
     try {
-      const uploadPromises = Array.from(files).map(async file => {
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      const session = await supabase.auth.getSession()
+      if (!session.data.session?.user) throw new Error('Not authenticated')
+
+      const uploadPromises = Array.from(files).map(async (file) => {
+        if (file.size > 5 * 1024 * 1024) {
           throw new Error(`File ${file.name} exceeds the 5MB limit.`)
         }
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${vendor.id}/${Date.now()}.${fileExt}`
-        const { error } = await supabase.storage.from('vendor-images').upload(fileName, file)
-        if (error) throw error
-        const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(fileName)
-        return publicUrl
+
+        const ext = file.name.split('.').pop()
+        const fileName = `${vendor.id}/${Date.now()}.${ext}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('vendor-images')
+          .upload(fileName, file)
+        if (uploadError) throw uploadError
+
+        const { data: signedUrlData, error: urlError } = await supabase.storage
+          .from('vendor-images')
+          .createSignedUrl(fileName, 60 * 60 * 24 * 7) // 7 days
+
+        if (urlError) throw urlError
+        return signedUrlData.signedUrl
       })
 
       const newImageUrls = await Promise.all(uploadPromises)
       const updatedBannerUrls = [...images, ...newImageUrls]
 
-      const { data, error } = await supabase
+      const { data, error: updateError } = await supabase
         .from('vendors')
         .update({ banner_image_url: updatedBannerUrls })
         .eq('id', vendor.id)
         .select()
         .single()
 
-      if (error) throw error
+      if (updateError) throw updateError
       if (data) onVendorUpdate(data)
 
     } catch (error) {
       console.error('Error uploading images:', error)
-      alert(`Failed to upload images. ${error instanceof Error ? error.message : ''}`)
+      alert(
+        `Failed to upload images. ${
+          error instanceof Error ? error.message : ''
+        }`
+      )
     } finally {
       setUploading(false)
     }
@@ -74,18 +102,20 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
       const fileName = imageUrl.split('/').pop()
       if (!fileName) return
 
-      const { error: storageError } = await supabase.storage.from('vendor-images').remove([`${vendor.id}/${fileName}`])
-      if (storageError) throw storageError
+      const { error: removeError } = await supabase.storage
+        .from('vendor-images')
+        .remove([`${vendor.id}/${fileName}`])
+      if (removeError) throw removeError
 
-      const updatedBannerUrls = images.filter(url => url !== imageUrl)
-      const { data, error } = await supabase
+      const updatedBannerUrls = images.filter((url) => url !== imageUrl)
+      const { data, error: updateError } = await supabase
         .from('vendors')
         .update({ banner_image_url: updatedBannerUrls })
         .eq('id', vendor.id)
         .select()
         .single()
 
-      if (error) throw error
+      if (updateError) throw updateError
       if (data) onVendorUpdate(data)
 
     } catch (error) {
@@ -109,12 +139,25 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
             <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
               <UploadCloudIcon className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="mt-4 text-sm text-muted-foreground">
-                <label htmlFor="image-upload" className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary">
+                <label
+                  htmlFor="image-upload"
+                  className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                >
                   <span>{t('gallery.dropOrBrowse')}</span>
-                  <input id="image-upload" name="image-upload" type="file" multiple className="sr-only" onChange={handleImageUpload} disabled={uploading || availableSlots === 0} />
+                  <input
+                    id="image-upload"
+                    name="image-upload"
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    onChange={handleImageUpload}
+                    disabled={uploading || availableSlots === 0}
+                  />
                 </label>
               </p>
-              <p className="text-xs text-muted-foreground">{t('gallery.fileTypes')}</p>
+              <p className="text-xs text-muted-foreground">
+                {t('gallery.fileTypes')}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -128,8 +171,15 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
             {images.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {images.map((url, index) => (
-                  <div key={index} className="relative group aspect-square">
-                    <img src={url} alt={`Vendor image ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
+                  <div
+                    key={index}
+                    className="relative group aspect-square"
+                  >
+                    <img
+                      src={url}
+                      alt={`Vendor image ${index + 1}`}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center">
                       <button
                         onClick={() => handleImageDelete(url)}
@@ -137,7 +187,11 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
                         className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-red-600 hover:bg-red-700 rounded-full p-2"
                         aria-label="Delete image"
                       >
-                        {deleting === url ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <XIcon className="h-5 w-5" />}
+                        {deleting === url ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                        ) : (
+                          <XIcon className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -146,8 +200,12 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
             ) : (
               <div className="text-center py-12">
                 <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium text-foreground">{t('gallery.noImagesYet')}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{t('gallery.uploadFirst')}</p>
+                <h3 className="mt-2 text-sm font-medium text-foreground">
+                  {t('gallery.noImagesYet')}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t('gallery.uploadFirst')}
+                </p>
               </div>
             )}
           </CardContent>
