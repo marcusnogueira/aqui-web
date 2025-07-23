@@ -15,11 +15,13 @@ interface LocationsSectionProps {
 export function LocationsSection({ staticLocations, onAddLocation }: LocationsSectionProps) {
   const { t } = useTranslation('dashboard')
   const [selectedLocation, setSelectedLocation] = useState<{ address: string; latitude: number; longitude: number } | null>(null)
+  const [inputValue, setInputValue] = useState('')
 
   const handleAddLocation = () => {
     if (selectedLocation) {
       onAddLocation(selectedLocation)
       setSelectedLocation(null)
+      setInputValue('')
     }
   }
 
@@ -30,7 +32,18 @@ export function LocationsSection({ staticLocations, onAddLocation }: LocationsSe
       <div className="flex items-center space-x-2 mb-4">
         <div className="flex-grow">
           <GooglePlacesAutocomplete
-            onSelectLocation={(lat, lng, address) => setSelectedLocation({ latitude: lat, longitude: lng, address })}
+            value={inputValue}
+            onChange={setInputValue}
+            onPlaceSelect={(place) => {
+              if (place.geometry) {
+                setSelectedLocation({
+                  latitude: place.geometry.location.lat(),
+                  longitude: place.geometry.location.lng(),
+                  address: place.formatted_address,
+                })
+                setInputValue(place.formatted_address)
+              }
+            }}
             placeholder={t('locations.searchAddress')}
           />
         </div>

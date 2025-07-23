@@ -53,7 +53,9 @@ export function AnnouncementsSection({ announcements, onAddAnnouncement }: Annou
             {announcements.map(announcement => (
               <li key={announcement.id} className="bg-card p-2 rounded-lg shadow text-sm">
                 <p className="text-card-foreground">{announcement.message}</p>
-                <p className="text-xs text-muted-foreground mt-1">{new Date(announcement.created_at).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {announcement.created_at ? new Date(announcement.created_at).toLocaleString() : 'No date'}
+                </p>
               </li>
             ))}
           </ul>

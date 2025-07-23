@@ -47,7 +47,7 @@ export function OverviewSection({ vendor, liveSession, staticLocations }: Overvi
           <CardDescription>{t('overview.addAnnouncementPrompt')}</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Announcements content will go here */}
+          <p className="text-sm text-muted-foreground">{t('overview.noAnnouncements')}</p>
         </CardContent>
       </Card>
     </div>

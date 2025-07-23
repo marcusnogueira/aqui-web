@@ -246,12 +246,12 @@ export default function VendorDashboardPage() {
         throw new Error('Vendor profile not found. Please complete your vendor onboarding.')
       }
       
-      // Check for existing active session (end_time is NULL) to prevent duplicates
+      // Check for existing active session using is_active instead of end_time
       const existingSessionResult = await supabase
         .from('vendor_live_sessions')
         .select('id')
         .eq('vendor_id', vendor.id)
-        .is('end_time', null)
+        .eq('is_active', true)  // ← CHANGE FROM .is('end_time', null)
         .single()
       
       const { data: existingSession } = existingSessionResult || { data: null }
@@ -271,8 +271,9 @@ export default function VendorDashboardPage() {
           longitude: position.coords.longitude,
           address: address,
           start_time: new Date().toISOString(),
-          end_time: null, // NULL indicates active session
-          auto_end_time: autoEndTime
+          end_time: null,
+          auto_end_time: autoEndTime,
+          is_active: true  // ← ADD THIS LINE for clarity
         })
         .select()
         .single()
@@ -323,7 +324,8 @@ export default function VendorDashboardPage() {
         .from('vendor_live_sessions')
         .update({ 
           end_time: new Date().toISOString(),
-          ended_by: USER_ROLES.VENDOR
+          ended_by: USER_ROLES.VENDOR,
+          is_active: false  // ← ADD THIS LINE
         })
         .eq('vendor_id', vendor.id)
         .is('end_time', null)

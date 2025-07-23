@@ -243,6 +243,21 @@ COMMENT ON FUNCTION "public"."set_current_user_context"("user_id" "uuid", "role_
 
 
 
+CREATE OR REPLACE FUNCTION "public"."update_is_active_on_end"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  IF NEW.end_time IS NOT NULL AND OLD.end_time IS NULL THEN
+    NEW.is_active = false;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_is_active_on_end"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -1062,6 +1077,10 @@ CREATE OR REPLACE TRIGGER "trg_update_vendor_rating" AFTER INSERT OR DELETE OR U
 
 
 CREATE OR REPLACE TRIGGER "trg_users_updated" BEFORE UPDATE ON "public"."users" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trigger_update_is_active" BEFORE UPDATE ON "public"."vendor_live_sessions" FOR EACH ROW EXECUTE FUNCTION "public"."update_is_active_on_end"();
 
 
 
@@ -6716,6 +6735,12 @@ GRANT ALL ON FUNCTION "public"."unlockrows"("text") TO "postgres";
 GRANT ALL ON FUNCTION "public"."unlockrows"("text") TO "anon";
 GRANT ALL ON FUNCTION "public"."unlockrows"("text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."unlockrows"("text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_is_active_on_end"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_is_active_on_end"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_is_active_on_end"() TO "service_role";
 
 
 
