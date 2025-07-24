@@ -202,12 +202,21 @@ export default function VendorOverviewPage() {
       // Get address from coordinates
       let address = 'Location not specified'
       try {
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${position.coords.longitude},${position.coords.latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
-        )
-        const data = await response.json()
-        if (data.features && data.features.length > 0) {
-          address = data.features[0].place_name
+        const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+        if (mapboxToken && mapboxToken !== 'pk.eyJ1IjoiYXF1aWFwcCIsImEiOiJjbTVqZGNqZGcwMGNzMmxzZGNqZGNqZGNqIn0.placeholder_token_replace_with_real_one') {
+          const response = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${position.coords.longitude},${position.coords.latitude}.json?access_token=${mapboxToken}`
+          )
+          if (response.ok) {
+            const data = await response.json()
+            if (data.features && data.features.length > 0) {
+              address = data.features[0].place_name
+            }
+          } else {
+            console.warn('Mapbox geocoding failed:', response.status, response.statusText)
+          }
+        } else {
+          console.warn('Mapbox token not configured, using default address')
         }
       } catch (geocodeError) {
         console.warn('Failed to get address from coordinates:', geocodeError)
@@ -215,15 +224,20 @@ export default function VendorOverviewPage() {
       
       // API will handle validation
       
+      // Extract only the needed coordinate values to avoid circular references
+      const requestData = {
+        latitude: Number(position.coords.latitude),
+        longitude: Number(position.coords.longitude),
+        address: address
+      }
+      
+      console.log('📤 Sending go-live request (overview):', requestData)
+      
       // Use API endpoint for go-live
       const response = await fetch('/api/vendor/go-live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          address: address
-        })
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
@@ -232,10 +246,17 @@ export default function VendorOverviewPage() {
       }
 
       const result = await response.json();
+      console.log('✅ Go-live successful (overview):', result)
       setLiveSession(result.session)
       alert('Live session started successfully!')
     } catch (error) {
-      console.error('Error starting live session:', error)
+      console.error('❌ Error starting live session (overview):', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      })
+      
       if (error instanceof GeolocationPositionError) {
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -252,7 +273,8 @@ export default function VendorOverviewPage() {
             break
         }
       } else {
-        alert('Failed to start live session. Please try again.')
+        // Show the actual error message for debugging
+        alert(`Error: ${error.message || 'Failed to start live session. Please try again.'}`)
       }
     }
   }

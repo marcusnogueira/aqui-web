@@ -103,6 +103,19 @@ CREATE TYPE "public"."vendor_status_enum" AS ENUM (
 ALTER TYPE "public"."vendor_status_enum" OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."clear_auth_context"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  PERFORM set_config('request.auth.user_id', '', false);
+  PERFORM set_config('request.auth.role', '', false);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."clear_auth_context"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."clear_current_user_context"() RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -221,6 +234,30 @@ COMMENT ON FUNCTION "public"."is_service_role"() IS 'NextAuth replacement for au
 
 
 
+CREATE OR REPLACE FUNCTION "public"."set_auth_role"("role" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  PERFORM set_config('request.auth.role', role, false);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."set_auth_role"("role" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."set_auth_user_id"("user_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  PERFORM set_config('request.auth.user_id', user_id::text, false);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."set_auth_user_id"("user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."set_current_user_context"("user_id" "uuid", "role_name" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -295,6 +332,22 @@ $$;
 
 
 ALTER FUNCTION "public"."update_vendor_rating_stats"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."validate_vendor_upload"("p_user_id" "uuid", "p_vendor_id" "uuid") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  -- Check if user owns the vendor
+  RETURN EXISTS(
+    SELECT 1 FROM public.vendors 
+    WHERE id = p_vendor_id AND user_id = p_user_id
+  );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."validate_vendor_upload"("p_user_id" "uuid", "p_vendor_id" "uuid") OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -723,7 +776,8 @@ CREATE TABLE IF NOT EXISTS "public"."vendor_static_locations" (
     "vendor_id" "uuid",
     "address" "text",
     "latitude" double precision,
-    "longitude" double precision
+    "longitude" double precision,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
 
 
@@ -1310,6 +1364,10 @@ CREATE POLICY "Notifications are only accessible by service role" ON "public"."n
 
 
 
+CREATE POLICY "Platform settings are only accessible by service role" ON "public"."platform_settings" USING ("public"."is_service_role"());
+
+
+
 CREATE POLICY "Platform settings are only accessible by service role" ON "public"."platform_settings_broken" USING ("public"."is_service_role"());
 
 
@@ -1416,7 +1474,7 @@ CREATE POLICY "Vendors can manage their own hours" ON "public"."vendor_hours" US
 
 
 
-CREATE POLICY "Vendors can manage their own profile" ON "public"."vendors" USING (("public"."get_current_user_id"() = "user_id"));
+CREATE POLICY "Vendors can manage their own profile" ON "public"."vendors" USING (("public"."get_current_user_id"() = "user_id")) WITH CHECK (("public"."get_current_user_id"() = "user_id"));
 
 
 
@@ -1435,10 +1493,6 @@ CREATE POLICY "Vendors can manage their own specials" ON "public"."vendor_specia
 CREATE POLICY "Vendors can manage their own static locations" ON "public"."vendor_static_locations" USING ((EXISTS ( SELECT 1
    FROM "public"."vendors"
   WHERE (("vendors"."id" = "vendor_static_locations"."vendor_id") AND ("vendors"."user_id" = "public"."get_current_user_id"())))));
-
-
-
-CREATE POLICY "Vendors: owner can manage" ON "public"."vendors" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
@@ -2380,6 +2434,12 @@ GRANT ALL ON FUNCTION "public"."checkauthtrigger"() TO "postgres";
 GRANT ALL ON FUNCTION "public"."checkauthtrigger"() TO "anon";
 GRANT ALL ON FUNCTION "public"."checkauthtrigger"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."checkauthtrigger"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."clear_auth_context"() TO "anon";
+GRANT ALL ON FUNCTION "public"."clear_auth_context"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."clear_auth_context"() TO "service_role";
 
 
 
@@ -3796,6 +3856,18 @@ GRANT ALL ON FUNCTION "public"."postgis_wagyu_version"() TO "postgres";
 GRANT ALL ON FUNCTION "public"."postgis_wagyu_version"() TO "anon";
 GRANT ALL ON FUNCTION "public"."postgis_wagyu_version"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."postgis_wagyu_version"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_auth_role"("role" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."set_auth_role"("role" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_auth_role"("role" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_auth_user_id"("user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."set_auth_user_id"("user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_auth_user_id"("user_id" "uuid") TO "service_role";
 
 
 
@@ -6774,6 +6846,12 @@ GRANT ALL ON FUNCTION "public"."updategeometrysrid"("catalogn_name" character va
 GRANT ALL ON FUNCTION "public"."updategeometrysrid"("catalogn_name" character varying, "schema_name" character varying, "table_name" character varying, "column_name" character varying, "new_srid_in" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."updategeometrysrid"("catalogn_name" character varying, "schema_name" character varying, "table_name" character varying, "column_name" character varying, "new_srid_in" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."updategeometrysrid"("catalogn_name" character varying, "schema_name" character varying, "table_name" character varying, "column_name" character varying, "new_srid_in" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."validate_vendor_upload"("p_user_id" "uuid", "p_vendor_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."validate_vendor_upload"("p_user_id" "uuid", "p_vendor_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."validate_vendor_upload"("p_user_id" "uuid", "p_vendor_id" "uuid") TO "service_role";
 
 
 

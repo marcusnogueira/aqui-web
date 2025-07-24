@@ -4,9 +4,10 @@
 BEGIN;
 
 -- 1. Clean up any vendor status values with extra whitespace
+-- Cast enum to text for TRIM function to work
 UPDATE vendors 
-SET status = TRIM(status)
-WHERE status != TRIM(status);
+SET status = TRIM(status::text)::vendor_status_enum
+WHERE status::text != TRIM(status::text);
 
 -- Report how many rows were cleaned
 SELECT 'Cleaned vendor status whitespace for ' || ROW_COUNT() || ' vendors' as cleanup_result;
@@ -78,7 +79,7 @@ ORDER BY count DESC;
 -- Check for any remaining whitespace issues
 SELECT 'Whitespace Check:' as check_type,
        CASE 
-         WHEN EXISTS(SELECT 1 FROM vendors WHERE status != TRIM(status))
+         WHEN EXISTS(SELECT 1 FROM vendors WHERE status::text != TRIM(status::text))
          THEN '❌ Found vendors with whitespace in status'
          ELSE '✅ No whitespace issues found'
        END as whitespace_status;

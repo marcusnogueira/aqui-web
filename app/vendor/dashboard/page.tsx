@@ -197,6 +197,18 @@ export default function VendorDashboardPage() {
 
   const startLiveSession = async (duration?: number | null) => {
     console.log('🔍 Starting go-live debug:', { vendor, supabase, loading })
+    console.log('🔍 Duration parameter:', { duration, type: typeof duration, isNumber: typeof duration === 'number' })
+    
+    // Deep inspection of the duration parameter to catch any hidden objects
+    if (duration !== null && duration !== undefined) {
+      console.log('🔍 Duration deep inspection:', {
+        value: duration,
+        type: typeof duration,
+        constructor: duration.constructor?.name,
+        isObject: typeof duration === 'object',
+        keys: typeof duration === 'object' ? Object.keys(duration) : 'N/A'
+      })
+    }
     
     if (!vendor) {
       console.error('❌ No vendor found:', { vendor, user })
@@ -254,29 +266,56 @@ export default function VendorDashboardPage() {
       // Get address from coordinates using reverse geocoding
       let address = 'Location not specified'
       try {
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${position.coords.longitude},${position.coords.latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
-        )
-        const data = await response.json()
-        if (data.features && data.features.length > 0) {
-          address = data.features[0].place_name
+        const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+        if (mapboxToken && mapboxToken !== 'pk.eyJ1IjoiYXF1aWFwcCIsImEiOiJjbTVqZGNqZGcwMGNzMmxzZGNqZGNqZGNqIn0.placeholder_token_replace_with_real_one') {
+          const response = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${position.coords.longitude},${position.coords.latitude}.json?access_token=${mapboxToken}`
+          )
+          if (response.ok) {
+            const data = await response.json()
+            if (data.features && data.features.length > 0) {
+              address = data.features[0].place_name
+            }
+          } else {
+            console.warn('Mapbox geocoding failed:', response.status, response.statusText)
+          }
+        } else {
+          console.warn('Mapbox token not configured, using default address')
         }
       } catch (geocodeError) {
         console.warn('Failed to get address from coordinates:', geocodeError)
       }
       
       // API will handle validation and duration
+      
+      // Extract only the needed coordinate values to avoid circular references
+      // Ensure duration is a clean number or null
+      const cleanDuration = duration && typeof duration === 'number' ? duration : null
+      
+      const requestData = {
+        latitude: Number(position.coords.latitude),
+        longitude: Number(position.coords.longitude),
+        address: String(address || 'Location not specified'),
+        duration: cleanDuration
+      }
+      
+      console.log('📤 Sending go-live request:', requestData)
+      
+      // Test JSON serialization before sending to catch any circular reference issues
+      try {
+        JSON.stringify(requestData)
+        console.log('✅ Request data serialization test passed')
+      } catch (serializationError) {
+        console.error('❌ Request data serialization failed:', serializationError)
+        console.error('❌ Problematic data:', requestData)
+        throw new Error('Failed to prepare request data: ' + serializationError.message)
+      }
 
       // Use API endpoint for go-live
       const response = await fetch('/api/vendor/go-live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          address: address,
-          duration: duration
-        })
+        body: JSON.stringify(requestData)
       });
 
       if (!response.ok) {
@@ -285,10 +324,17 @@ export default function VendorDashboardPage() {
       }
 
       const result = await response.json();
+      console.log('✅ Go-live successful:', result)
       setLiveSession(result.session)
       alert(t('alerts.startSessionSuccess'))
     } catch (error) {
-      console.error('Error starting live session:', error)
+      console.error('❌ Error starting live session:', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      })
+      
       if (error instanceof GeolocationPositionError) {
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -305,7 +351,8 @@ export default function VendorDashboardPage() {
             break
         }
       } else {
-        alert(t('alerts.startSessionError'))
+        // Show the actual error message for debugging
+        alert(`Error: ${error.message || t('alerts.startSessionError')}`)
       }
     } finally {
       setIsStartingSession(false)
