@@ -85,15 +85,15 @@ export default function VendorProfilePage() {
         
         // Check if vendor is favorited
         if (userData) {
-          const favoriteResult = await supabase
-            .from('favorites')
-            .select('id')
-            .eq('customer_id', userData.id)
-            .eq('vendor_id', vendorId)
-            .single()
-          
-          const { data: favorite } = favoriteResult || { data: null }
-          setIsFavorite(!!favorite);
+          try {
+            const response = await fetch(`/api/favorites?vendor_id=${vendorId}`);
+            if (response.ok) {
+              const result = await response.json();
+              setIsFavorite(result.isFavorite);
+            }
+          } catch (error) {
+            console.error('Error checking favorite status:', error);
+          }
         }
       }
     } catch (error) {
@@ -154,17 +154,13 @@ export default function VendorProfilePage() {
       
       const { data: specialsData } = specialsResult || { data: null };
 
-      // Fetch reviews with user info
-      const reviewsResult = await supabase
-        .from('reviews')
-        .select(`
-          *,
-          user:users(full_name, avatar_url)
-        `)
-        .eq('vendor_id', vendorId)
-        .order('created_at', { ascending: false });
-      
-      const { data: reviewsData } = reviewsResult || { data: null };
+      // Fetch reviews via API
+      const reviewsResponse = await fetch(`/api/reviews?vendor_id=${vendorId}`);
+      let reviewsData = null;
+      if (reviewsResponse.ok) {
+        const reviewsResult = await reviewsResponse.json();
+        reviewsData = reviewsResult.reviews;
+      }
 
       // Fetch live session to determine status
       const liveSessionResult = await supabase
@@ -206,25 +202,25 @@ export default function VendorProfilePage() {
   };
 
   const toggleFavorite = async () => {
-    if (!user || !supabase) return;
+    if (!user) return;
     
     try {
       setFavoriteClicked(true);
       setTimeout(() => setFavoriteClicked(false), 600);
       
-      if (isFavorite) {
-        await supabase
-          .from('favorites')
-          .delete()
-          .eq('customer_id', user.id)
-          .eq('vendor_id', vendorId);
-        setIsFavorite(false);
-      } else {
-        await supabase
-          .from('favorites')
-          .insert({ customer_id: user.id, vendor_id: vendorId });
-        setIsFavorite(true);
+      const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vendor_id: vendorId })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to toggle favorite');
       }
+
+      const result = await response.json();
+      setIsFavorite(result.isFavorite);
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }
@@ -239,44 +235,26 @@ export default function VendorProfilePage() {
     try {
       setSubmittingReview(true);
       
-      // Insert the review
-      const { error: reviewError } = await supabase
-        .from('reviews')
-        .insert({
-          user_id: user.id,
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           vendor_id: vendorId,
           rating: newReview.rating,
           review: newReview.comment.trim()
-        });
+        })
+      });
 
-      if (reviewError) throw reviewError;
-      
-      // Update vendor's average rating and total reviews
-      const allReviewsResult = await supabase
-        .from('reviews')
-        .select('rating')
-        .eq('vendor_id', vendorId);
-      
-      const { data: allReviews } = allReviewsResult || { data: null };
-      
-      if (allReviews) {
-        const totalReviews = allReviews.length;
-        const averageRating = allReviews.reduce((sum, review) => sum + (review.rating || 0), 0) / totalReviews;
-        
-        await supabase
-          .from('vendors')
-          .update({
-            average_rating: averageRating,
-            total_reviews: totalReviews
-          })
-          .eq('id', vendorId);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to submit review');
       }
-      
+
       setNewReview({ rating: 5, comment: '' });
-      fetchVendorData(); // Refresh to show new review
+      fetchVendorData(); // Refresh to show new review and updated stats
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to submit review. Please try again.');
     } finally {
       setSubmittingReview(false);
     }

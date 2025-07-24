@@ -180,38 +180,26 @@ export default function VendorOverviewPage() {
         console.warn('Failed to get address from coordinates:', geocodeError)
       }
       
-      // Check for existing active session to prevent duplicates
-      const existingSessionResult = await supabase
-        .from('vendor_live_sessions')
-        .select('id')
-        .eq('vendor_id', vendor.id)
-        .eq('is_active', true)
-        .single()
+      // API will handle validation
       
-      const { data: existingSession } = existingSessionResult || { data: null }
-      
-      if (existingSession) {
-        throw new Error('You already have an active live session. Please end it before starting a new one.')
-      }
-      
-      const insertResult = await supabase
-        .from('vendor_live_sessions')
-        .insert({
-          vendor_id: vendor.id,
+      // Use API endpoint for go-live
+      const response = await fetch('/api/vendor/go-live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          address: address,
-          start_time: new Date().toISOString(),
-          is_active: true
+          address: address
         })
-        .select()
-        .single()
-      
-      const { data, error } = insertResult || { data: null, error: null }
-      
-      if (error) throw error
-      
-      setLiveSession(data)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to start live session');
+      }
+
+      const result = await response.json();
+      setLiveSession(result.session)
       alert('Live session started successfully!')
     } catch (error) {
       console.error('Error starting live session:', error)
@@ -237,24 +225,24 @@ export default function VendorOverviewPage() {
   }
 
   const endLiveSession = async () => {
-    if (!liveSession || !supabase) return
+    if (!liveSession) return
     
     try {
-      const { error } = await supabase
-        .from('vendor_live_sessions')
-        .update({ 
-          end_time: new Date().toISOString(),
-          is_active: false 
-        })
-        .eq('id', liveSession.id)
-      
-      if (error) throw error
-      
+      const response = await fetch('/api/vendor/go-live', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to end live session');
+      }
+
       setLiveSession(null)
       alert('Live session ended successfully!')
     } catch (error) {
       console.error('Error ending live session:', error)
-      alert('Failed to end live session. Please try again.')
+      alert(`Failed to end live session: ${error instanceof Error ? error.message : 'Please try again.'}`)
     }
   }
 

@@ -30,7 +30,8 @@ const fetchVendors = async (url: string): Promise<Vendor[]> => {
   }
   
   const data = await response.json()
-  return data.vendors || []
+  // Map data API returns markers array, convert to vendor format
+  return data.markers?.map((marker: any) => marker.vendor) || []
 }
 
 // Generate ULTRA-STABLE cache key - only search query matters
@@ -44,7 +45,8 @@ const generateCacheKey = (searchQuery: string): string => {
   
   searchParams.set('limit', '100')
   
-  return `/api/search/vendors?${searchParams.toString()}`
+  // Use map-data API for live vendors instead of search API
+  return `/api/vendors/map-data?${searchParams.toString()}`
 }
 
 export function useLiveVendors(params: UseLiveVendorsParams = {}): UseLiveVendorsReturn {

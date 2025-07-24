@@ -232,60 +232,27 @@ export default function VendorDashboardPage() {
         console.warn('Failed to get address from coordinates:', geocodeError)
       }
       
-      // Verify vendor exists before inserting
-      const vendorCheckResult = await supabase
-        .from('vendors')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-      
-      const { data: vendorCheck, error: vendorError } = vendorCheckResult || { data: null, error: null }
-      
-      if (vendorError || !vendorCheck) {
-        console.error('[Live Session] Vendor not found:', vendorError)
-        throw new Error('Vendor profile not found. Please complete your vendor onboarding.')
-      }
-      
-      // Check for existing active session using is_active instead of end_time
-      const existingSessionResult = await supabase
-        .from('vendor_live_sessions')
-        .select('id')
-        .eq('vendor_id', vendor.id)
-        .eq('is_active', true)  // ← CHANGE FROM .is('end_time', null)
-        .single()
-      
-      const { data: existingSession } = existingSessionResult || { data: null }
+      // API will handle validation and duration
 
-      if (existingSession) {
-        throw new Error('You already have an active live session. Please end it before starting a new one.')
-      }
-      
-      const autoEndTime = duration ? 
-        new Date(Date.now() + duration * 60 * 1000).toISOString() : null
-
-      const insertResult = await supabase
-        .from('vendor_live_sessions')
-        .insert({
-          vendor_id: vendor.id,
+      // Use API endpoint for go-live
+      const response = await fetch('/api/vendor/go-live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           address: address,
-          start_time: new Date().toISOString(),
-          end_time: null,
-          auto_end_time: autoEndTime,
-          is_active: true  // ← ADD THIS LINE for clarity
+          duration: duration
         })
-        .select()
-        .single()
-      
-      const { data, error } = insertResult || { data: null, error: null }
-      
-      if (error) {
-        console.log('[Live Session Insert Error]', error?.message, error?.details, error)
-        throw error
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to start live session');
       }
-      
-      setLiveSession(data)
+
+      const result = await response.json();
+      setLiveSession(result.session)
       alert(t('alerts.startSessionSuccess'))
     } catch (error) {
       console.error('Error starting live session:', error)
@@ -316,27 +283,27 @@ export default function VendorDashboardPage() {
     try {
       setLoading(true)
       
-      if (!vendor || !supabase) {
-        throw new Error('Vendor not found or Supabase client not available')
+      if (!vendor) {
+        throw new Error('Vendor not found')
       }
       
-      const { error } = await supabase
-        .from('vendor_live_sessions')
-        .update({ 
-          end_time: new Date().toISOString(),
-          ended_by: USER_ROLES.VENDOR,
-          is_active: false  // ← ADD THIS LINE
-        })
-        .eq('vendor_id', vendor.id)
-        .is('end_time', null)
-      
-      if (error) throw error
-      
+      const response = await fetch('/api/vendor/go-live', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to end live session');
+      }
+
       setLiveSession(null)
       alert(t('alerts.endSessionSuccess'))
     } catch (error) {
       console.error('Error ending live session:', error)
       alert(t('alerts.endSessionError'))
+    } finally {
+      setLoading(false)
     }
   }
 
