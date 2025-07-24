@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     await setServiceRoleContext(supabase)
 
     const { data, error } = await supabase
-      .from('platform_settings')
+      .from('platform_settings_broken')
       .select('*')
       .eq('id', true)
       .single()
@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest) {
     await setServiceRoleContext(supabase)
 
     const { data, error } = await supabase
-      .from('platform_settings')
+      .from('platform_settings_broken')
       .update(updates)
       .eq('id', true)
       .select()

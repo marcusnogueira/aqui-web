@@ -145,8 +145,41 @@ export default function VendorOverviewPage() {
   }
 
   const startLiveSession = async () => {
-    if (!vendor || !supabase) return
+    console.log('🔍 Starting go-live debug (overview):', { vendor, supabase, loading })
     
+    if (!vendor) {
+      console.error('❌ No vendor found:', { vendor })
+      alert('Vendor profile not found. Please refresh the page and try again.')
+      return
+    }
+    
+    if (!supabase) {
+      console.error('❌ No supabase client')
+      alert('Database connection issue. Please refresh and try again.')
+      return
+    }
+    
+    // Clean and normalize vendor status to handle potential whitespace/casing issues
+    const cleanStatus = vendor.status?.trim()?.toLowerCase()
+    
+    console.log('🔍 Frontend vendor status check:', {
+      original: vendor.status,
+      cleaned: cleanStatus,
+      originalLength: vendor.status?.length,
+      cleanedLength: cleanStatus?.length
+    })
+    
+    if (cleanStatus !== 'active' && cleanStatus !== 'approved') {
+      console.error('❌ Vendor not approved:', {
+        originalStatus: vendor.status,
+        cleanedStatus: cleanStatus,
+        allowedStatuses: ['active', 'approved']
+      })
+      alert(`Cannot go live. Your vendor status is "${vendor.status}". Please wait for approval.`)
+      return
+    }
+    
+    console.log('✅ Vendor validation passed, requesting location...')
     try {
       // Get current location
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {

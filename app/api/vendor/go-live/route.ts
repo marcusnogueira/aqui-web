@@ -3,6 +3,17 @@ import { auth } from '@/app/api/auth/[...nextauth]/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 
+async function getPlatformSettings(supabase: any) {
+  // Get platform settings to check auto-approval
+  const { data: settings } = await supabase
+    .from('platform_settings_broken')
+    .select('allow_auto_vendor_approval, require_vendor_approval')
+    .eq('id', true)
+    .single()
+  
+  return settings || { allow_auto_vendor_approval: false, require_vendor_approval: true }
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Starting go-live API...')
@@ -36,6 +47,10 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ User context set for RLS')
 
+    // Get platform settings
+    const platformSettings = await getPlatformSettings(supabase)
+    console.log('📋 Platform settings:', platformSettings)
+
     // First, find the vendor for this user
     console.log('🔍 Finding vendor for user...')
     const { data: vendor, error: vendorError } = await supabase
@@ -51,13 +66,16 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Vendor found:', { id: vendor.id, name: vendor.business_name, status: vendor.status })
 
-    // Check if vendor is approved
-    if (vendor.status !== 'active') {
-      console.error('❌ Vendor not approved:', vendor.status)
+    // Check vendor approval status with platform settings logic
+    const canGoLive = checkVendorCanGoLive(vendor.status, platformSettings)
+    if (!canGoLive.allowed) {
+      console.error('❌ Vendor cannot go live:', canGoLive.reason)
       return NextResponse.json({ 
-        error: `Cannot go live. Vendor status is "${vendor.status}". Please wait for approval.` 
+        error: canGoLive.reason 
       }, { status: 400 })
     }
+
+    console.log('✅ Vendor can go live:', canGoLive.reason)
 
     // Check for existing active session
     console.log('🔍 Checking for existing active session...')
@@ -129,7 +147,67 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// POST: End live session
+// Helper function to determine if vendor can go live based on status and platform settings
+function checkVendorCanGoLive(vendorStatus: string, platformSettings: any) {
+  // Clean and normalize the vendor status to handle potential whitespace issues
+  const cleanStatus = vendorStatus?.trim()?.toLowerCase()
+  
+  console.log('🔍 Vendor status check:', {
+    original: vendorStatus,
+    cleaned: cleanStatus,
+    originalLength: vendorStatus?.length,
+    cleanedLength: cleanStatus?.length,
+    platformSettings
+  })
+  
+  // If vendor approval is not required, allow any vendor to go live
+  if (!platformSettings.require_vendor_approval) {
+    console.log('✅ Vendor approval not required - allowing go live')
+    return {
+      allowed: true,
+      reason: 'Vendor approval not required'
+    }
+  }
+  
+  // If auto-approval is enabled, allow pending vendors to go live
+  if (platformSettings.allow_auto_vendor_approval && cleanStatus === 'pending') {
+    console.log('✅ Auto-approval enabled for pending vendor')
+    return {
+      allowed: true,
+      reason: 'Auto-approval enabled: pending vendors can go live'
+    }
+  }
+  
+  // Standard approval check - both 'approved' and 'active' vendors can go live
+  if (cleanStatus === 'approved' || cleanStatus === 'active') {
+    console.log('✅ Vendor has approved/active status')
+    return {
+      allowed: true,
+      reason: 'Vendor is approved and can go live'
+    }
+  }
+  
+  // Additional debugging for edge cases
+  console.log('❌ Vendor cannot go live:', {
+    cleanStatus,
+    isApproved: cleanStatus === 'approved',
+    isActive: cleanStatus === 'active',
+    requireApproval: platformSettings.require_vendor_approval,
+    allowAutoApproval: platformSettings.allow_auto_vendor_approval
+  })
+  
+  // Block inactive vendors
+  return {
+    allowed: false,
+    reason: `Cannot go live. Your vendor status is "${vendorStatus}". ${
+      platformSettings.require_vendor_approval 
+        ? 'Please wait for admin approval or contact support.' 
+        : 'Please complete your vendor profile.'
+    }`
+  }
+}
+
+// DELETE: End live session
 export async function DELETE(request: NextRequest) {
   try {
     console.log('🔄 Starting end-live API...')
