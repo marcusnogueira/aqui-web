@@ -1019,6 +1019,7 @@ export type Database = {
       vendor_static_locations: {
         Row: {
           address: string | null
+          created_at: string
           id: number
           latitude: number | null
           longitude: number | null
@@ -1026,6 +1027,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          created_at?: string
           id?: number
           latitude?: number | null
           longitude?: number | null
@@ -1033,6 +1035,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          created_at?: string
           id?: number
           latitude?: number | null
           longitude?: number | null
@@ -1484,6 +1487,10 @@ export type Database = {
       bytea: {
         Args: { "": unknown } | { "": unknown }
         Returns: string
+      }
+      clear_auth_context: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       clear_current_user_context: {
         Args: Record<PropertyKey, never>
@@ -1973,6 +1980,14 @@ export type Database = {
       postgis_wagyu_version: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      set_auth_role: {
+        Args: { role: string }
+        Returns: undefined
+      }
+      set_auth_user_id: {
+        Args: { user_id: string }
+        Returns: undefined
       }
       set_current_user_context: {
         Args: { user_id: string; role_name?: string }
@@ -3064,6 +3079,10 @@ export type Database = {
           new_srid_in: number
         }
         Returns: string
+      }
+      validate_vendor_upload: {
+        Args: { p_user_id: string; p_vendor_id: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -252,9 +252,9 @@ export default function VendorOverviewPage() {
     } catch (error) {
       console.error('❌ Error starting live session (overview):', error)
       console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : typeof error
       })
       
       if (error instanceof GeolocationPositionError) {
@@ -274,7 +274,7 @@ export default function VendorOverviewPage() {
         }
       } else {
         // Show the actual error message for debugging
-        alert(`Error: ${error.message || 'Failed to start live session. Please try again.'}`)
+        alert(`Error: ${error instanceof Error ? error.message : String(error) || 'Failed to start live session. Please try again.'}`)
       }
     }
   }

@@ -308,7 +308,7 @@ export default function VendorDashboardPage() {
       } catch (serializationError) {
         console.error('❌ Request data serialization failed:', serializationError)
         console.error('❌ Problematic data:', requestData)
-        throw new Error('Failed to prepare request data: ' + serializationError.message)
+        throw new Error('Failed to prepare request data: ' + (serializationError instanceof Error ? serializationError.message : String(serializationError)))
       }
 
       // Use API endpoint for go-live
@@ -330,9 +330,9 @@ export default function VendorDashboardPage() {
     } catch (error) {
       console.error('❌ Error starting live session:', error)
       console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : typeof error
       })
       
       if (error instanceof GeolocationPositionError) {
@@ -352,7 +352,7 @@ export default function VendorDashboardPage() {
         }
       } else {
         // Show the actual error message for debugging
-        alert(`Error: ${error.message || t('alerts.startSessionError')}`)
+        alert(`Error: ${error instanceof Error ? error.message : String(error) || t('alerts.startSessionError')}`)
       }
     } finally {
       setIsStartingSession(false)
