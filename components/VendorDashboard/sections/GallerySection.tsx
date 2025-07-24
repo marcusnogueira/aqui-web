@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createClient } from '@/lib/supabase/client'
+import { useSupabase } from '@/lib/hooks/useSupabase'
 import { Database } from '@/types/database'
 import {
   Card,
@@ -30,7 +30,7 @@ const MAX_SLOTS = 10
 
 export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) {
   const { t } = useTranslation('dashboard')
-  const supabase = createClient()
+  const supabase = useSupabase()
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -47,42 +47,40 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
 
     setUploading(true)
     try {
-      const session = await supabase.auth.getSession()
-      if (!session.data.session?.user) throw new Error('Not authenticated')
-
-      const uploadPromises = Array.from(files).map(async (file) => {
+      // Validate file sizes before uploading
+      for (const file of Array.from(files)) {
         if (file.size > 5 * 1024 * 1024) {
           throw new Error(`File ${file.name} exceeds the 5MB limit.`)
         }
+      }
 
-        const ext = file.name.split('.').pop()
-        const fileName = `${vendor.id}/${Date.now()}.${ext}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('vendor-images')
-          .upload(fileName, file)
-        if (uploadError) throw uploadError
-
-        const { data: signedUrlData, error: urlError } = await supabase.storage
-          .from('vendor-images')
-          .createSignedUrl(fileName, 60 * 60 * 24 * 7) // 7 days
-
-        if (urlError) throw urlError
-        return signedUrlData.signedUrl
+      // Create FormData for the API request
+      const formData = new FormData()
+      formData.append('vendorId', vendor.id)
+      formData.append('imageType', 'gallery') // ← Added required imageType parameter
+      Array.from(files).forEach((file) => {
+        formData.append('files', file)
       })
 
-      const newImageUrls = await Promise.all(uploadPromises)
-      const updatedBannerUrls = [...images, ...newImageUrls]
+      // Upload via API route
+      const response = await fetch('/api/vendor/upload-image', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include', // Include cookies for authentication
+        headers: {
+          // Don't set Content-Type for FormData - let browser set it with boundary
+        },
+      })
 
-      const { data, error: updateError } = await supabase
-        .from('vendors')
-        .update({ banner_image_url: updatedBannerUrls })
-        .eq('id', vendor.id)
-        .select()
-        .single()
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to upload images')
+      }
 
-      if (updateError) throw updateError
-      if (data) onVendorUpdate(data)
+      const result = await response.json()
+      if (result.vendor) {
+        onVendorUpdate(result.vendor)
+      }
 
     } catch (error) {
       console.error('Error uploading images:', error)
@@ -99,24 +97,24 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
   const handleImageDelete = async (imageUrl: string) => {
     setDeleting(imageUrl)
     try {
-      const fileName = imageUrl.split('/').pop()
-      if (!fileName) return
+      // Delete via API route
+      const response = await fetch(
+        `/api/vendor/delete-image?vendorId=${vendor.id}&imageUrl=${encodeURIComponent(imageUrl)}`,
+        {
+          method: 'DELETE',
+          credentials: 'include', // Include cookies for authentication
+        }
+      )
 
-      const { error: removeError } = await supabase.storage
-        .from('vendor-images')
-        .remove([`${vendor.id}/${fileName}`])
-      if (removeError) throw removeError
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete image')
+      }
 
-      const updatedBannerUrls = images.filter((url) => url !== imageUrl)
-      const { data, error: updateError } = await supabase
-        .from('vendors')
-        .update({ banner_image_url: updatedBannerUrls })
-        .eq('id', vendor.id)
-        .select()
-        .single()
-
-      if (updateError) throw updateError
-      if (data) onVendorUpdate(data)
+      const result = await response.json()
+      if (result.vendor) {
+        onVendorUpdate(result.vendor)
+      }
 
     } catch (error) {
       console.error('Error deleting image:', error)

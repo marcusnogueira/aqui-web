@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,12 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ReorderRes
     // Get Supabase client
     const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
+    
+    // Create SERVICE ROLE client for database updates (bypasses ALL RLS)
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Get vendor for this user
     const { data: vendor, error: vendorError } = await supabase
@@ -44,6 +51,23 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ReorderRes
         { status: 404 }
       )
     }
+
+    // Validate reorder permission using DB function (bypasses RLS)
+    const { data: isAuthorized, error: authError } = await supabase
+      .rpc('validate_vendor_upload' as any, {
+        p_user_id: session.user.id,
+        p_vendor_id: vendor.id
+      })
+
+    if (authError || !isAuthorized) {
+      console.error('❌ Gallery reorder authorization failed:', authError)
+      return NextResponse.json(
+        { success: false, error: 'Reorder not authorized' },
+        { status: 403 }
+      )
+    }
+
+    console.log('✅ Gallery reorder authorized via DB function')
 
     // Parse request body
     const { imageUrls, imageTitles }: ReorderRequest = await request.json()
@@ -102,8 +126,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ReorderRes
       })
     }
 
-    // Update database with new order
-    const { error: updateError } = await supabase
+    // Update database with new order using SERVICE ROLE (since we already validated permission)
+    const { error: updateError } = await serviceClient
       .from('vendors')
       .update({
         gallery_images: imageUrls,

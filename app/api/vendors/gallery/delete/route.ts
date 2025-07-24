@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +30,12 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<DeleteI
     // Get Supabase client
     const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
+    
+    // Create SERVICE ROLE client for storage and database updates (bypasses ALL RLS)
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Get vendor for this user
     const { data: vendor, error: vendorError } = await supabase
@@ -43,6 +50,23 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<DeleteI
         { status: 404 }
       )
     }
+
+    // Validate delete permission using DB function (bypasses RLS)
+    const { data: isAuthorized, error: authError } = await supabase
+      .rpc('validate_vendor_upload' as any, {
+        p_user_id: session.user.id,
+        p_vendor_id: vendor.id
+      })
+
+    if (authError || !isAuthorized) {
+      console.error('❌ Gallery delete authorization failed:', authError)
+      return NextResponse.json(
+        { success: false, error: 'Delete not authorized' },
+        { status: 403 }
+      )
+    }
+
+    console.log('✅ Gallery delete authorized via DB function')
 
     // Parse request body
     const { imageIndex }: DeleteImageRequest = await request.json()

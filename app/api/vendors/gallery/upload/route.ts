@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -28,9 +29,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
       )
     }
 
-    // Get Supabase client
+    // Get regular client for database operations
     const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
+    
+    // Create SERVICE ROLE client for storage (bypasses ALL RLS)
+    const storageClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Get vendor for this user
     const { data: vendor, error: vendorError } = await supabase
@@ -45,6 +52,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
         { status: 404 }
       )
     }
+
+    // Validate upload permission using DB function (bypasses RLS)
+    const { data: isAuthorized, error: authError } = await supabase
+      .rpc('validate_vendor_upload' as any, {
+        p_user_id: session.user.id,
+        p_vendor_id: vendor.id
+      })
+
+    if (authError || !isAuthorized) {
+      console.error('❌ Gallery upload authorization failed:', authError)
+      return NextResponse.json(
+        { success: false, error: 'Upload not authorized' },
+        { status: 403 }
+      )
+    }
+
+    console.log('✅ Gallery upload authorized via DB function')
 
     // Parse form data
     const formData = await request.formData()
@@ -104,8 +128,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
         const arrayBuffer = await file.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
 
-        // Upload to Supabase storage
-        const { error: uploadError } = await supabase.storage
+        // Upload to Supabase storage using SERVICE ROLE (bypasses ALL RLS)
+        const { error: uploadError } = await storageClient.storage
           .from('vendor-images')
           .upload(fileName, uint8Array, { 
             upsert: false,
@@ -117,8 +141,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
           throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
         }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        // Get public URL using SERVICE ROLE
+        const { data: { publicUrl } } = storageClient.storage
           .from('vendor-images')
           .getPublicUrl(fileName)
 
@@ -138,7 +162,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
         try {
           const fileName = url.split('/').pop()
           if (fileName) {
-            await supabase.storage
+            await storageClient.storage
               .from('vendor-images')
               .remove([`${vendor.id}/gallery/${fileName}`])
           }
@@ -157,11 +181,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
       )
     }
 
-    // Update vendor gallery_images in database
+    // Update vendor gallery_images in database using SERVICE ROLE (since we already validated permission)
     const updatedGalleryImages = [...(vendor.gallery_images || []), ...uploadedUrls]
     const updatedGalleryTitles = [...(vendor.gallery_titles || []), ...new Array(uploadedUrls.length).fill('')]
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await storageClient
       .from('vendors')
       .update({
         gallery_images: updatedGalleryImages,
@@ -176,7 +200,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GalleryUp
         try {
           const fileName = url.split('/').pop()
           if (fileName) {
-            await supabase.storage
+            await storageClient.storage
               .from('vendor-images')
               .remove([`${vendor.id}/gallery/${fileName}`])
           }

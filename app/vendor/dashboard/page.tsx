@@ -383,70 +383,56 @@ export default function VendorDashboardPage() {
   }
 
   const saveProfile = async (profileData: any, profileImageFile: File | null, bannerImageFile: File | null) => {
-    if (!vendor || !supabase) return
+    if (!vendor) {
+      console.error('❌ saveProfile: Missing vendor')
+      return
+    }
+
+    console.log('🔄 Starting profile save...', {
+      vendorId: vendor.id,
+      hasProfileImage: !!profileImageFile,
+      hasBannerImage: !!bannerImageFile,
+      profileData
+    })
 
     setIsSavingProfile(true)
     try {
-      let profileImageUrl = vendor.profile_image_url
-      let bannerImageUrl: string | null = null
-
-      // Upload profile image if selected
+      // Prepare form data for API call
+      const formData = new FormData()
+      formData.append('profileData', JSON.stringify(profileData))
+      
       if (profileImageFile) {
-        const fileExt = profileImageFile.name.split('.').pop()
-        const fileName = `${vendor.id}/profile.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('vendor-images')
-          .upload(fileName, profileImageFile, { upsert: true })
-
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('vendor-images')
-          .getPublicUrl(fileName)
-
-        profileImageUrl = publicUrl
+        formData.append('profileImage', profileImageFile)
       }
-
-      // Upload banner image if selected
+      
       if (bannerImageFile) {
-        const fileExt = bannerImageFile.name.split('.').pop()
-        const fileName = `${vendor.id}/banner.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('vendor-images')
-          .upload(fileName, bannerImageFile, { upsert: true })
-
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('vendor-images')
-          .getPublicUrl(fileName)
-
-        bannerImageUrl = publicUrl
+        formData.append('bannerImage', bannerImageFile)
       }
 
-      // Update vendor profile
-       const { error } = await supabase
-         .from('vendors')
-         .update({
-           business_name: profileData.business_name,
-           description: profileData.description,
-           business_type: profileData.business_type,
-           subcategory: profileData.subcategory,
-           contact_email: profileData.contact_email,
-           phone: profileData.phone,
-           profile_image_url: profileImageUrl,
-           banner_image_url: bannerImageUrl ? [bannerImageUrl] : (vendor.banner_image_url || [])
-         })
-         .eq('id', vendor.id)
+      console.log('📤 Calling profile update API...')
+      
+      // Call the API route that handles service role authentication
+      const response = await fetch('/api/vendor/update-profile', {
+        method: 'POST',
+        body: formData
+      })
 
-      if (error) throw error
+      const result = await response.json()
 
+      if (!response.ok) {
+        console.error('❌ API call failed:', result)
+        throw new Error(result.error || 'Failed to update profile')
+      }
+
+      console.log('✅ Profile updated via API:', result)
+
+      console.log('🔄 Refreshing vendor data...')
       await fetchVendorData()
+      console.log('✅ Profile save completed successfully!')
+
     } catch (error) {
-      console.error('Error saving profile:', error)
-      alert(t('alerts.profileSaveError'))
+      console.error('❌ Error saving profile:', error)
+      alert(t('alerts.profileSaveError') + ': ' + (error instanceof Error ? error.message : 'Unknown error'))
     } finally {
       setIsSavingProfile(false)
     }

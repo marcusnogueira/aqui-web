@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export async function PUT(request: NextRequest) {
@@ -40,11 +41,17 @@ export async function PUT(request: NextRequest) {
 
     const cookieStore = await cookies()
     const supabase = createSupabaseServerClient(cookieStore)
+    
+    // Create SERVICE ROLE client for database updates (bypasses ALL RLS)
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     // Get current vendor data
     const { data: vendor, error: fetchError } = await supabase
       .from('vendors')
-      .select('gallery_images, gallery_titles')
+      .select('id, gallery_images, gallery_titles')
       .eq('user_id', session.user.id)
       .single()
 
@@ -62,6 +69,23 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Validate update permission using DB function (bypasses RLS)
+    const { data: isAuthorized, error: authError } = await supabase
+      .rpc('validate_vendor_upload' as any, {
+        p_user_id: session.user.id,
+        p_vendor_id: vendor.id
+      })
+
+    if (authError || !isAuthorized) {
+      console.error('❌ Gallery title update authorization failed:', authError)
+      return NextResponse.json(
+        { success: false, error: 'Update not authorized' },
+        { status: 403 }
+      )
+    }
+
+    console.log('✅ Gallery title update authorized via DB function')
 
     const galleryImages = vendor.gallery_images || []
     const galleryTitles = vendor.gallery_titles || []
@@ -84,11 +108,11 @@ export async function PUT(request: NextRequest) {
     
     updatedTitles[imageIndex] = title
 
-    // Update the vendor record
-    const { error: updateError } = await supabase
+    // Update the vendor record using SERVICE ROLE (since we already validated permission)
+    const { error: updateError } = await serviceClient
       .from('vendors')
       .update({ gallery_titles: updatedTitles })
-      .eq('user_id', session.user.id)
+      .eq('id', vendor.id)
 
     if (updateError) {
       console.error('Error updating gallery titles:', updateError)
