@@ -138,7 +138,6 @@ export default function VendorProfilePage() {
         .from('vendor_announcements')
         .select('*')
         .eq('vendor_id', vendorId)
-        .eq('is_active', true)
         .order('created_at', { ascending: false });
       
       const { data: announcementsData } = announcementsResult || { data: null };
