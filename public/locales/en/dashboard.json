@@ -129,6 +129,10 @@
     "endSessionSuccess": "Live session ended successfully!",
     "endSessionError": "Failed to end live session. Please try again.",
     "profileSaveSuccess": "Profile saved successfully!",
-    "profileSaveError": "Failed to save profile. Please try again."
+    "profileSaveError": "Failed to save profile. Please try again.",
+    "cannotSignOutWhileLive": "Please end your live session before signing out.",
+    "cannotSwitchRoleWhileLive": "Please end your live session before switching to customer mode.",
+    "announcementSuccess": "Announcement posted successfully!",
+    "announcementError": "Failed to post announcement. Please try again."
   }
 }

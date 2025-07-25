@@ -133,14 +133,19 @@ export default function VendorProfilePage() {
       
       const { data: locationData } = locationResult || { data: null };
 
-      // Fetch announcements
-      const announcementsResult = await supabase
-        .from('vendor_announcements')
-        .select('*')
-        .eq('vendor_id', vendorId)
-        .order('created_at', { ascending: false });
-      
-      const { data: announcementsData } = announcementsResult || { data: null };
+      // Fetch announcements using the API endpoint
+      let announcementsData = null;
+      try {
+        const announcementsResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || ''}/api/vendor/announcements?vendorId=${vendorId}`);
+        if (announcementsResponse.ok) {
+          const result = await announcementsResponse.json();
+          announcementsData = result.announcements;
+        } else {
+          console.error('Error fetching announcements from API');
+        }
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+      }
 
       // Fetch specials
       const specialsResult = await supabase

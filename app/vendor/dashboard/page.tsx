@@ -123,6 +123,14 @@ export default function VendorDashboardPage() {
 
   const switchToCustomerMode = async () => {
     try {
+      // Check if vendor has an active live session
+      if (liveSession && liveSession.is_active) {
+        // Show warning message and prevent role switching
+        alert(t('alerts.cannotSwitchRoleWhileLive') || 'Please end your live session before switching to customer mode.')
+        return
+      }
+      
+      // Proceed with role switching if no active session
       await clientAuth.switchRole(USER_ROLES.CUSTOMER)
       router.push('/')
     } catch (error) {
@@ -133,6 +141,14 @@ export default function VendorDashboardPage() {
 
   const handleSignOut = async () => {
     try {
+      // Check if vendor has an active live session
+      if (liveSession && liveSession.is_active) {
+        // Show warning message and prevent sign-out
+        alert(t('alerts.cannotSignOutWhileLive') || 'Please end your live session before signing out.')
+        return
+      }
+      
+      // Proceed with sign-out if no active session
       await nextAuthSignOut({ callbackUrl: '/' })
     } catch (error) {
       console.error('Error signing out:', error)
@@ -165,18 +181,15 @@ export default function VendorDashboardPage() {
         setVendor(vendorData)
 
         // Fetch all vendor-related data in parallel for better performance
-        const [sessionResult, announcementsResult, locationsResult] = await Promise.all([
+        // Use API endpoint for announcements, direct Supabase for other data
+        const [sessionResult, announcementsResponse, locationsResult] = await Promise.all([
           supabase
              .from('vendor_live_sessions')
              .select('*')
              .eq('vendor_id', vendorData.id)
              .is('end_time', null)
              .single(),
-          supabase
-            .from('vendor_announcements')
-            .select('*')
-            .eq('vendor_id', vendorData.id)
-            .order('created_at', { ascending: false }),
+          fetch(`/api/vendor/announcements?vendorId=${vendorData.id}`),
           supabase
             .from('vendor_static_locations')
             .select('*')
@@ -184,8 +197,17 @@ export default function VendorDashboardPage() {
             .order('created_at', { ascending: false })
         ])
 
+        // Process announcements from API response
+        let announcements = [];
+        if (announcementsResponse.ok) {
+          const announcementsData = await announcementsResponse.json();
+          announcements = announcementsData.announcements || [];
+        } else {
+          console.error('Error fetching announcements from API');
+        }
+
         setLiveSession(sessionResult.data)
-        setAnnouncements(announcementsResult.data || [])
+        setAnnouncements(announcements)
         setStaticLocations(locationsResult.data || [])
       }
     } catch (error) {
@@ -388,21 +410,35 @@ export default function VendorDashboardPage() {
   }
 
   const addAnnouncement = async (announcement: { message: string }) => {
-    if (!vendor || !announcement.message || !supabase) return
+    if (!vendor || !announcement.message) return
 
     try {
-      const { error } = await supabase
-        .from('vendor_announcements')
-        .insert({
-          vendor_id: vendor.id,
+      // Use the new API endpoint instead of direct Supabase access
+      const response = await fetch('/api/vendor/announcements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vendorId: vendor.id,
           message: announcement.message
         })
+      });
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add announcement');
+      }
 
-      await fetchVendorData()
+      // Refresh vendor data to show the new announcement
+      await fetchVendorData();
+      
+      // Show success message
+      alert(t('alerts.announcementSuccess') || 'Announcement posted successfully!')
+      
     } catch (error) {
       console.error('Error adding announcement:', error)
+      alert(t('alerts.announcementError') || 'Failed to post announcement. Please try again.')
     }
   }
 

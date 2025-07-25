@@ -69,13 +69,13 @@ export function useLiveVendors(params: UseLiveVendorsParams = {}): UseLiveVendor
       })
     },
     {
-      // AGGRESSIVE caching settings to prevent refresh loops
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false, 
-      revalidateIfStale: false,
+      // Balanced caching settings to allow real-time updates
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true, 
+      revalidateIfStale: true,
       revalidateOnMount: true,
-      dedupingInterval: 300000, // 5 minutes - prevent duplicate requests
-      refreshInterval: 0, // NO automatic refresh
+      dedupingInterval: 10000, // 10 seconds - prevent duplicate requests
+      refreshInterval: 30000, // Refresh every 30 seconds
       errorRetryCount: 1,
       errorRetryInterval: 30000,
       keepPreviousData: true,

@@ -124,12 +124,12 @@ export async function POST(request: NextRequest) {
       })
 
       const fileExt = bannerImageFile.name.split('.').pop()
-      const fileName = `${vendor.id}/banner.${fileExt}`
+      const fileName = `${vendor.id}/banner/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
       
       console.log('☁️ Uploading to storage:', fileName)
       const { error: uploadError } = await serviceClient.storage
         .from('vendor-images')
-        .upload(fileName, bannerImageFile, { upsert: true })
+        .upload(fileName, bannerImageFile, { upsert: false })
 
       if (uploadError) {
         console.error('❌ Banner image upload failed:', uploadError)
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       contact_email: profileData.contact_email,
       phone: profileData.phone,
       profile_image_url: profileImageUrl,
-      banner_image_url: bannerImageUrl ? [bannerImageUrl] : (vendor.banner_image_url || [])
+      banner_image_url: bannerImageUrl ? [...(vendor.banner_image_url || []), bannerImageUrl] : (vendor.banner_image_url || [])
     }
 
     console.log('📝 Update data:', updateData)

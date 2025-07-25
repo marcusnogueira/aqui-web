@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Database } from '@/types/database'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../Card'
@@ -27,6 +27,8 @@ export function ProfileSection({ vendor, businessTypeKeys, onSaveProfile, onSwit
   })
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
+  const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -35,20 +37,52 @@ export function ProfileSection({ vendor, businessTypeKeys, onSaveProfile, onSwit
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setProfileImageFile(e.target.files[0])
+      const file = e.target.files[0]
+      setProfileImageFile(file)
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setProfileImagePreview(previewUrl)
     }
   }
 
   const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setBannerImageFile(e.target.files[0])
+      const file = e.target.files[0]
+      setBannerImageFile(file)
+      
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setBannerImagePreview(previewUrl)
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSaveProfile(profileData, profileImageFile, bannerImageFile)
+    
+    // Clean up preview URLs after submission
+    if (profileImagePreview) {
+      URL.revokeObjectURL(profileImagePreview)
+      setProfileImagePreview(null)
+    }
+    if (bannerImagePreview) {
+      URL.revokeObjectURL(bannerImagePreview)
+      setBannerImagePreview(null)
+    }
   }
+
+  // Cleanup preview URLs on component unmount
+  React.useEffect(() => {
+    return () => {
+      if (profileImagePreview) {
+        URL.revokeObjectURL(profileImagePreview)
+      }
+      if (bannerImagePreview) {
+        URL.revokeObjectURL(bannerImagePreview)
+      }
+    }
+  }, [profileImagePreview, bannerImagePreview])
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -91,11 +125,35 @@ export function ProfileSection({ vendor, businessTypeKeys, onSaveProfile, onSwit
               </div>
               <div>
                 <label htmlFor="profile_image" className="block text-sm font-medium text-foreground">{t('profile.profileImage')}</label>
-                <input type="file" name="profile_image" id="profile_image" onChange={handleProfileImageChange} className="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                <input type="file" name="profile_image" id="profile_image" onChange={handleProfileImageChange} accept="image/*" className="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                {profileImagePreview && (
+                  <div className="mt-2">
+                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-border">
+                      <img
+                        src={profileImagePreview}
+                        alt="Profile preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <label htmlFor="banner_image" className="block text-sm font-medium text-foreground">{t('profile.bannerImages')}</label>
-                <input type="file" name="banner_image" id="banner_image" onChange={handleBannerImageChange} className="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                <input type="file" name="banner_image" id="banner_image" onChange={handleBannerImageChange} accept="image/*" className="mt-1 block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                {bannerImagePreview && (
+                  <div className="mt-2">
+                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                    <div className="relative w-full h-32 rounded-lg overflow-hidden border-2 border-border">
+                      <img
+                        src={bannerImagePreview}
+                        alt="Banner preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end">
                 <button type="submit" disabled={isSavingProfile} className="inline-flex justify-center rounded-md border border-transparent bg-primary py-2 px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">

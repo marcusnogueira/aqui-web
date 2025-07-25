@@ -34,7 +34,7 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  const images = vendor.banner_image_url || []
+  const images = vendor.gallery_images || []
   const availableSlots = MAX_SLOTS - images.length
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +99,7 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
     try {
       // Delete via API route
       const response = await fetch(
-        `/api/vendor/delete-image?vendorId=${vendor.id}&imageUrl=${encodeURIComponent(imageUrl)}`,
+        `/api/vendor/delete-image?vendorId=${vendor.id}&imageUrl=${encodeURIComponent(imageUrl)}&imageType=gallery`,
         {
           method: 'DELETE',
           credentials: 'include', // Include cookies for authentication

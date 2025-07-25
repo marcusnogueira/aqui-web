@@ -316,17 +316,31 @@ export default function HomePage() {
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'open').length} {t('vendor:status.open')}</span>
+                <span data-testid="open-vendors-count">
+                  {(vendors || []).filter(v => getVendorStatus(v) === 'open').length} {t('vendor:status.open')}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span>{(vendors || []).filter(v => getVendorStatus(v) === 'closing').length} {t('vendor:status.closing')}</span>
+                <span data-testid="closing-vendors-count">
+                  {(vendors || []).filter(v => getVendorStatus(v) === 'closing').length} {t('vendor:status.closing')}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="w-4 h-4" />
-                <span>{(vendors || []).length} {t('explore:vendorsFound')}</span>
+                <span data-testid="total-vendors-count">
+                  {(vendors || []).length} {t('explore:vendorsFound')}
+                </span>
               </div>
             </div>
+            {/* Add refresh button for manual updates */}
+            <button 
+              onClick={() => vendorData.mutate()} 
+              className="text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Refresh vendor data"
+            >
+              <Clock className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

@@ -134,9 +134,13 @@ export async function GET(request: NextRequest) {
       })
       .filter((marker): marker is MapMarkerData => marker !== null)
 
-    // Set cache headers for performance
-    const response = NextResponse.json({ markers })
-    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60')
+    // Set cache headers for real-time updates
+    const response = NextResponse.json({ 
+      markers,
+      timestamp: new Date().toISOString(), // Add timestamp to force client refresh
+      liveCount: markers.filter(m => m.isLive).length
+    })
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
     
     return response
 

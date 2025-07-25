@@ -70,46 +70,56 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match the expected VendorWithLiveSession format
-    const transformedVendors = vendors?.map((vendor: any) => ({
-      id: vendor.id,
-      user_id: vendor.user_id,
-      business_name: vendor.business_name,
-      description: vendor.description,
-      business_type: vendor.business_type,
-      subcategory: vendor.subcategory,
-      tags: vendor.tags,
-      profile_image_url: vendor.profile_image_url,
-      banner_image_url: vendor.banner_image_url,
-      contact_email: vendor.contact_email,
-      phone: vendor.phone,
-      address: vendor.address,
-      city: vendor.city,
-      latitude: vendor.live_latitude,
-      longitude: vendor.live_longitude,
-      status: vendor.status,
-      approved_by: vendor.approved_by,
-      approved_at: vendor.approved_at,
-      average_rating: vendor.average_rating,
-      total_reviews: vendor.total_reviews,
-      admin_notes: vendor.admin_notes,
-      created_at: vendor.created_at,
-      updated_at: vendor.updated_at,
-      live_session: {
-        id: vendor.session_id,
-        vendor_id: vendor.id,
-        start_time: vendor.start_time,
-        end_time: vendor.end_time,
-        was_scheduled_duration: vendor.was_scheduled_duration,
-        estimated_customers: vendor.estimated_customers,
-        latitude: vendor.session_latitude,
-        longitude: vendor.session_longitude,
-        address: vendor.session_address,
-        is_active: vendor.is_active,
-        created_at: vendor.session_created_at,
-        auto_end_time: vendor.auto_end_time,
-        ended_by: vendor.ended_by
-      }
-    })) || []
+    const transformedVendors = vendors?.map((vendor: any) => {
+      // Check if session data exists and is active
+      const hasActiveLiveSession = vendor.session_id && vendor.is_active === true;
+      
+      // Create the vendor object with proper structure
+      return {
+        id: vendor.id,
+        user_id: vendor.user_id,
+        business_name: vendor.business_name,
+        description: vendor.description,
+        business_type: vendor.business_type,
+        subcategory: vendor.subcategory,
+        tags: vendor.tags,
+        profile_image_url: vendor.profile_image_url,
+        banner_image_url: vendor.banner_image_url,
+        contact_email: vendor.contact_email,
+        phone: vendor.phone,
+        address: vendor.address,
+        city: vendor.city,
+        latitude: vendor.live_latitude,
+        longitude: vendor.live_longitude,
+        status: vendor.status,
+        approved_by: vendor.approved_by,
+        approved_at: vendor.approved_at,
+        average_rating: vendor.average_rating,
+        total_reviews: vendor.total_reviews,
+        admin_notes: vendor.admin_notes,
+        created_at: vendor.created_at,
+        updated_at: vendor.updated_at,
+        // Only include live_session if it's active
+        live_session: hasActiveLiveSession ? {
+          id: vendor.session_id,
+          vendor_id: vendor.id,
+          start_time: vendor.start_time,
+          end_time: vendor.end_time,
+          was_scheduled_duration: vendor.was_scheduled_duration,
+          estimated_customers: vendor.estimated_customers,
+          latitude: vendor.session_latitude,
+          longitude: vendor.session_longitude,
+          address: vendor.session_address,
+          is_active: vendor.is_active,
+          created_at: vendor.session_created_at,
+          auto_end_time: vendor.auto_end_time,
+          ended_by: vendor.ended_by
+        } : null
+      };
+    }) || []
+    
+    // Log the number of active vendors for debugging
+    console.log(`Found ${transformedVendors.length} vendors, ${transformedVendors.filter(v => v.live_session?.is_active).length} active`)
 
     // Log search query if user is authenticated and query is provided
     if (query.trim()) {
