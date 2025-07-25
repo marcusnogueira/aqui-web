@@ -179,18 +179,12 @@ export default function AboutPage() {
             >
               {t('common:explore')}
             </button>
-            <button 
-              onClick={() => setShowAuthModal(true)}
-              className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              {t('common:login')}
-            </button>
             <VendorLoginButton className="bg-mission-teal hover:bg-mission-teal/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">
               Vendor Login
             </VendorLoginButton>
             <button 
               onClick={() => router.push('/fund')}
-              className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
+              className="bg-mission-teal hover:bg-mission-teal/90 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
               {t('common:supportOurMission')}
             </button>
