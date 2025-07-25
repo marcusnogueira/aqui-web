@@ -3,6 +3,7 @@
 import { Navigation } from '@/components/Navigation';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { VendorLoginButton } from '@/components/VendorLoginButton';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -171,7 +172,7 @@ export default function AboutPage() {
         {/* Join the Movement */}
         <section className="text-center">
           <h2 className="text-3xl font-bold text-foreground mb-8">{t('joinMovement.title')}</h2>
-          <div className="space-x-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <button 
               onClick={() => router.push('/')}
               className="bg-chili-orange hover:bg-bay-cypress text-white px-6 py-3 rounded-lg font-medium transition-colors"
@@ -184,6 +185,9 @@ export default function AboutPage() {
             >
               {t('common:login')}
             </button>
+            <VendorLoginButton className="bg-mission-teal hover:bg-mission-teal/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+              Vendor Login
+            </VendorLoginButton>
             <button 
               onClick={() => router.push('/fund')}
               className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"

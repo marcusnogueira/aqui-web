@@ -74,7 +74,7 @@
     "noImages": "Chưa có hình ảnh nào được tải lên.",
     "maxSize": "PNG, JPG, GIF tối đa 10MB",
     "yourGallery": "Thư viện của bạn",
-    "galleryDescription": "Những hình ảnh này được hiển thị trên trang nhà cung cấp công khai của bạn.",
+    "galleryDescription": "Những hình ảnh này được hiển thị trên trang nhà cung cấp công khai của bạn. Nhấp vào bất kỳ hình ảnh nào để thêm hoặc chỉnh sửa chú thích.",
     "dropOrBrowse": "Thả hình ảnh vào đây hoặc nhấp để duyệt",
     "fileTypes": "JPEG, PNG, WebP tối đa 5MB mỗi tệp",
     "noImagesYet": "Chưa có hình ảnh nào",
@@ -82,7 +82,14 @@
     "statistics": "Thống kê thư viện",
     "imagesUsed": "Hình ảnh đã sử dụng",
     "storageUsed": "Bộ nhớ đã sử dụng",
-    "slotsAvailable": "{{count}} trong số 10 vị trí có sẵn"
+    "slotsAvailable": "{{count}} trong số 10 vị trí có sẵn",
+    "addCaption": "Thêm chú thích...",
+    "editCaption": "Nhấp để chỉnh sửa chú thích",
+    "captionPlaceholder": "Mô tả hình ảnh này...",
+    "saveCaption": "Lưu chú thích",
+    "cancelCaption": "Hủy",
+    "captionUpdated": "Chú thích đã được cập nhật thành công",
+    "captionError": "Không thể cập nhật chú thích"
   },
   "locations": {
     "title": "Quản lý địa điểm",

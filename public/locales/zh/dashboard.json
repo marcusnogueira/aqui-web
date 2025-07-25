@@ -74,7 +74,7 @@
     "noImages": "尚未上传任何图片。",
     "maxSize": "PNG, JPG, GIF, 最大10MB",
     "yourGallery": "您的相册",
-    "galleryDescription": "这些图片会显示在您的公共供应商页面上。",
+    "galleryDescription": "这些图片会显示在您的公共供应商页面上。点击任何图片以添加或编辑说明。",
     "dropOrBrowse": "将图片拖放到此处或点击浏览",
     "fileTypes": "JPEG, PNG, WebP, 每个最大5MB",
     "noImagesYet": "尚无图片",
@@ -82,7 +82,14 @@
     "statistics": "相册统计",
     "imagesUsed": "已用图片",
     "storageUsed": "已用存储",
-    "slotsAvailable": "10个插槽中还剩{{count}}个可用"
+    "slotsAvailable": "10个插槽中还剩{{count}}个可用",
+    "addCaption": "添加说明...",
+    "editCaption": "点击编辑说明",
+    "captionPlaceholder": "描述这张图片...",
+    "saveCaption": "保存说明",
+    "cancelCaption": "取消",
+    "captionUpdated": "说明更新成功",
+    "captionError": "无法更新说明"
   },
   "locations": {
     "title": "管理位置",

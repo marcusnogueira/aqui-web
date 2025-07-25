@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSupabase } from '@/lib/hooks/useSupabase'
 import { Database } from '@/types/database'
+import { ImageGallery } from '../components/ImageGallery'
 import {
   Card,
   CardContent,
@@ -35,6 +36,7 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const images = vendor.gallery_images || []
+  const titles = vendor.gallery_titles || []
   const availableSlots = MAX_SLOTS - images.length
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +96,8 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
     }
   }
 
-  const handleImageDelete = async (imageUrl: string) => {
+  const handleImageDelete = async (index: number) => {
+    const imageUrl = images[index]
     setDeleting(imageUrl)
     try {
       // Delete via API route
@@ -121,6 +124,44 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
       alert('Failed to delete image.')
     } finally {
       setDeleting(null)
+    }
+  }
+
+  const handleCaptionUpdate = async (index: number, caption: string) => {
+    try {
+      const response = await fetch('/api/vendors/gallery/captions', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          imageIndex: index,
+          caption: caption
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update caption')
+      }
+
+      // Update local state
+      const updatedTitles = [...titles]
+      while (updatedTitles.length <= index) {
+        updatedTitles.push('')
+      }
+      updatedTitles[index] = caption
+
+      const updatedVendor = {
+        ...vendor,
+        gallery_titles: updatedTitles
+      }
+      onVendorUpdate(updatedVendor)
+
+    } catch (error) {
+      console.error('Error updating caption:', error)
+      throw error // Re-throw to let ImageGallery handle the error display
     }
   }
 
@@ -166,46 +207,13 @@ export function GallerySection({ vendor, onVendorUpdate }: GallerySectionProps) 
             <CardDescription>{t('gallery.galleryDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            {images.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {images.map((url, index) => (
-                  <div
-                    key={index}
-                    className="relative group aspect-square"
-                  >
-                    <img
-                      src={url}
-                      alt={`Vendor image ${index + 1}`}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center">
-                      <button
-                        onClick={() => handleImageDelete(url)}
-                        disabled={deleting === url}
-                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-red-600 hover:bg-red-700 rounded-full p-2"
-                        aria-label="Delete image"
-                      >
-                        {deleting === url ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                        ) : (
-                          <XIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-medium text-foreground">
-                  {t('gallery.noImagesYet')}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t('gallery.uploadFirst')}
-                </p>
-              </div>
-            )}
+            <ImageGallery
+              images={images}
+              titles={titles}
+              onDeleteImage={handleImageDelete}
+              onUpdateTitle={handleCaptionUpdate}
+              className="min-h-[200px]"
+            />
           </CardContent>
         </Card>
       </div>

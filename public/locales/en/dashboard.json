@@ -74,7 +74,7 @@
     "noImages": "No images uploaded yet.",
     "maxSize": "PNG, JPG, GIF up to 10MB",
     "yourGallery": "Your Gallery",
-    "galleryDescription": "These images are displayed on your public vendor page.",
+    "galleryDescription": "These images are displayed on your public vendor page. Click on any image to add or edit captions.",
     "dropOrBrowse": "Drop images here or click to browse",
     "fileTypes": "JPEG, PNG, WebP up to 5MB each",
     "noImagesYet": "No images yet",
@@ -82,7 +82,14 @@
     "statistics": "Gallery Statistics",
     "imagesUsed": "Images Used",
     "storageUsed": "Storage Used",
-    "slotsAvailable": "{{count}} of 10 slots available"
+    "slotsAvailable": "{{count}} of 10 slots available",
+    "addCaption": "Add caption...",
+    "editCaption": "Click to edit caption",
+    "captionPlaceholder": "Describe this image...",
+    "saveCaption": "Save Caption",
+    "cancelCaption": "Cancel",
+    "captionUpdated": "Caption updated successfully",
+    "captionError": "Failed to update caption"
   },
   "locations": {
     "title": "Manage Locations",

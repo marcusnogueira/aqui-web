@@ -3,6 +3,7 @@
 import { Navigation } from '@/components/Navigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { VendorLoginButton } from '@/components/VendorLoginButton'
 import { useTranslation } from 'react-i18next';
 import AuthModal from '@/components/AuthModal';
 import { useRouter } from 'next/navigation';
@@ -73,7 +74,7 @@ export default function FAQPage() {
           <h1 className="text-4xl font-bold text-foreground mb-4">
             {t('title')}
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {t('subtitle')}
           </p>
         </div>
@@ -81,8 +82,8 @@ export default function FAQPage() {
         {/* For Customers Section */}
         <section className="mb-12">
           <div className="flex items-center mb-8">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-orange-500 font-bold">👤</span>
+            <div className="w-8 h-8 bg-chili-orange/10 dark:bg-chili-orange/20 rounded-full flex items-center justify-center mr-3">
+              <span className="text-chili-orange font-bold">👤</span>
             </div>
             <h2 className="text-3xl font-bold text-foreground">{t('forCustomers.title')}</h2>
           </div>
@@ -92,7 +93,7 @@ export default function FAQPage() {
           <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forCustomers.findVendors.question')}
               </h3>
-              <div className="text-gray-700 space-y-3">
+              <div className="text-foreground space-y-3">
                 <p>
                   {t('forCustomers.findVendors.answer1')}
                 </p>
@@ -106,7 +107,7 @@ export default function FAQPage() {
           <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forCustomers.followVendors.question')}
               </h3>
-              <p className="text-gray-700">
+              <p className="text-foreground">
                 {t('forCustomers.followVendors.answer')}
               </p>
             </div>
@@ -115,7 +116,7 @@ export default function FAQPage() {
                <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forCustomers.leaveReviews.question')}
               </h3>
-              <p className="text-gray-700">
+              <p className="text-foreground">
                 {t('forCustomers.leaveReviews.answer')}
               </p>
             </div>
@@ -124,7 +125,7 @@ export default function FAQPage() {
                <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forCustomers.reportVendor.question')}
               </h3>
-              <p className="text-gray-700">
+              <p className="text-foreground">
                 {t('forCustomers.reportVendor.answer')}
               </p>
             </div>
@@ -134,8 +135,8 @@ export default function FAQPage() {
         {/* For Vendors Section */}
         <section className="mb-12">
           <div className="flex items-center mb-8">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-orange-500 font-bold">🧑‍🍳</span>
+            <div className="w-8 h-8 bg-mission-teal/10 dark:bg-mission-teal/20 rounded-full flex items-center justify-center mr-3">
+              <span className="text-mission-teal font-bold">🧑‍🍳</span>
             </div>
             <h2 className="text-3xl font-bold text-foreground">{t('forVendors.title')}</h2>
           </div>
@@ -145,7 +146,7 @@ export default function FAQPage() {
                <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forVendors.joinAsVendor.question')}
               </h3>
-              <p className="text-gray-700">
+              <p className="text-foreground">
                 {t('forVendors.joinAsVendor.answer')}
               </p>
             </div>
@@ -154,7 +155,7 @@ export default function FAQPage() {
                <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forVendors.whatCanISell.question')}
               </h3>
-              <div className="text-gray-700 space-y-3">
+              <div className="text-foreground space-y-3">
                 <p>
                   {t('forVendors.whatCanISell.answer1')}
                 </p>
@@ -168,7 +169,7 @@ export default function FAQPage() {
                <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forVendors.needLicense.question')}
               </h3>
-              <p className="text-gray-700">
+              <p className="text-foreground">
                 {t('forVendors.needLicense.answer')}
               </p>
             </div>
@@ -177,7 +178,7 @@ export default function FAQPage() {
                <h3 className="text-xl font-semibold text-foreground mb-3">
                 {t('forVendors.updateLocation.question')}
               </h3>
-              <p className="text-gray-700">
+              <p className="text-foreground">
                 {t('forVendors.updateLocation.answer')}
               </p>
             </div>
@@ -187,8 +188,8 @@ export default function FAQPage() {
         {/* Contact Us Section */}
         <section className="mb-12">
           <div className="flex items-center mb-8">
-            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-orange-500 font-bold">📧</span>
+            <div className="w-8 h-8 bg-bay-cypress/10 dark:bg-bay-cypress/20 rounded-full flex items-center justify-center mr-3">
+              <span className="text-bay-cypress font-bold">📧</span>
             </div>
             <h2 className="text-3xl font-bold text-foreground">{t('contactUs.title')}</h2>
           </div>
@@ -197,12 +198,12 @@ export default function FAQPage() {
              <h3 className="text-xl font-semibold text-foreground mb-4">
               {t('contactUs.question')}
             </h3>
-            <div className="text-gray-700 space-y-2">
+            <div className="text-foreground space-y-2">
               <p>
-                {t('contactUs.generalEmail')} <a href="mailto:hello@get-aqui.com" className="text-orange-500 hover:text-orange-600 underline">hello@get-aqui.com</a>
+                {t('contactUs.generalEmail')} <a href="mailto:hello@get-aqui.com" className="text-chili-orange hover:text-chili-orange/80 underline">hello@get-aqui.com</a>
               </p>
               <p>
-                {t('contactUs.supportEmail')} <a href="mailto:support@get-aqui.com" className="text-orange-500 hover:text-orange-600 underline">support@get-aqui.com</a>
+                {t('contactUs.supportEmail')} <a href="mailto:support@get-aqui.com" className="text-chili-orange hover:text-chili-orange/80 underline">support@get-aqui.com</a>
               </p>
             </div>
           </div>
@@ -210,7 +211,7 @@ export default function FAQPage() {
 
         {/* Thank You Message */}
         <div className="text-center mb-12">
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-muted-foreground">
             {t('thankYou')}
           </p>
         </div>
@@ -218,22 +219,25 @@ export default function FAQPage() {
         {/* Join the Movement */}
         <section className="text-center">
           <h2 className="text-3xl font-bold text-foreground mb-8">{t('joinMovement.title')}</h2>
-          <div className="space-x-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <button 
               onClick={() => router.push('/')}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              className="bg-chili-orange hover:bg-bay-cypress text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
               {t('common:explore')}
             </button>
             <button 
               onClick={() => setShowAuthModal(true)}
-              className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-lg font-medium transition-colors"
+              className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
             >
               {t('common:login')}
             </button>
+            <VendorLoginButton className="bg-mission-teal hover:bg-mission-teal/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+              Vendor Login
+            </VendorLoginButton>
             <button 
               onClick={() => router.push('/fund')}
-              className="border border-orange-500 text-orange-500 hover:bg-orange-50 px-6 py-3 rounded-lg font-medium transition-colors"
+              className="border border-chili-orange text-chili-orange hover:bg-market-cream dark:hover:bg-gray-800 px-6 py-3 rounded-lg font-medium transition-colors"
             >
               {t('common:supportOurMission')}
             </button>

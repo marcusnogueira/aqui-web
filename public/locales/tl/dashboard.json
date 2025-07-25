@@ -74,7 +74,7 @@
     "noImages": "Wala pang mga larawang na-upload.",
     "maxSize": "PNG, JPG, GIF hanggang 10MB",
     "yourGallery": "Iyong Gallery",
-    "galleryDescription": "Ang mga larawang ito ay ipinapakita sa iyong pampublikong pahina ng vendor.",
+    "galleryDescription": "Ang mga larawang ito ay ipinapakita sa iyong pampublikong pahina ng vendor. I-click ang kahit anong larawan upang magdagdag o mag-edit ng mga caption.",
     "dropOrBrowse": "I-drop ang mga larawan dito o i-click upang mag-browse",
     "fileTypes": "JPEG, PNG, WebP hanggang 5MB bawat isa",
     "noImagesYet": "Wala pang mga larawan",
@@ -82,7 +82,14 @@
     "statistics": "Mga Istatistika ng Gallery",
     "imagesUsed": "Mga Ginamit na Larawan",
     "storageUsed": "Ginamit na Storage",
-    "slotsAvailable": "{{count}} sa 10 mga slot na magagamit"
+    "slotsAvailable": "{{count}} sa 10 mga slot na magagamit",
+    "addCaption": "Magdagdag ng caption...",
+    "editCaption": "I-click upang i-edit ang caption",
+    "captionPlaceholder": "Ilarawan ang larawang ito...",
+    "saveCaption": "I-save ang Caption",
+    "cancelCaption": "Kanselahin",
+    "captionUpdated": "Matagumpay na na-update ang caption",
+    "captionError": "Hindi ma-update ang caption"
   },
   "locations": {
     "title": "Pamahalaan ang mga Lokasyon",

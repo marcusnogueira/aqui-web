@@ -74,7 +74,7 @@
     "noImages": "Aún no se han subido imágenes.",
     "maxSize": "PNG, JPG, GIF de hasta 10MB",
     "yourGallery": "Tu Galería",
-    "galleryDescription": "Estas imágenes se muestran en tu página pública de vendedor.",
+    "galleryDescription": "Estas imágenes se muestran en tu página pública de vendedor. Haz clic en cualquier imagen para agregar o editar descripciones.",
     "dropOrBrowse": "Arrastra las imágenes aquí o haz clic para buscar",
     "fileTypes": "JPEG, PNG, WebP de hasta 5MB cada uno",
     "noImagesYet": "Aún no hay imágenes",
@@ -82,7 +82,14 @@
     "statistics": "Estadísticas de la Galería",
     "imagesUsed": "Imágenes Usadas",
     "storageUsed": "Almacenamiento Usado",
-    "slotsAvailable": "{{count}} de 10 espacios disponibles"
+    "slotsAvailable": "{{count}} de 10 espacios disponibles",
+    "addCaption": "Agregar descripción...",
+    "editCaption": "Haz clic para editar descripción",
+    "captionPlaceholder": "Describe esta imagen...",
+    "saveCaption": "Guardar Descripción",
+    "cancelCaption": "Cancelar",
+    "captionUpdated": "Descripción actualizada exitosamente",
+    "captionError": "Error al actualizar descripción"
   },
   "locations": {
     "title": "Administrar Ubicaciones",
