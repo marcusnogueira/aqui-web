@@ -39,7 +39,7 @@ export interface VendorForMap extends VendorWithLiveSession {
   hasTimer?: boolean
 }
 
-// Coordinate extraction utility
+// Coordinate extraction utility (strict - only live session coordinates)
 export const extractCoordinatesFromVendor = (vendor: VendorWithLiveSession): { lat: number; lng: number } => {
   try {
     if (!vendor) {
@@ -68,6 +68,36 @@ export const extractCoordinatesFromVendor = (vendor: VendorWithLiveSession): { l
     }
   } catch (error) {
     throw errorHandler.handle(error as Error, 'extractCoordinatesFromVendor')
+  }
+}
+
+// Flexible coordinate extraction utility (tries live session first, then static location)
+export const extractAnyCoordinatesFromVendor = (vendor: VendorWithLiveSession): { lat: number; lng: number } | null => {
+  try {
+    // First try live session coordinates
+    if (vendor.live_session && 
+        vendor.live_session.is_active &&
+        typeof vendor.live_session.latitude === 'number' && 
+        typeof vendor.live_session.longitude === 'number') {
+      return { 
+        lat: vendor.live_session.latitude, 
+        lng: vendor.live_session.longitude 
+      }
+    }
+    
+    // Then try static location coordinates
+    if (typeof vendor.latitude === 'number' && typeof vendor.longitude === 'number') {
+      return { 
+        lat: vendor.latitude, 
+        lng: vendor.longitude 
+      }
+    }
+    
+    // No coordinates available
+    return null
+  } catch (error) {
+    console.warn('Error extracting coordinates from vendor:', error)
+    return null
   }
 }
 

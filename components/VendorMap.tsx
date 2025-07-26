@@ -4,7 +4,7 @@ import React, { useMemo } from 'react'
 import OpenStreetMap from './OpenStreetMap'
 import { VendorMapProps } from '@/types/vendor'
 import { 
-  extractCoordinatesFromVendor, 
+  extractAnyCoordinatesFromVendor, 
   calculateTimeRemaining, 
   formatTimeRemaining,
   getVendorStatus,
@@ -16,8 +16,13 @@ function VendorMap({ vendors, userLocation, onVendorClick, onMapBoundsChange, on
   const markers = useMemo(() => {
     return (vendors || [])
       .map(vendor => {
-        const coordinates = extractCoordinatesFromVendor(vendor)
-        if (!coordinates) return null
+        // Extract coordinates using the flexible utility function
+        const coordinates = extractAnyCoordinatesFromVendor(vendor)
+        
+        // Skip vendors without any coordinates
+        if (!coordinates) {
+          return null
+        }
         
         const status = getVendorStatus(vendor)
         const categoryIcon = vendor.subcategory?.toLowerCase().includes('food') ? '🍽️' : 

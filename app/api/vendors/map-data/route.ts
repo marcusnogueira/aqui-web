@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import type { Database } from '@/lib/database.types'
 import { 
   extractCoordinatesFromVendor, 
+  extractAnyCoordinatesFromVendor,
   calculateTimeRemaining, 
   getVendorStatus,
   VendorWithLiveSession
@@ -139,22 +140,20 @@ export async function GET(request: NextRequest) {
             ? vendor.vendor_live_sessions.find(session => session.is_active)
             : vendor.vendor_live_sessions
           
-          // Try to extract coordinates from live session first
-          if (liveSession && liveSession.is_active) {
-            try {
-              const vendorWithSession = { ...vendor, live_session: liveSession } as unknown as VendorWithLiveSession
-              coordinates = extractCoordinatesFromVendor(vendorWithSession)
-              status = getVendorStatus(vendorWithSession)
-              timeRemainingMinutes = calculateTimeRemaining(vendorWithSession)
-              hasTimer = timeRemainingMinutes > 0
-            } catch (error) {
-              console.warn(`Failed to extract live session data for vendor ${vendor.id}:`, error)
-            }
+          // Create a properly structured vendor object for processing
+          const vendorWithSession: VendorWithLiveSession = {
+            ...vendor,
+            live_session: liveSession || null
           }
           
-          // If no live session coordinates, try static location coordinates
-          if (!coordinates && vendor.latitude && vendor.longitude) {
-            coordinates = { lat: vendor.latitude, lng: vendor.longitude }
+          // Extract coordinates using the flexible utility
+          coordinates = extractAnyCoordinatesFromVendor(vendorWithSession)
+          
+          // Calculate status and timing if we have a live session
+          if (liveSession && liveSession.is_active) {
+            status = getVendorStatus(vendorWithSession)
+            timeRemainingMinutes = calculateTimeRemaining(vendorWithSession)
+            hasTimer = timeRemainingMinutes > 0
           }
           
           // Skip vendors without any coordinates (can't show on map)
@@ -176,7 +175,7 @@ export async function GET(request: NextRequest) {
             categoryIcon,
             timeRemaining: timeRemainingMinutes,
             hasTimer,
-            vendor: vendor as unknown as VendorWithLiveSession
+            vendor: vendorWithSession
           } as MapMarkerData
         } catch (error) {
           console.warn(`Failed to process vendor ${vendor.id}:`, error)
