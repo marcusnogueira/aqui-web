@@ -12,6 +12,7 @@ interface UseLiveVendorsParams {
   userLocation?: { lat: number; lng: number } | null
   mapBounds?: { north: number; south: number; east: number; west: number } | null
   enabled?: boolean
+  showAll?: boolean // New parameter to show all vendors (for list view)
 }
 
 interface UseLiveVendorsReturn {
@@ -35,12 +36,17 @@ const fetchVendors = async (url: string): Promise<Vendor[]> => {
 }
 
 // Generate ULTRA-STABLE cache key - only search query matters
-const generateCacheKey = (searchQuery: string): string => {
+const generateCacheKey = (searchQuery: string, showAll: boolean = false): string => {
   const searchParams = new URLSearchParams()
   
   // Only add search query if it's meaningful (more than 2 characters)
   if (searchQuery?.trim() && searchQuery.trim().length > 2) {
     searchParams.set('q', searchQuery.trim())
+  }
+  
+  // Add showAll parameter for list view to get all vendors
+  if (showAll) {
+    searchParams.set('showAll', 'true')
   }
   
   searchParams.set('limit', '100')
@@ -50,12 +56,12 @@ const generateCacheKey = (searchQuery: string): string => {
 }
 
 export function useLiveVendors(params: UseLiveVendorsParams = {}): UseLiveVendorsReturn {
-  const { searchQuery = '', enabled = true } = params
+  const { searchQuery = '', enabled = true, showAll = false } = params
   
-  // ULTRA-STABLE cache key - only depends on search query
+  // ULTRA-STABLE cache key - depends on search query and showAll flag
   const cacheKey = useMemo(() => {
-    return enabled ? generateCacheKey(searchQuery) : null
-  }, [enabled, searchQuery])
+    return enabled ? generateCacheKey(searchQuery, showAll) : null
+  }, [enabled, searchQuery, showAll])
   
   // Use SWR for data fetching with AGGRESSIVE caching to prevent refresh loops
   const { data: vendors = [], error, isLoading, mutate: swrMutate } = useSWR(

@@ -69,31 +69,30 @@ async function debugLiveSessions() {
       .from('vendors')
       .select('*')
       .in('id', vendorIds)
-      .eq('is_approved', true)
-      .eq('is_active', true)
+      .eq('status', 'approved')
 
     if (vendorsError) {
       console.error('❌ Error fetching vendors:', vendorsError);
       return;
     }
 
-    console.log(`   Found ${vendorsData?.length || 0} approved and active vendors`);
+    console.log(`   Found ${vendorsData?.length || 0} approved vendors`);
     
     if (!vendorsData || vendorsData.length === 0) {
-      console.log('❌ NO APPROVED AND ACTIVE VENDORS FOUND!');
+      console.log('❌ NO APPROVED VENDORS FOUND!');
       
       // Check vendors without approval/active filter
       const { data: allVendors } = await supabase
         .from('vendors')
-        .select('id, business_name, is_approved, is_active')
+        .select('id, business_name, status')
         .in('id', vendorIds)
       
-      console.log(`   Total vendors (without approval/active filter): ${allVendors?.length || 0}`);
+      console.log(`   Total vendors (without approval filter): ${allVendors?.length || 0}`);
       
       if (allVendors && allVendors.length > 0) {
-        console.log('\n🔍 Vendors not meeting approval/active criteria:');
+        console.log('\n🔍 Vendors not meeting approval criteria:');
         allVendors.forEach(vendor => {
-          const status = `approved=${vendor.is_approved}, active=${vendor.is_active}`;
+          const status = `status=${vendor.status}`;
           console.log(`   ${vendor.business_name}: ${status}`);
         });
       }

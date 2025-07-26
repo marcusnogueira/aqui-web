@@ -197,7 +197,7 @@ export async function DELETE(request: NextRequest) {
 
     // End the active session
     console.log('🛑 Ending active live session...')
-    const { data: updatedSession, error: updateError } = await supabase
+    const { data: updatedSessions, error: updateError } = await supabase
       .from('vendor_live_sessions')
       .update({
         end_time: new Date().toISOString(),
@@ -207,7 +207,6 @@ export async function DELETE(request: NextRequest) {
       .eq('vendor_id', vendor.id)
       .eq('is_active', true)
       .select()
-      .single()
 
     if (updateError) {
       console.error('❌ Failed to end live session:', updateError)
@@ -216,6 +215,17 @@ export async function DELETE(request: NextRequest) {
         details: updateError.message 
       }, { status: 500 })
     }
+
+    // Check if any sessions were actually updated
+    if (!updatedSessions || updatedSessions.length === 0) {
+      console.log('⚠️ No active session found to end')
+      return NextResponse.json({ 
+        error: 'No active live session found to end',
+        message: 'There is no active live session to end. The session may have already been ended or expired.'
+      }, { status: 404 })
+    }
+
+    const updatedSession = updatedSessions[0] // Get the first (and should be only) updated session
 
     console.log('✅ Live session ended successfully')
 

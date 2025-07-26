@@ -51,7 +51,8 @@ export default function HomePage() {
     searchQuery,
     userLocation,
     mapBounds,
-    enabled: !loading // Only fetch vendors after auth check is complete
+    enabled: !loading, // Only fetch vendors after auth check is complete
+    showAll: viewMode === 'list' // Show all vendors in list view, only live ones in map view
   })
   
   const { vendors = [], isLoading: loadingVendors = false, error: vendorsError = null, mutate: refreshVendors = () => {} } = vendorData || {}

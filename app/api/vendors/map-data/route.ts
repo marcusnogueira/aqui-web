@@ -52,8 +52,9 @@ export async function GET(request: NextRequest) {
     // Get search parameters for potential filtering
     const { searchParams } = new URL(request.url)
     const bounds = searchParams.get('bounds')
+    const showAll = searchParams.get('showAll') === 'true' // New parameter for list view
     
-    // Fetch vendors with live sessions
+    // Build query based on whether we want all vendors or just those with live sessions
     let query = supabase
       .from('vendors')
       .select(`
@@ -71,11 +72,20 @@ export async function GET(request: NextRequest) {
           updated_at
         )
       `)
-      .eq('vendor_live_sessions.is_active', true)
-      .not('vendor_live_sessions', 'is', null)
 
-    // Apply bounds filtering if provided
-    if (bounds) {
+    // If showAll is true (list view), get all active vendors regardless of live session status
+    if (showAll) {
+      // For list view: get all active/approved vendors, with optional live session data
+      query = query.in('status', ['active', 'approved'])
+    } else {
+      // For map view: only get vendors with active live sessions
+      query = query
+        .eq('vendor_live_sessions.is_active', true)
+        .not('vendor_live_sessions', 'is', null)
+    }
+
+    // Apply bounds filtering if provided (only for map view)
+    if (bounds && !showAll) {
       try {
         const boundsObj = JSON.parse(bounds)
         query = query
