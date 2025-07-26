@@ -28,19 +28,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Location coordinates are required' }, { status: 400 })
     }
 
-    // Use service role client directly to avoid RLS issues
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Create Supabase client - use service role to bypass RLS issues during migration
+    let supabase
     
-    console.log('✅ Using service role client to bypass RLS')
+    try {
+      // Try to use regular client with user context first
+      const cookieStore = await cookies()
+      const userSupabase = createSupabaseServerClient(cookieStore)
+      
+      await userSupabase.rpc('set_current_user_context', {
+        user_id: session.user.id
+      })
+      
+      supabase = userSupabase
+      console.log('✅ User context set for RLS')
+    } catch (contextError) {
+      console.warn('⚠️ RLS context failed, using service role client:', contextError)
+      
+      // Fallback to service role client to bypass RLS during migration
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+      console.log('✅ Using service role client to bypass RLS')
+    }
 
     // First, find the vendor for this user
     console.log('🔍 Finding vendor for user...')
@@ -57,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Vendor found:', { id: vendor.id, name: vendor.business_name, status: vendor.status })
 
-    // Check if vendor is approved
+    // Check if vendor is approved (simplified check)
     if (vendor.status !== 'active' && vendor.status !== 'approved') {
       console.error('❌ Vendor not approved:', vendor.status)
       return NextResponse.json({ 
@@ -76,7 +93,7 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single()
 
-    if (checkError && checkError.code !== 'PGRST116') {
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
       console.error('❌ Error checking existing session:', checkError)
       return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 })
     }
@@ -92,7 +109,7 @@ export async function POST(request: NextRequest) {
     const autoEndTime = duration ? 
       new Date(Date.now() + duration * 60 * 1000).toISOString() : null
 
-    // Insert new live session using service role (bypasses RLS)
+    // Insert new live session
     console.log('💾 Creating new live session...')
     const { data: newSession, error: insertError } = await supabase
       .from('vendor_live_sessions')
@@ -118,6 +135,15 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Live session started successfully:', newSession.id)
+
+    // Clear user context if we used the regular client
+    try {
+      if (supabase && typeof supabase.rpc === 'function') {
+        await supabase.rpc('clear_current_user_context')
+      }
+    } catch (clearError) {
+      console.warn('⚠️ Failed to clear user context:', clearError)
+    }
 
     return NextResponse.json({ 
       success: true,
@@ -197,7 +223,7 @@ export async function DELETE(request: NextRequest) {
 
     // End the active session
     console.log('🛑 Ending active live session...')
-    const { data: updatedSessions, error: updateError } = await supabase
+    const { data: updatedSession, error: updateError } = await supabase
       .from('vendor_live_sessions')
       .update({
         end_time: new Date().toISOString(),
@@ -207,6 +233,7 @@ export async function DELETE(request: NextRequest) {
       .eq('vendor_id', vendor.id)
       .eq('is_active', true)
       .select()
+      .single()
 
     if (updateError) {
       console.error('❌ Failed to end live session:', updateError)
@@ -215,17 +242,6 @@ export async function DELETE(request: NextRequest) {
         details: updateError.message 
       }, { status: 500 })
     }
-
-    // Check if any sessions were actually updated
-    if (!updatedSessions || updatedSessions.length === 0) {
-      console.log('⚠️ No active session found to end')
-      return NextResponse.json({ 
-        error: 'No active live session found to end',
-        message: 'There is no active live session to end. The session may have already been ended or expired.'
-      }, { status: 404 })
-    }
-
-    const updatedSession = updatedSessions[0] // Get the first (and should be only) updated session
 
     console.log('✅ Live session ended successfully')
 
