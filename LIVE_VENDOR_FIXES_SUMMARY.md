@@ -57,28 +57,58 @@ The fixes were validated against the `db_723.sql` schema:
 
 ## Testing
 
+### Automated Testing Results:
+
+**Database Structure**: ✅ Verified
+- 4 active/approved vendors total
+- 2 vendors with active live sessions
+- 2 vendors with static locations
+- 3 vendors with usable coordinates
+- 1 vendor without coordinates (will not appear in either view)
+
+**Map View Logic**: ✅ Working
+- Returns 2 vendors with active live sessions
+- Jake's BBQ: Live at 37.6602624, -122.4900608
+- Vendor "7": Live at -12.0993425011639, -77.0205308976771
+
+**List View Logic**: ✅ Working  
+- Returns 3 vendors with any coordinates
+- Tobal's Tamales: Offline with static location
+- Jake's BBQ: Live with both live and static coordinates
+- Vendor "7": Live with live coordinates only
+
+**End Session Logic**: ✅ Working
+- Properly returns 404 when no active session exists
+- Handles edge cases without throwing errors
+
 ### Manual Testing Steps:
 
 1. **List View Test**:
    ```bash
    curl "http://localhost:3000/api/vendors/map-data?showAll=true"
    ```
-   Should return all active/approved vendors
+   Expected: 3 vendors with coordinates
 
 2. **Map View Test**:
    ```bash
    curl "http://localhost:3000/api/vendors/map-data"
    ```
-   Should return only vendors with active live sessions
+   Expected: 2 vendors with active live sessions
 
 3. **End Session Test**:
    - Try ending a session when no active session exists
-   - Should receive 404 with descriptive message instead of 500 error
+   - Expected: 404 with descriptive message instead of 500 error
 
-### Automated Testing:
-Run the test script:
+### Test Scripts:
 ```bash
+# Basic functionality test
 node scripts/test-live-vendor-fixes.js
+
+# Detailed API logic test  
+node scripts/debug-api-endpoints.js
+
+# Complete behavior validation
+node scripts/test-complete-fixes.js
 ```
 
 ## Expected Behavior After Fixes

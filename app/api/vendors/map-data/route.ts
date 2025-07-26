@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       .from('vendors')
       .select(`
         *,
-        live_session:vendor_live_sessions(
+        vendor_live_sessions!inner(
           id,
           vendor_id,
           latitude,
@@ -68,20 +68,35 @@ export async function GET(request: NextRequest) {
           end_time,
           auto_end_time,
           is_active,
-          created_at,
-          updated_at
+          created_at
         )
       `)
 
     // If showAll is true (list view), get all active vendors regardless of live session status
     if (showAll) {
       // For list view: get all active/approved vendors, with optional live session data
-      query = query.in('status', ['active', 'approved'])
+      // Use left join to include vendors without live sessions
+      query = supabase
+        .from('vendors')
+        .select(`
+          *,
+          vendor_live_sessions(
+            id,
+            vendor_id,
+            latitude,
+            longitude,
+            start_time,
+            end_time,
+            auto_end_time,
+            is_active,
+            created_at
+          )
+        `)
+        .in('status', ['active', 'approved'])
     } else {
       // For map view: only get vendors with active live sessions
       query = query
         .eq('vendor_live_sessions.is_active', true)
-        .not('vendor_live_sessions', 'is', null)
     }
 
     // Apply bounds filtering if provided (only for map view)
@@ -113,14 +128,40 @@ export async function GET(request: NextRequest) {
     const markers: MapMarkerData[] = (vendors || [])
       .map(vendor => {
         try {
-          // Extract coordinates
-          const coordinates = extractCoordinatesFromVendor(vendor as unknown as VendorWithLiveSession)
-          if (!coordinates) return null
+          // For showAll mode, we need to handle vendors without live sessions
+          let coordinates: { lat: number; lng: number } | null = null
+          let status = 'offline'
+          let timeRemainingMinutes = 0
+          let hasTimer = false
           
-          // Calculate status and timing
-          const status = getVendorStatus(vendor as unknown as VendorWithLiveSession)
-          const timeRemainingMinutes = calculateTimeRemaining(vendor as unknown as VendorWithLiveSession)
-          const hasTimer = timeRemainingMinutes > 0
+          // Handle different response structures based on query type
+          const liveSession = Array.isArray(vendor.vendor_live_sessions) 
+            ? vendor.vendor_live_sessions.find(session => session.is_active)
+            : vendor.vendor_live_sessions
+          
+          // Try to extract coordinates from live session first
+          if (liveSession && liveSession.is_active) {
+            try {
+              const vendorWithSession = { ...vendor, live_session: liveSession } as unknown as VendorWithLiveSession
+              coordinates = extractCoordinatesFromVendor(vendorWithSession)
+              status = getVendorStatus(vendorWithSession)
+              timeRemainingMinutes = calculateTimeRemaining(vendorWithSession)
+              hasTimer = timeRemainingMinutes > 0
+            } catch (error) {
+              console.warn(`Failed to extract live session data for vendor ${vendor.id}:`, error)
+            }
+          }
+          
+          // If no live session coordinates, try static location coordinates
+          if (!coordinates && vendor.latitude && vendor.longitude) {
+            coordinates = { lat: vendor.latitude, lng: vendor.longitude }
+          }
+          
+          // Skip vendors without any coordinates (can't show on map)
+          if (!coordinates) {
+            console.warn(`Vendor ${vendor.id} has no coordinates, skipping`)
+            return null
+          }
           
           // Get category icon
           const categoryIcon = getCategoryIcon(vendor.subcategory)
