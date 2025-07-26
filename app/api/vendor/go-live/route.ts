@@ -141,59 +141,99 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     console.log('🔄 Starting end-live API...')
+    console.log('🔄 Request headers:', Object.fromEntries(request.headers.entries()))
     
     // Check authentication
     const session = await auth()
     if (!session?.user?.id) {
       console.error('❌ Authentication failed: No session or user ID')
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      console.error('❌ Session object:', session)
+      return NextResponse.json({ 
+        error: 'Not authenticated',
+        debug: 'No valid session found'
+      }, { status: 401 })
     }
 
-    console.log('✅ Authentication successful:', { userId: session.user.id })
+    console.log('✅ Authentication successful:', { 
+      userId: session.user.id,
+      userEmail: session.user.email 
+    })
 
-    // Create Supabase client - use service role to bypass RLS issues during migration
-    let supabase
-    
-    try {
-      // Try to use regular client with user context first
-      const cookieStore = await cookies()
-      const userSupabase = createSupabaseServerClient(cookieStore)
-      
-      await userSupabase.rpc('set_current_user_context', {
-        user_id: session.user.id
-      })
-      
-      supabase = userSupabase
-      console.log('✅ User context set for RLS (DELETE)')
-    } catch (contextError) {
-      console.warn('⚠️ RLS context failed, using service role client (DELETE):', contextError)
-      
-      // Fallback to service role client to bypass RLS during migration
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          }
+    // Always use service role client for reliability
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
         }
-      )
-      console.log('✅ Using service role client to bypass RLS (DELETE)')
-    }
+      }
+    )
+    
+    console.log('✅ Using service role client for DELETE operation')
 
     // Find the vendor for this user
-    console.log('🔍 Finding vendor for user...')
+    console.log('🔍 Finding vendor for user:', session.user.id)
     const { data: vendor, error: vendorError } = await supabase
       .from('vendors')
-      .select('id')
+      .select('id, business_name, user_id')
       .eq('user_id', session.user.id)
       .single()
 
-    if (vendorError || !vendor) {
-      console.error('❌ Failed to find vendor:', vendorError)
-      return NextResponse.json({ error: 'Vendor profile not found' }, { status: 404 })
+    if (vendorError) {
+      console.error('❌ Vendor query error:', vendorError)
+      return NextResponse.json({ 
+        error: 'Database error finding vendor',
+        details: vendorError.message,
+        debug: { userId: session.user.id }
+      }, { status: 500 })
     }
+
+    if (!vendor) {
+      console.error('❌ No vendor found for user:', session.user.id)
+      return NextResponse.json({ 
+        error: 'Vendor profile not found',
+        debug: { userId: session.user.id }
+      }, { status: 404 })
+    }
+
+    console.log('✅ Vendor found:', { 
+      id: vendor.id, 
+      name: vendor.business_name,
+      userId: vendor.user_id 
+    })
+
+    // Check for active session before trying to end it
+    console.log('🔍 Checking for active session...')
+    const { data: activeSession, error: checkError } = await supabase
+      .from('vendor_live_sessions')
+      .select('id, is_active, start_time')
+      .eq('vendor_id', vendor.id)
+      .eq('is_active', true)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('❌ Error checking active session:', checkError)
+      return NextResponse.json({ 
+        error: 'Database error checking active session',
+        details: checkError.message 
+      }, { status: 500 })
+    }
+
+    if (!activeSession) {
+      console.log('⚠️ No active session found for vendor:', vendor.id)
+      return NextResponse.json({ 
+        error: 'No active live session found to end',
+        message: 'There is no active live session to end. The session may have already been ended or expired.',
+        debug: { vendorId: vendor.id }
+      }, { status: 404 })
+    }
+
+    console.log('✅ Active session found:', {
+      sessionId: activeSession.id,
+      startTime: activeSession.start_time
+    })
 
     // End the active session
     console.log('🛑 Ending active live session...')
@@ -212,43 +252,50 @@ export async function DELETE(request: NextRequest) {
       console.error('❌ Failed to end live session:', updateError)
       return NextResponse.json({ 
         error: 'Failed to end live session', 
-        details: updateError.message 
+        details: updateError.message,
+        debug: { vendorId: vendor.id }
       }, { status: 500 })
     }
 
     // Check if any sessions were actually updated
     if (!updatedSessions || updatedSessions.length === 0) {
-      console.log('⚠️ No active session found to end')
+      console.log('⚠️ No sessions were updated (race condition?)')
       return NextResponse.json({ 
         error: 'No active live session found to end',
-        message: 'There is no active live session to end. The session may have already been ended or expired.'
+        message: 'The session may have been ended by another request or expired.',
+        debug: { vendorId: vendor.id, expectedSessionId: activeSession.id }
       }, { status: 404 })
     }
 
-    const updatedSession = updatedSessions[0] // Get the first (and should be only) updated session
-
-    console.log('✅ Live session ended successfully')
-
-    // Clear user context if we used the regular client
-    try {
-      if (supabase && typeof supabase.rpc === 'function') {
-        await supabase.rpc('clear_current_user_context')
-      }
-    } catch (clearError) {
-      console.warn('⚠️ Failed to clear user context (DELETE):', clearError)
-    }
+    const updatedSession = updatedSessions[0]
+    console.log('✅ Live session ended successfully:', {
+      sessionId: updatedSession.id,
+      endTime: updatedSession.end_time
+    })
 
     return NextResponse.json({ 
       success: true,
       session: updatedSession,
-      message: 'Live session ended successfully!'
+      message: 'Live session ended successfully!',
+      debug: {
+        vendorId: vendor.id,
+        sessionId: updatedSession.id,
+        endedAt: updatedSession.end_time
+      }
     })
 
   } catch (error) {
     console.error('❌ End-live error:', error)
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     
     return NextResponse.json(
-      { error: `Failed to end live session: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { 
+        error: `Failed to end live session: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        debug: {
+          errorType: error instanceof Error ? error.constructor.name : typeof error,
+          timestamp: new Date().toISOString()
+        }
+      },
       { status: 500 }
     )
   }

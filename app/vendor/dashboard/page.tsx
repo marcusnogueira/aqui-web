@@ -383,27 +383,60 @@ export default function VendorDashboardPage() {
 
   const endLiveSession = async () => {
     try {
+      console.log('🔄 Starting end live session request...')
       setLoading(true)
       
       if (!vendor) {
         throw new Error('Vendor not found')
       }
       
+      console.log('📤 Sending DELETE request to /api/vendor/go-live')
       const response = await fetch('/api/vendor/go-live', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        credentials: 'include' // Ensure cookies are sent
       });
 
+      console.log('📥 Response status:', response.status)
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to end live session');
+        const errorData = await response.json();
+        console.error('❌ API Error Response:', errorData)
+        
+        // Show more specific error messages
+        const errorMessage = errorData.message || errorData.error || 'Failed to end live session'
+        const debugInfo = errorData.debug ? ` (Debug: ${JSON.stringify(errorData.debug)})` : ''
+        
+        throw new Error(`${errorMessage}${debugInfo}`)
       }
 
+      const result = await response.json()
+      console.log('✅ End session successful:', result)
+      
       setLiveSession(null)
-      alert(t('alerts.endSessionSuccess'))
+      
+      // Show success message
+      const successMessage = result.message || t('alerts.endSessionSuccess') || 'Live session ended successfully!'
+      alert(successMessage)
+      
+      // Refresh vendor data to ensure UI is in sync
+      await fetchVendorData()
+      
     } catch (error) {
-      console.error('Error ending live session:', error)
-      alert(t('alerts.endSessionError'))
+      console.error('❌ Error ending live session:', error)
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      
+      // Show detailed error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Failed to end live session: ${errorMessage}`)
+      
     } finally {
       setLoading(false)
     }
