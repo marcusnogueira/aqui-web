@@ -109,6 +109,12 @@ export default function VendorProfilePage() {
         return;
       }
       
+      if (!vendorId) {
+        setError('Invalid vendor ID');
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       
       // Fetch vendor basic info
@@ -123,15 +129,22 @@ export default function VendorProfilePage() {
       if (vendorError) throw vendorError;
       if (!vendorData) throw new Error('Vendor not found');
 
-      // Fetch vendor location
-      const locationResult = await supabase
-        .from('vendor_static_locations')
-        .select('*')
-        .eq('vendor_id', vendorId)
-        .eq('is_primary', true)
-        .single();
-      
-      const { data: locationData } = locationResult || { data: null };
+      // Fetch vendor location (get the first/most recent one since is_primary doesn't exist)
+      let locationData = null;
+      try {
+        const locationResult = await supabase
+          .from('vendor_static_locations')
+          .select('*')
+          .eq('vendor_id', vendorId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        locationData = locationResult.data;
+      } catch (locationError) {
+        console.warn('No static location found for vendor:', vendorId);
+        // This is not a critical error, vendor can exist without static location
+      }
 
       // Fetch announcements using the API endpoint
       let announcementsData = null;
@@ -147,16 +160,21 @@ export default function VendorProfilePage() {
         console.error('Error fetching announcements:', error);
       }
 
-      // Fetch specials
-      const specialsResult = await supabase
-        .from('vendor_specials')
-        .select('*')
-        .eq('vendor_id', vendorId)
-        .eq('is_active', true)
-        .gte('ends_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
-      
-      const { data: specialsData } = specialsResult || { data: null };
+      // Fetch specials (simplified since is_active and ends_at columns don't exist)
+      let specialsData = null;
+      try {
+        const specialsResult = await supabase
+          .from('vendor_specials')
+          .select('*')
+          .eq('vendor_id', vendorId)
+          .order('created_at', { ascending: false });
+        
+        specialsData = specialsResult.data;
+      } catch (specialsError) {
+        console.warn('Error fetching specials for vendor:', vendorId, specialsError);
+        // This is not a critical error, vendor can exist without specials
+        specialsData = [];
+      }
 
       // Fetch reviews via API
       const reviewsResponse = await fetch(`/api/reviews?vendor_id=${vendorId}`);
@@ -167,15 +185,21 @@ export default function VendorProfilePage() {
       }
 
       // Fetch live session to determine status
-      const liveSessionResult = await supabase
-        .from('vendor_live_sessions')
-        .select('*')
-        .eq('vendor_id', vendorId)
-        .eq('is_active', true)
-        .is('end_time', null)
-        .single();
-      
-      const { data: liveSession } = liveSessionResult || { data: null };
+      let liveSession = null;
+      try {
+        const liveSessionResult = await supabase
+          .from('vendor_live_sessions')
+          .select('*')
+          .eq('vendor_id', vendorId)
+          .eq('is_active', true)
+          .is('end_time', null)
+          .single();
+        
+        liveSession = liveSessionResult.data;
+      } catch (sessionError) {
+        console.warn('No active live session found for vendor:', vendorId);
+        // This is not a critical error, vendor can exist without live session
+      }
 
       // Determine vendor status using shared utility
       const statusInfo = getDetailedVendorStatus({
@@ -230,8 +254,28 @@ export default function VendorProfilePage() {
     }
   };
 
-  // Extract coordinates for directions
-  const coordinates = vendor ? extractCoordinatesFromVendor(vendor as unknown as VendorWithLiveSession) : null;
+  // Extract coordinates for directions - handle vendors without live sessions
+  const coordinates = useMemo(() => {
+    if (!vendor) return null;
+    
+    try {
+      // First try to get coordinates from live session
+      if (vendor.live_session && vendor.live_session.latitude && vendor.live_session.longitude) {
+        return extractCoordinatesFromVendor(vendor as unknown as VendorWithLiveSession);
+      }
+    } catch (error) {
+      // If live session extraction fails, try static location
+      console.warn('Failed to extract live session coordinates, trying static location');
+    }
+    
+    // Fallback to static location coordinates
+    if (vendor.location && vendor.location.latitude && vendor.location.longitude) {
+      return { lat: vendor.location.latitude, lng: vendor.location.longitude };
+    }
+    
+    // No coordinates available
+    return null;
+  }, [vendor]);
 
   const submitReview = async () => {
     if (!user || !newReview.comment.trim() || !supabase) return;
