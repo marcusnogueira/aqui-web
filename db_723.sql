@@ -120,8 +120,8 @@ CREATE OR REPLACE FUNCTION "public"."clear_current_user_context"() RETURNS "void
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
 BEGIN
-    PERFORM set_config('app.current_user_id', '', true);
-    PERFORM set_config('app.current_role', '', true);
+  PERFORM set_config('app.current_user_id', '', true);
+  PERFORM set_config('app.current_role', '', true);
 END;
 $$;
 
@@ -262,13 +262,8 @@ CREATE OR REPLACE FUNCTION "public"."set_current_user_context"("user_id" "uuid",
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
 BEGIN
-    -- Set the current user ID for RLS policies
-    PERFORM set_config('app.current_user_id', user_id::TEXT, true);
-    
-    -- Set the current role if provided
-    IF role_name IS NOT NULL THEN
-        PERFORM set_config('app.current_role', role_name, true);
-    END IF;
+  PERFORM set_config('app.current_user_id', user_id::text, true);
+  PERFORM set_config('app.current_role', COALESCE(role_name, 'authenticated'), true);
 END;
 $$;
 
@@ -509,7 +504,8 @@ CREATE TABLE IF NOT EXISTS "public"."vendors" (
     "rejection_reason" "text",
     "subcategory__other" "text",
     "gallery_images" "text"[] DEFAULT '{}'::"text"[],
-    "gallery_titles" "text"[] DEFAULT '{}'::"text"[]
+    "gallery_titles" "text"[] DEFAULT '{}'::"text"[],
+    "business_hours" "jsonb"
 );
 
 
@@ -554,6 +550,33 @@ CREATE OR REPLACE VIEW "public"."live_vendors_with_sessions" AS
 
 
 ALTER VIEW "public"."live_vendors_with_sessions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."mock_vendors" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "test_group" "text" NOT NULL,
+    "vendor_name" "text" NOT NULL,
+    "business_type" "text",
+    "subcategory" "text",
+    "tags" "text"[],
+    "contact_email" "text",
+    "phone" "text",
+    "city" "text",
+    "address" "text",
+    "profile_image_url" "text",
+    "banner_image_url" "text"[],
+    "gallery_images" "text"[],
+    "gallery_titles" "text"[],
+    "business_hours" "jsonb",
+    "latitude" double precision,
+    "longitude" double precision,
+    "status" "text" DEFAULT 'pending'::"text",
+    "created_at" timestamp without time zone DEFAULT "now"(),
+    "notes" "text"
+);
+
+
+ALTER TABLE "public"."mock_vendors" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."moderation_logs" (
@@ -884,6 +907,11 @@ ALTER TABLE ONLY "public"."favorites"
 
 
 
+ALTER TABLE ONLY "public"."mock_vendors"
+    ADD CONSTRAINT "mock_vendors_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."moderation_logs"
     ADD CONSTRAINT "moderation_logs_pkey" PRIMARY KEY ("id");
 
@@ -1118,6 +1146,10 @@ CREATE INDEX "idx_vendors_status" ON "public"."vendors" USING "btree" ("status")
 
 
 
+CREATE INDEX "idx_vendors_status_user_id" ON "public"."vendors" USING "btree" ("status", "user_id");
+
+
+
 CREATE UNIQUE INDEX "uniq_live_active" ON "public"."vendor_live_sessions" USING "btree" ("vendor_id") WHERE "is_active";
 
 
@@ -1332,10 +1364,6 @@ CREATE POLICY "Analytics exports are only accessible by service role" ON "public
 
 
 
-CREATE POLICY "Anyone can view live sessions" ON "public"."vendor_live_sessions" FOR SELECT USING (true);
-
-
-
 CREATE POLICY "Anyone can view vendor announcements" ON "public"."vendor_announcements" FOR SELECT USING (true);
 
 
@@ -1377,6 +1405,10 @@ CREATE POLICY "Public can view business subcategories" ON "public"."business_sub
 
 
 CREATE POLICY "Public can view business types" ON "public"."business_types" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Public can view live sessions" ON "public"."vendor_live_sessions" FOR SELECT USING (true);
 
 
 
@@ -1478,12 +1510,6 @@ CREATE POLICY "Vendors can manage their own profile" ON "public"."vendors" USING
 
 
 
-CREATE POLICY "Vendors can manage their own sessions" ON "public"."vendor_live_sessions" USING ((EXISTS ( SELECT 1
-   FROM "public"."vendors"
-  WHERE (("vendors"."id" = "vendor_live_sessions"."vendor_id") AND ("vendors"."user_id" = "public"."get_current_user_id"())))));
-
-
-
 CREATE POLICY "Vendors can manage their own specials" ON "public"."vendor_specials" USING ((EXISTS ( SELECT 1
    FROM "public"."vendors"
   WHERE (("vendors"."id" = "vendor_specials"."vendor_id") AND ("vendors"."user_id" = "public"."get_current_user_id"())))));
@@ -1493,6 +1519,16 @@ CREATE POLICY "Vendors can manage their own specials" ON "public"."vendor_specia
 CREATE POLICY "Vendors can manage their own static locations" ON "public"."vendor_static_locations" USING ((EXISTS ( SELECT 1
    FROM "public"."vendors"
   WHERE (("vendors"."id" = "vendor_static_locations"."vendor_id") AND ("vendors"."user_id" = "public"."get_current_user_id"())))));
+
+
+
+CREATE POLICY "Vendors can manage their sessions" ON "public"."vendor_live_sessions" USING ((EXISTS ( SELECT 1
+   FROM "public"."vendors"
+  WHERE (("vendors"."id" = "vendor_live_sessions"."vendor_id") AND ("vendors"."user_id" = COALESCE((NULLIF("current_setting"('app.current_user_id'::"text", true), ''::"text"))::"uuid", "auth"."uid"(),
+        CASE
+            WHEN (CURRENT_USER = 'service_role'::"name") THEN "vendors"."user_id"
+            ELSE NULL::"uuid"
+        END))))));
 
 
 
@@ -7080,6 +7116,12 @@ GRANT ALL ON TABLE "public"."vendors" TO "service_role";
 GRANT ALL ON TABLE "public"."live_vendors_with_sessions" TO "anon";
 GRANT ALL ON TABLE "public"."live_vendors_with_sessions" TO "authenticated";
 GRANT ALL ON TABLE "public"."live_vendors_with_sessions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."mock_vendors" TO "anon";
+GRANT ALL ON TABLE "public"."mock_vendors" TO "authenticated";
+GRANT ALL ON TABLE "public"."mock_vendors" TO "service_role";
 
 
 

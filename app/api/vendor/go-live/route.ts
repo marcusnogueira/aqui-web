@@ -4,47 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
 
-async function getPlatformSettings() {
-  try {
-    // Use service role client to get platform settings
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
-    const { data: settings, error } = await supabase
-      .from('platform_settings')
-      .select('allow_auto_vendor_approval, require_vendor_approval')
-      .eq('id', 'default')
-      .single()
-    
-    if (error) {
-      console.warn('Failed to get platform settings:', error)
-      // Return default settings if query fails
-      return { 
-        allow_auto_vendor_approval: false, 
-        require_vendor_approval: true 
-      }
-    }
-    
-    return settings || { 
-      allow_auto_vendor_approval: false, 
-      require_vendor_approval: true 
-    }
-  } catch (error) {
-    console.warn('Error getting platform settings:', error)
-    return { 
-      allow_auto_vendor_approval: false, 
-      require_vendor_approval: true 
-    }
-  }
-}
+// Removed problematic getPlatformSettings function
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,36 +28,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Location coordinates are required' }, { status: 400 })
     }
 
-    // Create Supabase client - use service role to bypass RLS issues during migration
-    let supabase
-    
-    try {
-      // Try to use regular client with user context first
-      const cookieStore = await cookies()
-      const userSupabase = createSupabaseServerClient(cookieStore)
-      
-      await userSupabase.rpc('set_current_user_context', {
-        user_id: session.user.id
-      })
-      
-      supabase = userSupabase
-      console.log('✅ User context set for RLS')
-    } catch (contextError) {
-      console.warn('⚠️ RLS context failed, using service role client:', contextError)
-      
-      // Fallback to service role client to bypass RLS during migration
-      supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          }
+    // Use service role client directly to avoid RLS issues
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
         }
-      )
-      console.log('✅ Using service role client to bypass RLS')
-    }
+      }
+    )
+    
+    console.log('✅ Using service role client to bypass RLS')
 
     // First, find the vendor for this user
     console.log('🔍 Finding vendor for user...')
@@ -114,20 +57,15 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Vendor found:', { id: vendor.id, name: vendor.business_name, status: vendor.status })
 
-    // Get platform settings to check approval requirements
-    const platformSettings = await getPlatformSettings()
-    console.log('📋 Platform settings:', platformSettings)
-
-    // Check if vendor can go live based on status and platform settings
-    const canGoLive = checkVendorCanGoLive(vendor.status, platformSettings)
-    if (!canGoLive.allowed) {
-      console.error('❌ Vendor cannot go live:', canGoLive.reason)
+    // Check if vendor is approved
+    if (vendor.status !== 'active' && vendor.status !== 'approved') {
+      console.error('❌ Vendor not approved:', vendor.status)
       return NextResponse.json({ 
-        error: canGoLive.reason 
+        error: `Cannot go live. Vendor status is "${vendor.status}". Please wait for approval.` 
       }, { status: 400 })
     }
 
-    console.log('✅ Vendor can go live:', canGoLive.reason)
+    console.log('✅ Vendor can go live with status:', vendor.status)
 
     // Check for existing active session
     console.log('🔍 Checking for existing active session...')
@@ -138,7 +76,7 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single()
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (checkError && checkError.code !== 'PGRST116') {
       console.error('❌ Error checking existing session:', checkError)
       return NextResponse.json({ error: 'Failed to check existing session' }, { status: 500 })
     }
@@ -154,7 +92,7 @@ export async function POST(request: NextRequest) {
     const autoEndTime = duration ? 
       new Date(Date.now() + duration * 60 * 1000).toISOString() : null
 
-    // Insert new live session
+    // Insert new live session using service role (bypasses RLS)
     console.log('💾 Creating new live session...')
     const { data: newSession, error: insertError } = await supabase
       .from('vendor_live_sessions')
@@ -181,15 +119,6 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Live session started successfully:', newSession.id)
 
-    // Clear user context if we used the regular client
-    try {
-      if (supabase && typeof supabase.rpc === 'function') {
-        await supabase.rpc('clear_current_user_context')
-      }
-    } catch (clearError) {
-      console.warn('⚠️ Failed to clear user context:', clearError)
-    }
-
     return NextResponse.json({ 
       success: true,
       session: newSession,
@@ -199,15 +128,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Go-live error:', error)
     
-    // Try to clear context on error too
-    try {
-      if (supabase && typeof supabase.rpc === 'function') {
-        await supabase.rpc('clear_current_user_context')
-      }
-    } catch (clearError) {
-      console.warn('⚠️ Failed to clear user context on error:', clearError)
-    }
-    
     return NextResponse.json(
       { error: `Failed to start live session: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
@@ -215,62 +135,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to determine if vendor can go live based on status and platform settings
-function checkVendorCanGoLive(vendorStatus: string | null, platformSettings: any) {
-  // Handle null status
-  if (!vendorStatus) {
-    return {
-      allowed: false,
-      reason: 'Vendor status is not set. Please complete your vendor profile.'
-    }
-  }
-
-  // Clean and normalize the vendor status to handle potential whitespace issues
-  const cleanStatus = vendorStatus.trim().toLowerCase()
-  
-  console.log('🔍 Vendor status check:', {
-    original: vendorStatus,
-    cleaned: cleanStatus,
-    platformSettings
-  })
-  
-  // If vendor approval is not required, allow any vendor to go live
-  if (!platformSettings.require_vendor_approval) {
-    console.log('✅ Vendor approval not required - allowing go live')
-    return {
-      allowed: true,
-      reason: 'Vendor approval not required by platform settings'
-    }
-  }
-  
-  // If auto-approval is enabled, allow pending vendors to go live
-  if (platformSettings.allow_auto_vendor_approval && cleanStatus === 'pending') {
-    console.log('✅ Auto-approval enabled for pending vendor')
-    return {
-      allowed: true,
-      reason: 'Auto-approval enabled: pending vendors can go live'
-    }
-  }
-  
-  // Standard approval check - both 'approved' and 'active' vendors can go live
-  if (cleanStatus === 'approved' || cleanStatus === 'active') {
-    console.log('✅ Vendor has approved/active status')
-    return {
-      allowed: true,
-      reason: 'Vendor is approved and can go live'
-    }
-  }
-  
-  // Block inactive vendors
-  return {
-    allowed: false,
-    reason: `Cannot go live. Your vendor status is "${vendorStatus}". ${
-      platformSettings.require_vendor_approval 
-        ? 'Please wait for admin approval or contact support.' 
-        : 'Please complete your vendor profile.'
-    }`
-  }
-}
+// Removed problematic checkVendorCanGoLive helper function
 
 // DELETE: End live session
 export async function DELETE(request: NextRequest) {
@@ -371,15 +236,6 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ End-live error:', error)
-    
-    // Try to clear context on error too
-    try {
-      if (supabase && typeof supabase.rpc === 'function') {
-        await supabase.rpc('clear_current_user_context')
-      }
-    } catch (clearError) {
-      console.warn('⚠️ Failed to clear user context on error (DELETE):', clearError)
-    }
     
     return NextResponse.json(
       { error: `Failed to end live session: ${error instanceof Error ? error.message : 'Unknown error'}` },

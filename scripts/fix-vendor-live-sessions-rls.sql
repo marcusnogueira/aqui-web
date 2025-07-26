@@ -17,8 +17,25 @@ CREATE POLICY "Public can view live sessions" ON vendor_live_sessions
 
 -- Allow authenticated users to insert/update/delete their own vendor sessions
 -- This policy checks if the user_id in the vendors table matches the session user
+-- We need both USING (for SELECT/UPDATE/DELETE) and WITH CHECK (for INSERT) clauses
 CREATE POLICY "Vendors can manage their sessions" ON vendor_live_sessions
-    FOR ALL USING (
+    USING (
+        EXISTS (
+            SELECT 1 FROM vendors 
+            WHERE vendors.id = vendor_live_sessions.vendor_id 
+            AND vendors.user_id = (
+                COALESCE(
+                    -- Try to get from session variable first
+                    NULLIF(current_setting('app.current_user_id', true), '')::UUID,
+                    -- Fallback to auth.uid() if available
+                    auth.uid(),
+                    -- If neither works, allow service role
+                    CASE WHEN current_user = 'service_role' THEN vendors.user_id ELSE NULL END
+                )
+            )
+        )
+    )
+    WITH CHECK (
         EXISTS (
             SELECT 1 FROM vendors 
             WHERE vendors.id = vendor_live_sessions.vendor_id 
