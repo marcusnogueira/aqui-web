@@ -69,7 +69,11 @@ export async function GET(request: NextRequest) {
           end_time,
           auto_end_time,
           is_active,
-          created_at
+          created_at,
+          address,
+          ended_by,
+          estimated_customers,
+          was_scheduled_duration
         )
       `)
 
@@ -90,7 +94,11 @@ export async function GET(request: NextRequest) {
             end_time,
             auto_end_time,
             is_active,
-            created_at
+            created_at,
+            address,
+            ended_by,
+            estimated_customers,
+            was_scheduled_duration
           )
         `)
         .in('status', ['active', 'approved'])

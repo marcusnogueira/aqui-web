@@ -34,7 +34,11 @@ async function testMapDataLogic() {
           end_time,
           auto_end_time,
           is_active,
-          created_at
+          created_at,
+          address,
+          ended_by,
+          estimated_customers,
+          was_scheduled_duration
         )
       `)
       .eq('vendor_live_sessions.is_active', true)
