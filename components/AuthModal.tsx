@@ -106,6 +106,47 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </button>
           </div>
 
+          {/* Legal Disclaimer */}
+          <div className="mt-6 px-2">
+            <p className="text-xs text-muted-foreground text-center leading-relaxed">
+              By signing in, you agree to AQUI's{' '}
+              <a 
+                href="/terms" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 underline underline-offset-2"
+              >
+                Terms of Service
+              </a>
+              ,{' '}
+              <a 
+                href="/privacy" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 underline underline-offset-2"
+              >
+                Privacy Policy
+              </a>
+              , and{' '}
+              <a 
+                href="/legal" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 underline underline-offset-2"
+              >
+                Legal Notice
+              </a>
+              . For any questions, contact us at{' '}
+              <a 
+                href="mailto:mrn@get-aqui.com"
+                className="text-primary hover:text-primary/80 underline underline-offset-2"
+              >
+                mrn@get-aqui.com
+              </a>
+              . We do not provide a phone number or physical address.
+            </p>
+          </div>
+
           <div className="mt-4 flex flex-col items-center space-y-2">
             <button
               onClick={onClose}
