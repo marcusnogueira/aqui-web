@@ -72,7 +72,7 @@ export default function VendorProfilePage() {
     }
     fetchVendorData();
     fetchUser();
-  }, [vendorId, session, status]);
+  }, [vendorId, session, status, supabase]);
 
   const fetchUser = async () => {
     try {
@@ -329,6 +329,8 @@ export default function VendorProfilePage() {
     } catch (error) {
       console.error('Error submitting report:', error);
       alert('Failed to submit report. Please try again.');
+    } finally {
+      setSubmittingReport(false);
     }
   };
 
@@ -763,7 +765,7 @@ export default function VendorProfilePage() {
                 <textarea
                   value={reportData.description}
                   onChange={(e) => setReportData({ ...reportData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"cus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   rows={3}
                   placeholder="Please provide additional details about your report..."
                 />
