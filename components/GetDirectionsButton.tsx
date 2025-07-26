@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Navigation, MapPin, ExternalLink } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getDirections, getDirectionProvider } from '@/lib/directions'
 
 interface GetDirectionsButtonProps {
@@ -21,6 +22,7 @@ export function GetDirectionsButton({
   size = 'md',
   showProvider = false
 }: GetDirectionsButtonProps) {
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'success' | 'denied'>('idle')
   
@@ -79,7 +81,7 @@ export function GetDirectionsButton({
       case 'denied':
         return 'Opening directions...'
       default:
-        return 'Get Directions'
+        return t('get_directions')
     }
   }
 
@@ -97,7 +99,7 @@ export function GetDirectionsButton({
       case 'denied':
         return <MapPin className="w-4 h-4" />
       default:
-        return <Navigation className="w-4 h-4" />
+        return <MapPin className="w-4 h-4" />
     }
   }
 
@@ -107,14 +109,14 @@ export function GetDirectionsButton({
         onClick={handleGetDirections}
         disabled={isLoading}
         className={`
-          w-full flex items-center justify-center space-x-2 
+          w-full sm:w-auto flex items-center justify-center space-x-2 
           rounded-lg font-medium transition-all duration-200
           disabled:opacity-50 disabled:cursor-not-allowed
           ${variantStyles[variant]}
           ${sizeStyles[size]}
           ${className}
         `}
-        title={`Get directions to ${vendorName} via ${providerName}`}
+        title={`${t('get_directions')} to ${vendorName} via ${providerName}`}
       >
         {getStatusIcon()}
         <span>{getStatusMessage()}</span>
@@ -127,7 +129,7 @@ export function GetDirectionsButton({
       )}
       
       {locationStatus === 'denied' && (
-        <p className="text-xs text-amber-600 text-center">
+        <p className="text-xs text-yellow-600 dark:text-yellow-400 text-center">
           Location access denied - directions will open without your current location
         </p>
       )}
@@ -174,7 +176,7 @@ export function GetDirectionsButtonCompact({
       title={`Get directions to ${vendorName}`}
     >
       {isLoading ? (
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
       ) : (
         <Navigation className="w-4 h-4" />
       )}

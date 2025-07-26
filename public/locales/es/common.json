@@ -5,6 +5,7 @@
   "login": "Acceso de Vendedor",
   "supportOurMission": "Apoya Nuestra Misión",
   "loading": "Cargando...",
+  "get_directions": "Obtener Direcciones",
   "auth": {
     "signIn": "Iniciar Sesión"
   }

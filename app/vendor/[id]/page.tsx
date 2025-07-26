@@ -13,6 +13,9 @@ import { useHeartBeat } from '@/lib/animations';
 import { GetDirectionsButton } from '@/components/GetDirectionsButton';
 import { getDetailedVendorStatus, extractCoordinatesFromVendor, VendorWithLiveSession } from '@/lib/vendor-utils';
 import { useSession } from 'next-auth/react';
+import { useTranslation } from 'react-i18next';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 type VendorLocation = Database['public']['Tables']['vendor_static_locations']['Row'];
 type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['Row'];
@@ -35,6 +38,7 @@ interface VendorProfileData extends Omit<VendorWithDetails, 'status'> {
 export default function VendorProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const supabase = useMemo(() => {
     if (typeof window !== 'undefined') {
       return createClient()
@@ -254,26 +258,21 @@ export default function VendorProfilePage() {
     }
   };
 
-  // Extract coordinates for directions - handle vendors without live sessions
-  const coordinates = useMemo(() => {
+  // Extract coordinates for directions - only for live vendors with live coordinates
+  const liveCoordinates = useMemo(() => {
     if (!vendor) return null;
     
-    try {
-      // First try to get coordinates from live session
-      if (vendor.live_session && vendor.live_session.latitude && vendor.live_session.longitude) {
-        return extractCoordinatesFromVendor(vendor as unknown as VendorWithLiveSession);
-      }
-    } catch (error) {
-      // If live session extraction fails, try static location
-      console.warn('Failed to extract live session coordinates, trying static location');
+    // Only show directions if vendor is live with active session and has live coordinates
+    if (vendor.live_session && 
+        vendor.live_session.is_active && 
+        vendor.live_session.latitude && 
+        vendor.live_session.longitude) {
+      return { 
+        lat: vendor.live_session.latitude, 
+        lng: vendor.live_session.longitude 
+      };
     }
     
-    // Fallback to static location coordinates
-    if (vendor.location && vendor.location.latitude && vendor.location.longitude) {
-      return { lat: vendor.location.latitude, lng: vendor.location.longitude };
-    }
-    
-    // No coordinates available
     return null;
   }, [vendor]);
 
@@ -351,21 +350,21 @@ export default function VendorProfilePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error || !vendor) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Vendor Not Found</h1>
-          <p className="text-gray-600 mb-4">{error || 'The vendor you\'re looking for doesn\'t exist.'}</p>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Vendor Not Found</h1>
+          <p className="text-muted-foreground mb-4">{error || 'The vendor you\'re looking for doesn\'t exist.'}</p>
           <button
             onClick={() => router.push('/')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors"
             aria-label="Back to Home"
           >
             Back to Home
@@ -376,23 +375,31 @@ export default function VendorProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-background border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => router.push('/')}
-            className="text-blue-600 hover:text-blue-700 mb-4"
-            aria-label="Back to Map"
-          >
-            ← Back to Map
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => router.push('/')}
+              className="text-primary hover:text-primary/80 transition-colors"
+              aria-label="Back to Map"
+            >
+              ← Back to Map
+            </button>
+            
+            {/* Theme Toggle and Language Switcher */}
+            <div className="flex items-center space-x-3">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Vendor Profile */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-background border border-border rounded-lg shadow-lg overflow-hidden">
           {/* Cover Image */}
           <div className="h-64 bg-gradient-to-r from-blue-500 to-purple-600 relative">
             {vendor.banner_image_url && vendor.banner_image_url.length > 0 && (
@@ -409,7 +416,7 @@ export default function VendorProfilePage() {
           <div className="relative px-6 py-8">
             {/* Profile Image */}
             <div className="absolute -top-16 left-6">
-              <div className="w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden">
+              <div className="w-32 h-32 rounded-full border-4 border-background bg-background overflow-hidden shadow-lg">
                 {vendor.profile_image_url ? (
                   <img
                     src={vendor.profile_image_url}
@@ -417,8 +424,8 @@ export default function VendorProfilePage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-500 text-2xl font-bold">
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <span className="text-muted-foreground text-2xl font-bold">
                       {vendor.business_name.charAt(0)}
                     </span>
                   </div>
@@ -432,10 +439,10 @@ export default function VendorProfilePage() {
                 <>
                   <button
                     onClick={toggleFavorite}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-colors ${
                       isFavorite 
-                        ? 'bg-red-50 border-red-200 text-red-600' 
-                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400' 
+                        : 'bg-background border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     }`}
                   >
                     <Heart ref={heartBeatRef} className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''} ${favoriteClicked ? 'animate-heartbeat' : ''}`} />
@@ -443,7 +450,7 @@ export default function VendorProfilePage() {
                   </button>
                   <button
                     onClick={() => setShowReportModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg border bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg border bg-background border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     <Flag className="w-4 h-4" />
                     <span>Report Vendor</span>
@@ -455,7 +462,7 @@ export default function VendorProfilePage() {
             {/* Basic Info */}
             <div className="mt-16">
               <div className="flex items-center space-x-4 mb-4">
-                <h1 className="text-3xl font-bold text-gray-900">{vendor.business_name}</h1>
+                <h1 className="text-3xl font-bold text-foreground">{vendor.business_name}</h1>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(vendor.status)}`}>
                   {getStatusText(vendor.status)}
                 </span>
@@ -467,7 +474,7 @@ export default function VendorProfilePage() {
                   {vendor.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                      className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
                     >
                       {tag}
                     </span>
@@ -489,23 +496,23 @@ export default function VendorProfilePage() {
                     />
                   ))}
                 </div>
-                <span className="text-gray-600">
+                <span className="text-muted-foreground">
                   {vendor.average_rating?.toFixed(1) || '0.0'} ({vendor.total_reviews || 0} reviews)
                 </span>
               </div>
 
               {/* Location */}
               {vendor.location && (
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                   <div className="flex items-center space-x-2">
-                    <MapPin className="w-5 h-5 text-gray-500" />
-                    <span className="text-gray-600">{vendor.location.address}</span>
+                    <MapPin className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-muted-foreground">{vendor.location.address}</span>
                   </div>
-                  {coordinates && (
+                  {liveCoordinates && (
                     <GetDirectionsButton
-                      destination={coordinates}
+                      destination={liveCoordinates}
                       vendorName={vendor.business_name}
-                      className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      variant="outline"
                     />
                   )}
                 </div>
@@ -514,13 +521,13 @@ export default function VendorProfilePage() {
               {/* Contact */}
               {vendor.contact_email && (
                 <div className="flex items-center space-x-2 mb-6">
-                  <Mail className="w-5 h-5 text-gray-500" />
-                  <span className="text-gray-600">{vendor.contact_email}</span>
+                  <Mail className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-muted-foreground">{vendor.contact_email}</span>
                 </div>
               )}
 
               {/* Description */}
-              <p className="text-gray-700 mb-8">{vendor.description}</p>
+              <p className="text-foreground mb-8">{vendor.description}</p>
             </div>
           </div>
         </div>
@@ -531,12 +538,12 @@ export default function VendorProfilePage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Announcements */}
             {vendor.announcements.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Announcements</h2>
+              <div className="bg-background border border-border rounded-lg shadow p-6">
+                <h2 className="text-xl font-bold text-foreground mb-4">Announcements</h2>
                 <div className="space-y-4">
                   {vendor.announcements.map((announcement) => (
-                    <div key={announcement.id} className="border-l-4 border-blue-500 pl-4">
-                      <p className="text-gray-600">{announcement.message}</p>
+                    <div key={announcement.id} className="border-l-4 border-primary pl-4">
+                      <p className="text-muted-foreground">{announcement.message}</p>
                     </div>
                   ))}
                 </div>
@@ -545,15 +552,15 @@ export default function VendorProfilePage() {
 
             {/* Specials */}
             {vendor.specials.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Current Specials</h2>
+              <div className="bg-background border border-border rounded-lg shadow p-6">
+                <h2 className="text-xl font-bold text-foreground mb-4">Current Specials</h2>
                 <div className="grid gap-4">
                   {vendor.specials.map((special) => (
-                    <div key={special.id} className="border rounded-lg p-4">
+                    <div key={special.id} className="border border-border rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-900">{special.title}</h3>
+                        <h3 className="font-semibold text-foreground">{special.title}</h3>
                       </div>
-                      <p className="text-gray-600 mb-2">{special.description}</p>
+                      <p className="text-muted-foreground mb-2">{special.description}</p>
                     </div>
                   ))}
                 </div>
@@ -561,15 +568,15 @@ export default function VendorProfilePage() {
             )}
 
             {/* Reviews Section */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Reviews</h2>
+            <div className="bg-background border border-border rounded-lg shadow p-6">
+              <h2 className="text-xl font-bold text-foreground mb-4">Reviews</h2>
               
               {/* Add Review Form */}
               {user && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-3">Write a Review</h3>
+                <div className="mb-6 p-4 bg-muted rounded-lg">
+                  <h3 className="font-semibold text-foreground mb-3">Write a Review</h3>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Rating
                     </label>
                     <div className="flex space-x-1">
@@ -592,13 +599,13 @@ export default function VendorProfilePage() {
                     </div>
                   </div>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Comment
                     </label>
                     <textarea
                       value={newReview.comment}
                       onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       rows={3}
                       placeholder="Share your experience..."
                     />
@@ -606,7 +613,7 @@ export default function VendorProfilePage() {
                   <button
                     onClick={submitReview}
                     disabled={submittingReview || !newReview.comment.trim()}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {submittingReview ? 'Submitting...' : 'Submit Review'}
                   </button>
@@ -617,7 +624,7 @@ export default function VendorProfilePage() {
               <div className="space-y-4">
                 {vendor.reviews.length > 0 ? (
                   vendor.reviews.map((review) => (
-                    <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                    <div key={review.id} className="border-b border-border pb-4 last:border-b-0">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0">
                           {review.user.avatar_url ? (
@@ -627,8 +634,8 @@ export default function VendorProfilePage() {
                               className="w-10 h-10 rounded-full"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-500 font-medium">
+                            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                              <span className="text-muted-foreground font-medium">
                                 {(review.user.full_name || 'U').charAt(0)}
                               </span>
                             </div>
@@ -636,7 +643,7 @@ export default function VendorProfilePage() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-foreground">
                               {review.user.full_name || 'Anonymous'}
                             </span>
                             <div className="flex items-center">
@@ -652,18 +659,18 @@ export default function VendorProfilePage() {
                               ))}
                             </div>
                             {review.created_at &&
-                              <span className="text-sm text-gray-500">
+                              <span className="text-sm text-muted-foreground">
                                 {new Date(review.created_at).toLocaleDateString()}
                               </span>
                             }
                           </div>
-                          <p className="text-gray-700">{review.review}</p>
+                          <p className="text-foreground">{review.review}</p>
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-muted-foreground text-center py-8">
                     No reviews yet. Be the first to review this vendor!
                   </p>
                 )}
@@ -674,19 +681,19 @@ export default function VendorProfilePage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Info */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Quick Info</h3>
+            <div className="bg-background border border-border rounded-lg shadow p-6">
+              <h3 className="font-semibold text-foreground mb-4">Quick Info</h3>
               <div className="space-y-3">
                 <div>
-                  <span className="text-sm text-gray-700 font-medium">Cuisine Type</span>
-                  <p className="font-semibold text-gray-900">{vendor.subcategory || 'Not specified'}</p>
+                  <span className="text-sm text-muted-foreground font-medium">Cuisine Type</span>
+                  <p className="font-semibold text-foreground">{vendor.subcategory || 'Not specified'}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-gray-700 font-medium">Business Type</span>
-                  <p className="font-semibold text-gray-900">{vendor.business_type || 'Not specified'}</p>
+                  <span className="text-sm text-muted-foreground font-medium">Business Type</span>
+                  <p className="font-semibold text-foreground">{vendor.business_type || 'Not specified'}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-gray-700 font-medium">Status</span>
+                  <span className="text-sm text-muted-foreground font-medium">Status</span>
                   <p className={`font-semibold ${getStatusColor(vendor.status).replace('bg-', 'text-')}`}>
                     {getStatusText(vendor.status)}
                   </p>
@@ -696,14 +703,14 @@ export default function VendorProfilePage() {
 
             {/* Map Preview */}
             {vendor.location && vendor.location.latitude && vendor.location.longitude && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Location</h3>
-                <div className="aspect-square bg-gray-200 rounded-lg mb-3 flex items-center justify-center">
-                  <MapPin className="w-8 h-8 text-gray-400" />
-                  <span className="ml-2 text-gray-500">Map Preview</span>
+              <div className="bg-background border border-border rounded-lg shadow p-6">
+                <h3 className="font-semibold text-foreground mb-4">Location</h3>
+                <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center">
+                  <MapPin className="w-8 h-8 text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Map Preview</span>
                 </div>
-                <p className="text-sm text-gray-600">{vendor.location.address}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground">{vendor.location.address}</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   {vendor.location.latitude.toFixed(6)}, {vendor.location.longitude.toFixed(6)}
                 </p>
               </div>
@@ -715,12 +722,12 @@ export default function VendorProfilePage() {
       {/* Report Vendor Modal */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="bg-background border border-border rounded-lg max-w-md w-full p-6 shadow-lg">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Report Vendor</h3>
+              <h3 className="text-lg font-semibold text-foreground">Report Vendor</h3>
               <button
                  onClick={() => setShowReportModal(false)}
-                 className="text-gray-400 hover:text-gray-600"
+                 className="text-muted-foreground hover:text-foreground transition-colors"
                  aria-label="Close report modal"
                >
                  <X className="w-5 h-5" />
@@ -729,13 +736,13 @@ export default function VendorProfilePage() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Reason for Report *
                 </label>
                 <select
                    value={reportData.reason}
                    onChange={(e) => setReportData({ ...reportData, reason: e.target.value })}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                    aria-label="Reason for report"
                    required
                  >
@@ -750,13 +757,13 @@ export default function VendorProfilePage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Additional Details (Optional)
                 </label>
                 <textarea
                   value={reportData.description}
                   onChange={(e) => setReportData({ ...reportData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-primary"cus:ring-blue-500"
                   rows={3}
                   placeholder="Please provide additional details about your report..."
                 />
@@ -773,7 +780,7 @@ export default function VendorProfilePage() {
               <button
                 onClick={submitReport}
                 disabled={submittingReport || !reportData.reason.trim()}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submittingReport ? 'Submitting...' : 'Submit Report'}
               </button>

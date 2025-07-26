@@ -5,6 +5,7 @@
   "login": "供应商登录",
   "supportOurMission": "支持我们的使命",
   "loading": "加载中...",
+  "get_directions": "获取路线",
   "auth": {
     "signIn": "登录"
   }
