@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { USER_ROLES, ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 

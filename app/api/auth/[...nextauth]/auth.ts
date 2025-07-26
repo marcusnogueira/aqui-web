@@ -16,9 +16,9 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
-import { createClient } from '@/lib/supabase-server'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { USER_ROLES } from '@/lib/constants'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 
 type UserRow = Database['public']['Tables']['users']['Row']
 
@@ -44,7 +44,8 @@ export const authConfig: NextAuthConfig = {
         const { email, password } = credentials as { email?: string; password?: string };
         if (!email || !password) return null;
 
-        const supabase = createClient()
+        const cookieStore = await cookies()
+        const supabase = createSupabaseServerClient(cookieStore)
         const { data: user } = await supabase
           .from('users')
           .select('id, email, password_hash, full_name, active_role')
@@ -53,7 +54,7 @@ export const authConfig: NextAuthConfig = {
 
         if (!user || !user.password_hash) return null
 
-        const valid = await bcrypt.compare(password, user.password_hash)
+        const valid = await bcrypt.compare(password, user.password_hash as string)
         if (!valid) return null
 
         return {
@@ -78,7 +79,8 @@ export const authConfig: NextAuthConfig = {
         token.supabaseAccessToken = account.access_token ?? ''
         token.supabaseRefreshToken = account.refresh_token ?? ''
 
-        const supabase = createClient()
+        const cookieStore = await cookies()
+        const supabase = createSupabaseServerClient(cookieStore)
         const { data: existing } = await supabase
           .from('users')
           .select('id, active_role')

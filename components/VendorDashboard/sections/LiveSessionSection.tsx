@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']
 

@@ -2,9 +2,8 @@
 
 import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from 'next-themes'
-import { useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { SupabaseContext } from '@/contexts/SupabaseContext'
+
+import { SupabaseProvider } from '@/contexts/SupabaseContext'
 import type { Session } from 'next-auth'
 
 export function Providers({
@@ -14,12 +13,9 @@ export function Providers({
   children: React.ReactNode
   session: Session | null
 }) {
-  // Create a single, memoized Supabase client instance
-  const supabase = useMemo(() => createClient(), [])
-
   return (
     <SessionProvider session={session}>
-      <SupabaseContext.Provider value={{ supabase }}>
+      <SupabaseProvider>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
@@ -28,7 +24,7 @@ export function Providers({
         >
           {children}
         </ThemeProvider>
-      </SupabaseContext.Provider>
+      </SupabaseProvider>
     </SessionProvider>
   )
 }

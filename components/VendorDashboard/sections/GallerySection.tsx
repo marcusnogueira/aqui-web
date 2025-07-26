@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSupabase } from '@/lib/hooks/useSupabase'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 import { ImageGallery } from '../components/ImageGallery'
 import {
   Card,

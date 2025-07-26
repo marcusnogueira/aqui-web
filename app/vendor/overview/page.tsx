@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@/lib/supabase/client'
 import { clientAuth } from '@/lib/auth-helpers'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 import { Store, MapPin, Clock, Users, TrendingUp, Calendar } from 'lucide-react'
 import { USER_ROLES } from '@/lib/constants'
 

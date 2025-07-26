@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setServiceRoleContext, clearUserContext } from '@/lib/nextauth-context'
 import { cookies } from 'next/headers'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { verifyAdminTokenServer } from '@/lib/admin-auth-server'
 import { ERROR_MESSAGES, HTTP_STATUS } from '@/lib/constants'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 // GET endpoint to fetch current platform settings
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServerClient(await cookies())
-  
   try {
     const adminUser = await verifyAdminTokenServer(request)
     if (!adminUser) {
@@ -21,13 +19,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Set service role context for RLS policies
-    await setServiceRoleContext(supabase)
+    // Use service role client to bypass RLS
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
-    const { data, error } = await supabase
-      .from('platform_settings_broken')
+    const { data: settings, error } = await supabase
+      .from('platform_settings')
       .select('*')
-      .eq('id', true)
+      .eq('id', 'default')
       .single()
 
     if (error) {
@@ -38,7 +45,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ success: true, settings: data })
+    return NextResponse.json({ success: true, settings: settings })
 
   } catch (error) {
     console.error('Fetch platform settings error:', error)
@@ -46,16 +53,11 @@ export async function GET(request: NextRequest) {
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }
 
 // PUT endpoint to update platform settings
 export async function PUT(request: NextRequest) {
-  const supabase = createSupabaseServerClient(await cookies())
-  
   try {
     const adminUser = await verifyAdminTokenServer(request)
     if (!adminUser) {
@@ -109,13 +111,22 @@ export async function PUT(request: NextRequest) {
 
     updates.updated_at = new Date().toISOString()
 
-    // Set service role context for RLS policies
-    await setServiceRoleContext(supabase)
+    // Use service role client to bypass RLS
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
     const { data, error } = await supabase
-      .from('platform_settings_broken')
+      .from('platform_settings')
       .update(updates)
-      .eq('id', true)
+      .eq('id', 'default')
       .select()
       .single()
 
@@ -135,8 +146,5 @@ export async function PUT(request: NextRequest) {
       { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     )
-  } finally {
-    // Always clear user context when done
-    await clearUserContext(supabase)
   }
 }

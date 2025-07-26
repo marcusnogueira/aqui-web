@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { DashboardSidebar } from './DashboardSidebar'
 import { DashboardHeader } from './DashboardHeader'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 
 type Vendor = Database['public']['Tables']['vendors']['Row']
 type VendorLiveSession = Database['public']['Tables']['vendor_live_sessions']['Row']

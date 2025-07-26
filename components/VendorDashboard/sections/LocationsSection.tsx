@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 
 type VendorStaticLocation = Database['public']['Tables']['vendor_static_locations']['Row']
 

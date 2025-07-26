@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslation } from 'react-i18next'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../Card'
 import { StatCard } from '../StatCard'
 import { StarIcon, CheckCircleIcon, MapPinIcon } from '@heroicons/react/24/outline'

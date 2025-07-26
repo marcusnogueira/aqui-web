@@ -2,16 +2,48 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/app/api/auth/[...nextauth]/auth'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 
-async function getPlatformSettings(supabase: any) {
-  // Get platform settings to check auto-approval
-  const { data: settings } = await supabase
-    .from('platform_settings_broken')
-    .select('allow_auto_vendor_approval, require_vendor_approval')
-    .eq('id', true)
-    .single()
-  
-  return settings || { allow_auto_vendor_approval: false, require_vendor_approval: true }
+async function getPlatformSettings() {
+  try {
+    // Use service role client to get platform settings
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { data: settings, error } = await supabase
+      .from('platform_settings')
+      .select('allow_auto_vendor_approval, require_vendor_approval')
+      .eq('id', 'default')
+      .single()
+    
+    if (error) {
+      console.warn('Failed to get platform settings:', error)
+      // Return default settings if query fails
+      return { 
+        allow_auto_vendor_approval: false, 
+        require_vendor_approval: true 
+      }
+    }
+    
+    return settings || { 
+      allow_auto_vendor_approval: false, 
+      require_vendor_approval: true 
+    }
+  } catch (error) {
+    console.warn('Error getting platform settings:', error)
+    return { 
+      allow_auto_vendor_approval: false, 
+      require_vendor_approval: true 
+    }
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -36,24 +68,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Location coordinates are required' }, { status: 400 })
     }
 
-    // Create Supabase client with service role to bypass RLS for this operation
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Create Supabase client - use service role to bypass RLS issues during migration
+    let supabase
     
-    console.log('✅ Service role Supabase client created')
-
-    // Get platform settings
-    const platformSettings = await getPlatformSettings(supabase)
-    console.log('📋 Platform settings:', platformSettings)
+    try {
+      // Try to use regular client with user context first
+      const cookieStore = await cookies()
+      const userSupabase = createSupabaseServerClient(cookieStore)
+      
+      await userSupabase.rpc('set_current_user_context', {
+        user_id: session.user.id
+      })
+      
+      supabase = userSupabase
+      console.log('✅ User context set for RLS')
+    } catch (contextError) {
+      console.warn('⚠️ RLS context failed, using service role client:', contextError)
+      
+      // Fallback to service role client to bypass RLS during migration
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+      console.log('✅ Using service role client to bypass RLS')
+    }
 
     // First, find the vendor for this user
     console.log('🔍 Finding vendor for user...')
@@ -70,7 +114,11 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Vendor found:', { id: vendor.id, name: vendor.business_name, status: vendor.status })
 
-    // Check vendor approval status with platform settings logic
+    // Get platform settings to check approval requirements
+    const platformSettings = await getPlatformSettings()
+    console.log('📋 Platform settings:', platformSettings)
+
+    // Check if vendor can go live based on status and platform settings
     const canGoLive = checkVendorCanGoLive(vendor.status, platformSettings)
     if (!canGoLive.allowed) {
       console.error('❌ Vendor cannot go live:', canGoLive.reason)
@@ -133,7 +181,14 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Live session started successfully:', newSession.id)
 
-    // No need to clear context when using service role
+    // Clear user context if we used the regular client
+    try {
+      if (supabase && typeof supabase.rpc === 'function') {
+        await supabase.rpc('clear_current_user_context')
+      }
+    } catch (clearError) {
+      console.warn('⚠️ Failed to clear user context:', clearError)
+    }
 
     return NextResponse.json({ 
       success: true,
@@ -143,6 +198,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Go-live error:', error)
+    
+    // Try to clear context on error too
+    try {
+      if (supabase && typeof supabase.rpc === 'function') {
+        await supabase.rpc('clear_current_user_context')
+      }
+    } catch (clearError) {
+      console.warn('⚠️ Failed to clear user context on error:', clearError)
+    }
+    
     return NextResponse.json(
       { error: `Failed to start live session: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
@@ -151,15 +216,21 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to determine if vendor can go live based on status and platform settings
-function checkVendorCanGoLive(vendorStatus: string, platformSettings: any) {
+function checkVendorCanGoLive(vendorStatus: string | null, platformSettings: any) {
+  // Handle null status
+  if (!vendorStatus) {
+    return {
+      allowed: false,
+      reason: 'Vendor status is not set. Please complete your vendor profile.'
+    }
+  }
+
   // Clean and normalize the vendor status to handle potential whitespace issues
-  const cleanStatus = vendorStatus?.trim()?.toLowerCase()
+  const cleanStatus = vendorStatus.trim().toLowerCase()
   
   console.log('🔍 Vendor status check:', {
     original: vendorStatus,
     cleaned: cleanStatus,
-    originalLength: vendorStatus?.length,
-    cleanedLength: cleanStatus?.length,
     platformSettings
   })
   
@@ -168,7 +239,7 @@ function checkVendorCanGoLive(vendorStatus: string, platformSettings: any) {
     console.log('✅ Vendor approval not required - allowing go live')
     return {
       allowed: true,
-      reason: 'Vendor approval not required'
+      reason: 'Vendor approval not required by platform settings'
     }
   }
   
@@ -189,15 +260,6 @@ function checkVendorCanGoLive(vendorStatus: string, platformSettings: any) {
       reason: 'Vendor is approved and can go live'
     }
   }
-  
-  // Additional debugging for edge cases
-  console.log('❌ Vendor cannot go live:', {
-    cleanStatus,
-    isApproved: cleanStatus === 'approved',
-    isActive: cleanStatus === 'active',
-    requireApproval: platformSettings.require_vendor_approval,
-    allowAutoApproval: platformSettings.allow_auto_vendor_approval
-  })
   
   // Block inactive vendors
   return {
@@ -224,20 +286,36 @@ export async function DELETE(request: NextRequest) {
 
     console.log('✅ Authentication successful:', { userId: session.user.id })
 
-    // Create Supabase client with service role to bypass RLS for this operation
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
+    // Create Supabase client - use service role to bypass RLS issues during migration
+    let supabase
     
-    console.log('✅ Service role Supabase client created (DELETE)')
+    try {
+      // Try to use regular client with user context first
+      const cookieStore = await cookies()
+      const userSupabase = createSupabaseServerClient(cookieStore)
+      
+      await userSupabase.rpc('set_current_user_context', {
+        user_id: session.user.id
+      })
+      
+      supabase = userSupabase
+      console.log('✅ User context set for RLS (DELETE)')
+    } catch (contextError) {
+      console.warn('⚠️ RLS context failed, using service role client (DELETE):', contextError)
+      
+      // Fallback to service role client to bypass RLS during migration
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+      console.log('✅ Using service role client to bypass RLS (DELETE)')
+    }
 
     // Find the vendor for this user
     console.log('🔍 Finding vendor for user...')
@@ -276,7 +354,14 @@ export async function DELETE(request: NextRequest) {
 
     console.log('✅ Live session ended successfully')
 
-    // No need to clear context when using service role
+    // Clear user context if we used the regular client
+    try {
+      if (supabase && typeof supabase.rpc === 'function') {
+        await supabase.rpc('clear_current_user_context')
+      }
+    } catch (clearError) {
+      console.warn('⚠️ Failed to clear user context (DELETE):', clearError)
+    }
 
     return NextResponse.json({ 
       success: true,
@@ -286,6 +371,16 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ End-live error:', error)
+    
+    // Try to clear context on error too
+    try {
+      if (supabase && typeof supabase.rpc === 'function') {
+        await supabase.rpc('clear_current_user_context')
+      }
+    } catch (clearError) {
+      console.warn('⚠️ Failed to clear user context on error (DELETE):', clearError)
+    }
+    
     return NextResponse.json(
       { error: `Failed to end live session: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }

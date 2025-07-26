@@ -1,4 +1,4 @@
-import { Database } from './database'
+import { Database } from '@/lib/database.types'
 import { 
   Vendor, 
   VendorLiveSession, 

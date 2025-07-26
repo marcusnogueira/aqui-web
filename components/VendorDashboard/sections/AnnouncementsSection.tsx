@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Database } from '@/types/database'
+import { Database } from '@/lib/database.types'
 
 type VendorAnnouncement = Database['public']['Tables']['vendor_announcements']['Row']
 

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Database } from '@/types/database';
+import { Database } from '@/lib/database.types';
 import { VendorWithDetails } from '@/types/vendor';
 import { Star, MapPin, Clock, Phone, Mail, Heart, MessageSquare, Flag, X, Navigation } from 'lucide-react';
 import { useHeartBeat } from '@/lib/animations';

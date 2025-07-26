@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut as nextAuthSignOut, signIn } from 'next-auth/react'
 import { useTranslation } from 'react-i18next'
-import { signOut, createClient } from '@/lib/supabase/client'
+import { signOut } from '@/lib/supabase/client'
+import { useSupabase } from '@/lib/hooks/useSupabase'
 import { clientAuth } from '@/lib/auth-helpers'
 import { USER_ROLES } from '@/lib/constants'
 
@@ -18,12 +19,7 @@ export function Navigation() {
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false)
-  const supabase = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return createClient()
-    }
-    return null
-  }, [])
+  const supabase = useSupabase()
 
   useEffect(() => {
     // Only run checkAuth on the client-side when the session is authenticated

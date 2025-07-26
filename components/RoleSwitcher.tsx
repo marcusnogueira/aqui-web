@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
-import { createClient, signOut } from '@/lib/supabase/client'
+import { signOut } from '@/lib/supabase/client'
+import { useSupabase } from '@/lib/hooks/useSupabase'
 import { clientAuth } from '@/lib/auth-helpers'
-import type { Database } from '@/types/database'
+import type { Database } from '@/lib/database.types'
 import { USER_ROLES } from '@/lib/constants'
 
 // Force dynamic rendering for this component
@@ -22,12 +23,7 @@ export default function RoleSwitcher({ onRoleChange }: RoleSwitcherProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [hasVendorProfile, setHasVendorProfile] = useState(false)
-  const supabase = useMemo(() => {
-    if (typeof window !== 'undefined') {
-      return createClient()
-    }
-    return null
-  }, [])
+  const supabase = useSupabase()
 
   useEffect(() => {
     if (status === 'loading') return
